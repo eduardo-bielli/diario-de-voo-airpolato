@@ -1,0 +1,7 @@
+indow.APP_CONFIG = {
+  SUPABASE_URL:   "https://lxejhxguoyfkszdfwrow.supabase.co",
+  SUPABASE_KEY:   "COLE_A_CHAVE_PUBLISHABLE_AQUI",
+  DOMINIO_PADRAO: "airpolato.com.br",
+  RESET_URL:      "https://airpolato.netlify.app/",
+  APP_NAME:       "Air Polato"
+};
