@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locks App Preview</title>
+    <style>
+        :root {
+            --bg: #06101b;
+            --panel: #091b2c;
+            --line: #173651;
+            --text: #f1f7ff;
+            --muted: #8fa7bc;
+            --accent: #1687ff;
+            --green: #30cf8a;
+        }
+        body {
+            margin: 0; padding: 0;
+            background: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh;
+        }
+        .iphone-frame {
+            width: 390px; height: 844px;
+            background: var(--bg);
+            border-radius: 40px;
+            border: 8px solid #333;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+        }
+        .notch {
+            width: 120px; height: 30px; background: #333;
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+            z-index: 100;
+        }
+        .header {
+            padding: 50px 20px 15px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--line);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 800; color: var(--text); }
+        .header .user { font-size: 12px; color: var(--muted); }
+        
+        .content { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; }
+        
+        /* Tab Bar */
+        .tab-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 80px; background: var(--panel); border-top: 1px solid var(--line);
+            display: flex; justify-content: space-around; padding-top: 10px;
+        }
+        .tab { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: 600; cursor: pointer; }
+        .tab.active { color: var(--accent); }
+        .tab .icon { font-size: 22px; margin-bottom: 4px; }
+        
+        /* Calendar */
+        .calendar-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 15px; }
+        .day { flex: 0 0 auto; width: 50px; height: 65px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .day.active { background: var(--accent); border-color: var(--accent); color: white; }
+        .day .weekday { font-size: 10px; text-transform: uppercase; color: var(--muted); }
+        .day.active .weekday { color: #e0f0ff; }
+        .day .num { font-size: 18px; font-weight: 800; margin-top: 2px; }
+        .day .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--green); margin-top: 4px; }
+        
+        /* Flight Card */
+        .card {
+            background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+            padding: 16px; margin-bottom: 12px; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .card:active { transform: scale(0.98); }
+        .card-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+        .card-route { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+        .card-info { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+        .badge { background: rgba(22,135,255,.15); color: var(--accent); padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+        
+        /* Bottom Sheet / Modal */
+        .modal {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none; align-items: flex-end;
+            z-index: 200;
+        }
+        .modal.open { display: flex; }
+        .sheet {
+            background: var(--bg); width: 100%; height: 85%;
+            border-top-left-radius: 24px; border-top-right-radius: 24px;
+            padding: 20px; box-sizing: border-box;
+            display: flex; flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .sheet-header h2 { margin: 0; font-size: 20px; color: var(--text); }
+        .close-btn { background: var(--panel); border: 1px solid var(--line); color: var(--text); width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight: bold; }
+        
+        /* Multi-leg timeline */
+        .timeline { border-left: 2px solid var(--line); margin-left: 10px; padding-left: 15px; margin-bottom: 20px; }
+        .leg { position: relative; margin-bottom: 20px; }
+        .leg::before { content: ''; position: absolute; left: -21px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+        .leg-route { font-size: 16px; font-weight: 800; color: var(--text); }
+        .leg-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+        .leg-fuso { color: var(--accent); font-size: 11px; font-weight: 600; margin-left: 5px; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .info-item { background: var(--panel); padding: 12px; border-radius: 12px; border: 1px solid var(--line); }
+        .info-label { font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+        .info-value { font-size: 14px; color: var(--text); font-weight: 600; }
+        
+        .btn-primary {
+            background: var(--accent); color: white; border: none; padding: 16px; border-radius: 12px;
+            font-size: 16px; font-weight: 700; width: 100%; cursor: pointer; margin-top: auto;
+        }
+        
+        /* Wizard Revisão */
+        .step-indicator { display: flex; gap: 5px; margin-bottom: 20px; }
+        .step-dot { flex: 1; height: 4px; background: var(--line); border-radius: 2px; }
+        .step-dot.active { background: var(--accent); }
+        .step-dot.done { background: var(--green); }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+        .form-control { width: 100%; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 14px; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        .radio-group { display: flex; gap: 10px; }
+        .radio-btn { flex: 1; background: var(--panel); border: 1px solid var(--line); padding: 14px; text-align: center; border-radius: 10px; font-weight: 600; cursor: pointer; color: var(--muted); }
+        .radio-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(22,135,255,.1); }
+        
+        .pax-list { display: flex; flex-direction: column; gap: 8px; }
+        .pax-item { display: flex; justify-content: space-between; background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; }
+        .pax-item .del { color: #ff5a5f; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="iphone-frame">
+    <div class="notch"></div>
+    
+    <!-- TELA 1: AGENDA -->
+    <div id="screen-agenda" style="display: flex; flex-direction: column; height: 100%;">
+        <div class="header">
+            <div>
+                <h1>Agenda</h1>
+                <div class="user">Olá, Piloto João</div>
+            </div>
+            <div style="font-size: 24px; color: var(--accent);">📅</div>
+        </div>
+        
+        <div class="content">
+            <div class="calendar-strip">
+                <div class="day"><span class="weekday">Seg</span><span class="num">26</span></div>
+                <div class="day"><span class="weekday">Ter</span><span class="num">27</span></div>
+                <div class="day active"><span class="weekday">Qua</span><span class="num">28</span><div class="dot"></div></div>
+                <div class="day"><span class="weekday">Qui</span><span class="num">29</span></div>
+                <div class="day"><span class="weekday">Sex</span><span class="num">30</span></div>
+            </div>
+            
+            <h2 style="font-size: 14px; color: var(--muted); text-transform: uppercase; margin-bottom: 15px;">Voos Agendados</h2>
+            
+            <!-- Card de Voo -->
+            <div class="card" onclick="openFlightDetails()">
+                <div class="card-header">
+                    <span>28/10 · 14:00</span>
+                    <span class="badge">Agendado</span>
+                </div>
+                <div class="card-route">SBBR ➔ SBGR</div>
+                <div class="card-info">
+                    <span>✈️ PS-STA</span> · <span>👤 P1: João, P2: Marcos</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>29/10 · 08:30</span>
+                    <span class="badge" style="background: rgba(242,201,76,.15); color: #f2c94c;">Aguardando Revisão</span>
+                </div>
+                <div class="card-route">SBSP ➔ SBRJ</div>
+                <div class="card-info">
+                    <span>✈️ PS-STA</span> · <span>👤 P1: João, P2: Marcos</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-bar">
+            <div class="tab active"><span class="icon">📅</span>Agenda</div>
+            <div class="tab"><span class="icon">📝</span>Revisões</div>
+            <div class="tab"><span class="icon">⚙️</span>Perfil</div>
+        </div>
+    </div>
+
+    <!-- TELA 2: DETALHES DO VOO (MODAL) -->
+    <div class="modal" id="modal-details">
+        <div class="sheet">
+            <div class="sheet-header">
+                <h2>Detalhes do Voo</h2>
+                <div class="close-btn" onclick="closeFlightDetails()">✕</div>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto;">
+                <div class="timeline">
+                    <div class="leg">
+                        <div class="leg-route">SBBR (Brasília) ➔ SBGR (São Paulo)</div>
+                        <div class="leg-time">28/10 · 14:00 → 15:30</div>
+                    </div>
+                    <div class="leg">
+                        <div class="leg-route">SBGR (São Paulo) ➔ SBRJ (Rio)</div>
+                        <div class="leg-time">28/10 · 16:30 → 17:20</div>
+                    </div>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Aeronave</div>
+                        <div class="info-value">PS-STA</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Solicitante</div>
+                        <div class="info-value">Diretoria</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Pilotos</div>
+                        <div class="info-value">P1: João, P2: Marcos</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Passageiros</div>
+                        <div class="info-value">3 PAX</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="startReview()">Revisar Voo (Pousou)</button>
+        </div>
+    </div>
+
+    <!-- TELA 3: WIZARD REVISÃO (MODAL) -->
+    <div class="modal" id="modal-review">
+        <div class="sheet">
+            <div class="sheet-header">
+                <h2>Revisar Voo</h2>
+                <div class="close-btn" onclick="closeReview()">✕</div>
+            </div>
+            
+            <div class="step-indicator">
+                <div class="step-dot active"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto;">
+                <!-- Etapa 1: Local -->
+                <div class="form-group">
+                    <label>Pousou no aeroporto programado?</label>
+                    <div class="radio-group">
+                        <div class="radio-btn active" onclick="selectRadio(this)">Sim</div>
+                        <div class="radio-btn" onclick="selectRadio(this)">Não</div>
+                    </div>
+                </div>
+
+                <!-- Etapa 2: Horários -->
+                <div class="form-group">
+                    <label>Hora real de decolagem</label>
+                    <input type="time" class="form-control" value="14:05">
+                </div>
+                <div class="form-group">
+                    <label>Hora real de pouso</label>
+                    <input type="time" class="form-control" value="15:35">
+                </div>
+
+                <!-- Etapa 3: Combustível -->
+                <div class="form-group" style="border-top: 1px solid var(--line); padding-top: 15px;">
+                    <label>Abasteceu antes do voo?</label>
+                    <div class="radio-group" style="margin-bottom: 15px;">
+                        <div class="radio-btn" onclick="selectRadio(this)">Não</div>
+                        <div class="radio-btn active" onclick="selectRadio(this)">Sim</div>
+                    </div>
+                    <input type="number" class="form-control" placeholder="Litros abastecidos" value="100" style="margin-bottom: 10px;">
+                    <input type="number" class="form-control" placeholder="Valor pago R$" value="800.00">
+                </div>
+
+                <div class="form-group">
+                    <label>Combustível gasto (L)</label>
+                    <input type="number" class="form-control" placeholder="Litros gastos" value="450">
+                </div>
+
+                <!-- Etapa 4: Passageiros -->
+                <div class="form-group" style="border-top: 1px solid var(--line); padding-top: 15px;">
+                    <label>Passageiros</label>
+                    <div class="pax-list">
+                        <div class="pax-item"><span>João Silva</span><span class="del">✕</span></div>
+                        <div class="pax-item"><span>Maria Souza</span><span class="del">✕</span></div>
+                        <div class="pax-item"><span>Carlos Andrade</span><span class="del">✕</span></div>
+                    </div>
+                    <button style="background: transparent; border: 1px dashed var(--accent); color: var(--accent); padding: 10px; border-radius: 8px; width: 100%; margin-top: 8px; font-weight: 600;">+ Adicionar Passageiro</button>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="finishReview()" style="background: var(--green);">Finalizar Revisão</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function openFlightDetails() {
+        document.getElementById('modal-details').classList.add('open');
+    }
+    function closeFlightDetails() {
+        document.getElementById('modal-details').classList.remove('open');
+    }
+    function startReview() {
+        closeFlightDetails();
+        document.getElementById('modal-review').classList.add('open');
+    }
+    function closeReview() {
+        document.getElementById('modal-review').classList.remove('open');
+    }
+    function finishReview() {
+        alert("✅ Voo revisado com sucesso! O status no site será atualizado automaticamente.");
+        closeReview();
+    }
+    function selectRadio(btn) {
+        const group = btn.parentElement;
+        group.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+</script>
+
+</body>
+</html>

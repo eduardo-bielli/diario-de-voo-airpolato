@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#06101b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Diário de Voo — Mobile</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#06101b;--panel:#0d1a2b;--card:#0f2136;--line:#173651;
+  --text:#f1f7ff;--muted:#8fa7bc;--accent:#38a8ff;--accent2:#1687ff;
+  --green:#30cf8a;--yellow:#f2c94c;--red:#ff5a5f;--purple:#a78bfa;
+  --radius:14px;--radius-sm:10px;
+}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Segoe UI,Roboto,sans-serif;
+  font-size:15px;line-height:1.45;overscroll-behavior-y:contain}
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+
+/* ===== HEADER ===== */
+.hdr{position:sticky;top:0;z-index:50;background:rgba(6,16,27,.92);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  display:flex;align-items:center;gap:12px}
+.hdr__back{width:36px;height:36px;border:0;background:transparent;color:var(--text);
+  border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:20px}
+.hdr__back:active{background:var(--card)}
+.hdr__title{flex:1;min-width:0}
+.hdr__title h1{margin:0;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr__title small{color:var(--muted);font-size:12px;font-weight:500}
+.hdr__actions{display:flex;gap:6px}
+.icon-btn{width:38px;height:38px;border:1px solid var(--line);background:var(--card);
+  color:var(--text);border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:16px}
+.icon-btn:active{background:var(--panel)}
+
+/* ===== CONTEÚDO ===== */
+.main{padding:14px 14px 20px}
+.section-title{font-size:11px;color:var(--muted);font-weight:800;
+  text-transform:uppercase;letter-spacing:.08em;margin:18px 4px 10px}
+.section-title:first-child{margin-top:4px}
+
+/* ===== CARD DE VOO ===== */
+.flight{background:var(--card);border-radius:var(--radius);border-left:4px solid var(--accent);
+  padding:14px;margin-bottom:10px;cursor:pointer;transition:transform .12s}
+.flight:active{transform:scale(.985)}
+.flight__top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.flight__tail{font-family:ui-monospace,monospace;font-size:12px;font-weight:800;
+  padding:3px 8px;border-radius:6px;color:#fff;background:var(--accent)}
+.flight__date{font-size:12px;color:var(--muted);font-weight:600}
+.flight__route{font-size:19px;font-weight:800;letter-spacing:.02em;
+  font-family:ui-monospace,monospace;margin:4px 0 8px}
+.flight__meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.flight__meta b{color:var(--text);font-weight:700}
+.flight__status{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:5px;margin-top:10px}
+.st-aguardando{background:rgba(242,201,76,.18);color:var(--yellow)}
+.st-revisado{background:rgba(48,207,138,.18);color:var(--green)}
+.st-futuro{background:rgba(56,168,255,.15);color:var(--accent)}
+.st-hoje{background:rgba(255,90,95,.15);color:var(--red)}
+
+/* ===== DETALHES ===== */
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card h3{margin:0 0 12px;font-size:13px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.06em;font-weight:800}
+.row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);
+  font-size:14px;gap:12px}
+.row:last-child{border-bottom:0}
+.row span:first-child{color:var(--muted);flex-shrink:0}
+.row span:last-child{text-align:right;font-weight:600;min-width:0;word-break:break-word}
+.pilots{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.pilot-chip{background:rgba(56,168,255,.15);color:var(--accent);
+  padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700}
+.pilot-chip.p2{background:rgba(167,139,250,.15);color:var(--purple)}
+
+/* ===== BOTÕES ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 18px;border-radius:12px;border:0;font-size:15px;font-weight:700;
+  cursor:pointer;transition:transform .1s;width:100%;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn--primary{background:var(--accent2);color:#fff}
+.btn--secondary{background:var(--card);color:var(--text);border:1px solid var(--line)}
+.btn--success{background:var(--green);color:#001a0d}
+.btn--danger{background:var(--red);color:#fff}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+.btn-row .btn{flex:1}
+
+/* ===== FORM ===== */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;padding:12px;
+  background:var(--bg);border:1px solid var(--line);border-radius:10px;
+  color:var(--text);font-size:15px;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row.one{grid-template-columns:1fr}
+
+/* ===== BOTTOM NAV ===== */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:rgba(6,16,27,.96);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);display:flex;
+  padding-bottom:env(safe-area-inset-bottom)}
+.bnav button{flex:1;background:transparent;border:0;color:var(--muted);
+  padding:10px 4px 12px;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:3px;font-size:10px;font-weight:600;font-family:inherit}
+.bnav button.active{color:var(--accent)}
+.bnav .ico{font-size:20px;line-height:1}
+
+/* ===== OVERLAY MODAL ===== */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);
+  display:none;align-items:flex-end}
+.modal.open{display:flex}
+.modal__sheet{background:var(--panel);width:100%;max-height:88vh;overflow-y:auto;
+  border-radius:22px 22px 0 0;padding:20px 18px calc(30px + env(safe-area-inset-bottom));
+  animation:slideUp .25s cubic-bezier(.2,.8,.2,1)}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal__handle{width:38px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 16px}
+.modal h2{margin:0 0 18px;font-size:18px;font-weight:800}
+
+/* ===== EMPTY ===== */
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty .ico{font-size:52px;opacity:.4;margin-bottom:12px}
+.empty h3{color:var(--text);margin:0 0 6px;font-size:16px}
+.empty p{margin:0;font-size:13px}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;top:calc(env(safe-area-inset-top) + 70px);left:50%;
+  transform:translateX(-50%) translateY(-20px);z-index:200;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:12px 18px;font-size:14px;font-weight:600;opacity:0;
+  transition:all .25s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:#1a3d2c;border-color:var(--green);color:var(--green)}
+.toast.err{background:#3d1a1d;border-color:var(--red);color:var(--red)}
+
+/* ===== PULL-REFRESH visual ===== */
+.pull{text-align:center;padding:10px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <button class="hdr__back" id="btnBack" style="display:none" onclick="App.back()">‹</button>
+  <div class="hdr__title">
+    <h1 id="hdrTitle">Próximos voos</h1>
+    <small id="hdrSub">Carregando…</small>
+  </div>
+  <div class="hdr__actions">
+    <button class="icon-btn" onclick="App.reload()" title="Atualizar">↻</button>
+    <button class="icon-btn" onclick="App.go('perfil')" title="Perfil">👤</button>
+  </div>
+</header>
+
+<!-- CONTEÚDO -->
+<main class="main" id="main"></main>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button data-nav="voos" class="active" onclick="App.go('voos')">
+    <span class="ico">✈️</span>Voos
+  </button>
+  <button data-nav="agenda" onclick="App.go('agenda')">
+    <span class="ico">📅</span>Agenda
+  </button>
+  <button data-nav="perfil" onclick="App.go('perfil')">
+    <span class="ico">👤</span>Perfil
+  </button>
+</nav>
+
+<!-- MODAL -->
+<div class="modal" id="modal" onclick="if(event.target===this)App.closeModal()">
+  <div class="modal__sheet" id="modalSheet"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   APP MOBILE — Protótipo
+   - Lê dados do localStorage do app principal (se disponível)
+   - Caso contrário, usa dados de exemplo
+   ========================================================= */
+
+/* ===== Constantes de conversão (iguais à versão web) ===== */
+const DENSIDADE_JETA1 = 0.80;
+const LB_POR_KG = 2.20462;
+const LB_POR_LITRO = DENSIDADE_JETA1 * LB_POR_KG;
+const CONV_LB_PARA_L = (lb) => (lb / LB_POR_KG) / DENSIDADE_JETA1;
+const CONV_L_PARA_LB = (l) => l * LB_POR_KG * DENSIDADE_JETA1;
+
+const App = (() => {
+  let view = "voos";
+  let currentEventId = null;
+  let eventos = [];
+
+  /* ============ DADOS ============ */
+  const MOCK = [
+    {
+      id: "mock-1",
+      tipo: "Voo regular",
+      aeronave_tail: "PS-STA",
+      piloto_p1: "u-1791338836742",
+      piloto_p2: "u-1791469643404",
+      solicitante_id: "u-1791338836742",
+      observacoes: "Cliente VIP a bordo",
+      trechos: [
+        { data: todayPlus(0), hora: "08:00", duracao: "01:30", origem: "SIAQ", destino: "SBRD", revisao: null },
+        { data: todayPlus(0), hora: "14:00", duracao: "01:30", origem: "SBRD", destino: "SIAQ", revisao: null }
+      ]
+    },
+    {
+      id: "mock-2",
+      tipo: "Translado",
+      aeronave_tail: "PS-LKS",
+      piloto_p1: "u-1791338836742",
+      piloto_p2: null,
+      solicitante_id: "u-1791338836742",
+      observacoes: "",
+      trechos: [
+        { data: todayPlus(1), hora: "07:30", duracao: "02:00", origem: "SIAQ", destino: "SBAC", revisao: null }
+      ]
+    },
+    {
+      id: "mock-3",
+      tipo: "Voo regular",
+      aeronave_tail: "PS-STA",
+      piloto_p1: "u-1791469643404",
+      piloto_p2: null,
+      solicitante_id: "u-1791338836742",
+      observacoes: "",
+      trechos: [
+        { data: todayPlus(2), hora: "09:00", duracao: "01:15", origem: "SBAC", destino: "SIAQ",
+          revisao: { status: "concluido", hora_decolagem_real: "09:05", hora_pouso_real: "10:22", combustivel: { gasto_litros: 180, abasteceu: true, litros_abastecidos: 200, valor_litro: 6.80 }, observacoes: "" } }
+      ]
+    },
+    {
+      id: "mock-4",
+      tipo: "Voo regular",
+      aeronave_tail: "PS-LKS",
+      piloto_p1: "u-1791338836742",
+      piloto_p2: "u-1791469643404",
+      solicitante_id: "u-1791338836742",
+      observacoes: "Treinamento de copiloto",
+      trechos: [
+        { data: todayPlus(3), hora: "10:00", duracao: "01:45", origem: "SIAQ", destino: "SBRD", revisao: null }
+      ]
+    }
+  ];
+
+  function todayPlus(n) {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem("dv.agenda.v1");
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    } catch(e){}
+    return MOCK;
+  }
+
+  /* ============ HELPERS ============ */
+  const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+  const fmtDDMM = (iso) => { if (!iso) return ""; const [y,m,d] = iso.split("-"); return d+"/"+m; };
+  const fmtData = (iso) => { if (!iso) return ""; const [y,m,d] = iso.split("-"); return d+"/"+m+"/"+y; };
+  const diaSemana = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso + "T12:00:00");
+    return ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][d.getDay()];
+  };
+  const hoje = () => todayPlus(0);
+  const nomePiloto = (id) => {
+    if (!id) return "—";
+    const nomes = {
+      "u-1791338836742": "Admin",
+      "u-1791469643404": "Copiloto"
+    };
+    return nomes[id] || "Piloto " + id.slice(-4);
+  };
+  const statusDo = (ev) => {
+    const trs = ev.trechos || [];
+    if (!trs.length) return { tipo: "sem-trecho", label: "Sem trechos", cls: "st-futuro" };
+    const todosRev = trs.every(t => t.revisao && t.revisao.status === "concluido");
+    if (todosRev) return { tipo: "revisado", label: "✓ Revisado", cls: "st-revisado" };
+    const hojeStr = hoje();
+    const primeira = trs.slice().sort((a,b) => a.data.localeCompare(b.data))[0].data;
+    if (primeira === hojeStr) return { tipo: "hoje", label: "Hoje", cls: "st-hoje" };
+    if (primeira > hojeStr) return { tipo: "futuro", label: "Agendado", cls: "st-futuro" };
+    const algumRev = trs.some(t => t.revisao && t.revisao.status === "concluido");
+    return algumRev ? { tipo: "parcial", label: "Parcial", cls: "st-aguardando" } : { tipo: "aguardando", label: "Aguardando", cls: "st-aguardando" };
+  };
+  const rotaStr = (ev) => {
+    const trs = (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora));
+    if (!trs.length) return "—";
+    const rota = [trs[0].origem || "—"];
+    trs.forEach(t => rota.push(t.destino || "—"));
+    return rota.join(" → ");
+  };
+  const corDoTipo = (ev) => {
+    const t = ev.tipo || "";
+    if (t === "Voo Extra") return "#f2c94c";
+    if (t === "Manutenção") return "#ff5a5f";
+    if (t === "Translado") return "#9aa9b8";
+    if (t === "Bloquear aeronave") return "#dc3545";
+    return "#38a8ff";
+  };
+
+  /* ============ VIEWS ============ */
+  function viewVoos() {
+    document.getElementById("hdrTitle").textContent = "Próximos voos";
+    document.getElementById("hdrSub").textContent = eventos.length + " voo" + (eventos.length === 1 ? "" : "s") + " agendado" + (eventos.length === 1 ? "" : "s");
+
+    const futuros = eventos
+      .filter(ev => ev.tipo !== "Bloquear aeronave")
+      .map(ev => ({ ev, trs: (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora)) }))
+      .filter(x => x.trs.length)
+      .filter(x => x.trs.some(t => t.data >= hoje()))
+      .sort((a,b) => (a.trs[0].data + a.trs[0].hora).localeCompare(b.trs[0].data + b.trs[0].hora));
+
+    const passados = eventos
+      .filter(ev => ev.tipo !== "Bloquear aeronave")
+      .map(ev => ({ ev, trs: (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora)) }))
+      .filter(x => x.trs.length && x.trs.every(t => t.data < hoje()));
+
+    let html = "";
+
+    if (!futuros.length && !passados.length) {
+      html = '<div class="empty"><div class="ico">✈️</div><h3>Nenhum voo</h3><p>Você não tem voos agendados.</p></div>';
+    } else {
+      if (futuros.length) {
+        html += '<p class="section-title">Próximos</p>';
+        html += futuros.map(({ev, trs}) => cardVoo(ev, trs)).join("");
+      }
+      if (passados.length) {
+        html += '<p class="section-title">Anteriores</p>';
+        html += passados.slice(0, 5).map(({ev, trs}) => cardVoo(ev, trs, true)).join("");
+      }
+    }
+    document.getElementById("main").innerHTML = html;
+  }
+
+  function cardVoo(ev, trs, isPassado) {
+    const st = statusDo(ev);
+    const cor = corDoTipo(ev);
+    const primeira = trs[0];
+    const ultima = trs[trs.length-1];
+    const hora = primeira.hora || "—";
+    const mesmaData = primeira.data === ultima.data;
+    const dataLabel = mesmaData
+      ? diaSemana(primeira.data) + " " + fmtDDMM(primeira.data)
+      : diaSemana(primeira.data) + " " + fmtDDMM(primeira.data) + " → " + diaSemana(ultima.data) + " " + fmtDDMM(ultima.data);
+    const paxCount = (ev.passageiros_ids || []).length;
+
+    return '<article class="flight" style="border-left-color:'+cor+'" onclick="App.openDetalhe(\''+esc(ev.id)+'\')">'
+      + '<div class="flight__top">'
+      +   '<span class="flight__tail" style="background:'+cor+'">'+esc(ev.aeronave_tail||"—")+'</span>'
+      +   '<span class="flight__date">'+esc(dataLabel)+'</span>'
+      + '</div>'
+      + '<div class="flight__route">'+esc(rotaStr(ev))+'</div>'
+      + '<div class="flight__meta">'
+      +   '<span>🕐 <b>'+esc(hora)+'</b></span>'
+      +   '<span>'+esc(ev.tipo||"Voo regular")+'</span>'
+      +   (paxCount ? '<span>👥 <b>'+paxCount+'</b></span>' : '')
+      + '</div>'
+      + '<span class="flight__status '+st.cls+'">'+esc(st.label)+'</span>'
+      + '</article>';
+  }
+
+  function viewDetalhe() {
+    const ev = eventos.find(e => String(e.id) === String(currentEventId));
+    if (!ev) { go("voos"); return; }
+
+    const trs = (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora));
+    const st = statusDo(ev);
+    const todosRev = trs.every(t => t.revisao && t.revisao.status === "concluido");
+
+    document.getElementById("btnBack").style.display = "grid";
+    document.getElementById("hdrTitle").textContent = ev.aeronave_tail || "Voo";
+    document.getElementById("hdrSub").textContent = rotaStr(ev);
+
+    let html = "";
+
+    /* Card principal */
+    html += '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      +   '<span class="flight__tail" style="background:'+corDoTipo(ev)+'">'+esc(ev.aeronave_tail||"—")+'</span>'
+      +   '<span class="flight__status '+st.cls+'">'+esc(st.label)+'</span>'
+      + '</div>'
+      + '<div class="flight__route" style="font-size:22px">'+esc(rotaStr(ev))+'</div>'
+      + '</div>';
+
+    /* Info */
+    html += '<div class="card"><h3>Informações</h3>'
+      + '<div class="row"><span>Tipo</span><span>'+esc(ev.tipo||"Voo regular")+'</span></div>'
+      + '<div class="row"><span>Solicitante</span><span>'+esc(nomePiloto(ev.solicitante_id))+'</span></div>'
+      + '<div class="row"><span>Trechos</span><span>'+trs.length+'</span></div>'
+      + (ev.observacoes ? '<div class="row"><span>Obs.</span><span>'+esc(ev.observacoes)+'</span></div>' : '')
+      + '</div>';
+
+    /* Pilotos */
+    if (ev.piloto_p1 || ev.piloto_p2) {
+      html += '<div class="card"><h3>Tripulação</h3>'
+        + '<div class="pilots">'
+        + (ev.piloto_p1 ? '<span class="pilot-chip">P1 · '+esc(nomePiloto(ev.piloto_p1))+'</span>' : '')
+        + (ev.piloto_p2 ? '<span class="pilot-chip p2">P2 · '+esc(nomePiloto(ev.piloto_p2))+'</span>' : '')
+        + '</div></div>';
+    }
+
+    /* Trechos */
+    html += '<div class="card"><h3>Trechos</h3>';
+    trs.forEach((t, i) => {
+      const rev = t.revisao && t.revisao.status === "concluido";
+      html += '<div style="padding:12px 0;'+(i < trs.length-1 ? 'border-bottom:1px solid var(--line);' : '')+'">'
+        + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px">'
+        +   '<strong style="font-size:16px">'+esc(t.origem||"—")+' → '+esc(t.destino||"—")+'</strong>'
+        +   '<span style="font-size:11px;color:var(--muted)">T'+(i+1)+'</span>'
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap">'
+        +   '<span>📅 '+esc(fmtDDMM(t.data))+'</span>'
+        +   '<span>🕐 '+esc(t.hora||"—")+'</span>'
+        +   '<span>⏱ '+esc(t.duracao||"—")+'</span>'
+        +   (rev ? '<span style="color:var(--green);font-weight:700">✓ Revisado</span>' : '<span style="color:var(--yellow);font-weight:700">⚠ Pendente</span>')
+        + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+
+    /* Ações */
+    const hojeStr = hoje();
+    /* Voo já aconteceu? (todos os trechos com data <= hoje) */
+    const vooJaAconteceu = trs.length > 0 && trs.every(t => (t.data || "") <= hojeStr);
+    /* Tem algum trecho pendente de revisão? */
+    const temPendente = trs.some(t => !t.revisao || t.revisao.status !== "concluido");
+
+    html += '<div class="btn-row">'
+      + '<button class="btn btn--secondary" onclick="App.abrirEditar()">✎ Editar</button>'
+      + (todosRev
+          ? '<button class="btn btn--success" onclick="App.toast(\'Voo já revisado\',\'ok\')">✓ Revisado</button>'
+          : (vooJaAconteceu && temPendente
+              ? '<button class="btn btn--success" onclick="App.abrirRevisar()">✓ Revisar</button>'
+              : '<button class="btn btn--success" disabled style="opacity:.5;cursor:not-allowed" title="Disponível após o voo acontecer">✓ Revisar</button>'))
+      + '</div>';
+
+    document.getElementById("main").innerHTML = html;
+  }
+
+  function viewAgenda() {
+    document.getElementById("btnBack").style.display = "none";
+    document.getElementById("hdrTitle").textContent = "Agenda";
+    document.getElementById("hdrSub").textContent = "Visualização simplificada";
+
+    const hojeStr = hoje();
+    const grupos = {};
+    eventos.forEach(ev => {
+      if (ev.tipo === "Bloquear aeronave") return;
+      (ev.trechos || []).forEach(t => {
+        if (!t.data) return;
+        (grupos[t.data] = grupos[t.data] || []).push({ ev, t });
+      });
+    });
+
+    const datas = Object.keys(grupos).sort();
+    if (!datas.length) {
+      document.getElementById("main").innerHTML = '<div class="empty"><div class="ico">📅</div><h3>Sem eventos</h3><p>Nenhum voo agendado.</p></div>';
+      return;
+    }
+
+    let html = "";
+    datas.forEach(d => {
+      const doDia = grupos[d];
+      const isHoje = d === hojeStr;
+      const isFuturo = d > hojeStr;
+      html += '<p class="section-title" style="'+(isHoje ? 'color:var(--accent)' : '')+'">'
+        + diaSemana(d) + ' ' + fmtDDMM(d)
+        + (isHoje ? ' · HOJE' : '')
+        + (isFuturo ? '' : ' · passado')
+        + '</p>';
+      doDia.forEach(({ ev, t }) => {
+        html += '<article class="flight" style="border-left-color:'+corDoTipo(ev)+';opacity:'+(isFuturo||isHoje?'1':'0.55')+'" onclick="App.openDetalhe(\''+esc(ev.id)+'\')">'
+          + '<div class="flight__top">'
+          +   '<span class="flight__tail" style="background:'+corDoTipo(ev)+'">'+esc(ev.aeronave_tail||"—")+'</span>'
+          +   '<span class="flight__date">'+esc(t.hora||"—")+'</span>'
+          + '</div>'
+          + '<div style="font-size:15px;font-weight:700;font-family:ui-monospace,monospace">'+esc(t.origem||"—")+' → '+esc(t.destino||"—")+'</div>'
+          + '</article>';
+      });
+    });
+    document.getElementById("main").innerHTML = html;
+  }
+
+  function viewPerfil() {
+    document.getElementById("btnBack").style.display = "none";
+    document.getElementById("hdrTitle").textContent = "Perfil";
+    document.getElementById("hdrSub").textContent = "Configurações";
+    document.getElementById("main").innerHTML = ''
+      + '<div class="card" style="text-align:center;padding:24px">'
+      +   '<div style="font-size:52px;margin-bottom:8px">👤</div>'
+      +   '<h2 style="margin:0;font-size:19px">Administrador</h2>'
+      +   '<p style="margin:6px 0 0;color:var(--muted);font-size:13px">admin@local</p>'
+      + '</div>'
+      + '<div class="card">'
+      +   '<div class="row"><span>Versão</span><span>1.0 (protótipo)</span></div>'
+      +   '<div class="row"><span>Origem</span><span>localStorage</span></div>'
+      +   '<div class="row"><span>Voos carregados</span><span>'+eventos.length+'</span></div>'
+      + '</div>'
+      + '<p class="section-title">Ações</p>'
+      + '<button class="btn btn--secondary" style="margin-bottom:8px" onclick="App.reload()">↻ Recarregar dados</button>'
+      + '<button class="btn btn--secondary" onclick="App.toast(\'Em breve\')">⚙ Configurações</button>';
+  }
+
+  /* ============ NAV ============ */
+  function go(v) {
+    view = v;
+    currentEventId = null;
+    document.getElementById("btnBack").style.display = "none";
+    document.querySelectorAll(".bnav button").forEach(b => {
+      b.classList.toggle("active", b.dataset.nav === v);
+    });
+    if (v === "voos") viewVoos();
+    else if (v === "agenda") viewAgenda();
+    else if (v === "perfil") viewPerfil();
+    else if (v === "detalhe") viewDetalhe();
+    window.scrollTo(0, 0);
+  }
+
+  function back() {
+    if (view === "detalhe") go("voos");
+    else go("voos");
+  }
+
+  function openDetalhe(id) {
+    currentEventId = id;
+    view = "detalhe";
+    document.querySelectorAll(".bnav button").forEach(b => b.classList.remove("active"));
+    viewDetalhe();
+    window.scrollTo(0, 0);
+  }
+
+  /* ============ MODAL ============ */
+  function openModal(html) {
+    document.getElementById("modalSheet").innerHTML = '<div class="modal__handle"></div>' + html;
+    document.getElementById("modal").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeModal() {
+    document.getElementById("modal").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  function abrirEditar() {
+    const ev = eventos.find(e => String(e.id) === String(currentEventId));
+    if (!ev) return;
+    const trs = (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora));
+    const t0 = trs[0] || {};
+
+    openModal(''
+      + '<h2>✎ Editar voo</h2>'
+      + '<div class="field"><label>Observações</label><textarea id="edObs" rows="3">'+esc(ev.observacoes||"")+'</textarea></div>'
+      + '<div class="field-row">'
+      +   '<div class="field"><label>Data</label><input type="date" id="edData" value="'+esc(t0.data||"")+'"></div>'
+      +   '<div class="field"><label>Hora</label><input type="time" id="edHora" value="'+esc(t0.hora||"")+'"></div>'
+      + '</div>'
+      + '<div class="field-row">'
+      +   '<div class="field"><label>Origem</label><input id="edOrigem" value="'+esc(t0.origem||"")+'" maxlength="4" style="text-transform:uppercase"></div>'
+      +   '<div class="field"><label>Destino</label><input id="edDestino" value="'+esc(t0.destino||"")+'" maxlength="4" style="text-transform:uppercase"></div>'
+      + '</div>'
+      + '<div class="btn-row">'
+      +   '<button class="btn btn--secondary" onclick="App.closeModal()">Cancelar</button>'
+      +   '<button class="btn btn--primary" onclick="App.salvarEdicao()">Salvar</button>'
+      + '</div>'
+    );
+  }
+
+  function salvarEdicao() {
+    const ev = eventos.find(e => String(e.id) === String(currentEventId));
+    if (!ev) return;
+    const novaObs = document.getElementById("edObs").value.trim();
+    const novaData = document.getElementById("edData").value;
+    const novaHora = document.getElementById("edHora").value;
+    const novaOrigem = document.getElementById("edOrigem").value.toUpperCase().trim();
+    const novaDestino = document.getElementById("edDestino").value.toUpperCase().trim();
+
+    ev.observacoes = novaObs;
+    if (ev.trechos && ev.trechos[0]) {
+      ev.trechos[0].data = novaData;
+      ev.trechos[0].hora = novaHora;
+      ev.trechos[0].origem = novaOrigem;
+      ev.trechos[0].destino = novaDestino;
+    }
+
+    /* Se estiver no localStorage real, persiste */
+    try {
+      const raw = localStorage.getItem("dv.agenda.v1");
+      if (raw) {
+        const arr = JSON.parse(raw);
+        const i = arr.findIndex(x => String(x.id) === String(ev.id));
+        if (i >= 0) {
+          arr[i] = ev;
+          localStorage.setItem("dv.agenda.v1", JSON.stringify(arr));
+          toast("Voo atualizado", "ok");
+        } else {
+          toast("Atualizado (local apenas)", "ok");
+        }
+      } else {
+        toast("Atualizado (mock)", "ok");
+      }
+    } catch(e) { toast("Atualizado (mock)", "ok"); }
+
+    closeModal();
+    if (view === "detalhe") viewDetalhe(); else go("voos");
+  }
+
+  function abrirRevisar() {
+    const ev = eventos.find(e => String(e.id) === String(currentEventId));
+    if (!ev) return;
+    const trs = (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora));
+    const pendente = trs.find(t => !t.revisao || t.revisao.status !== "concluido");
+    if (!pendente) { toast("Todos os trechos já foram revisados", "ok"); return; }
+
+    const idx = ev.trechos.indexOf(pendente);
+    window.__revisandoIdx = idx;
+    const rv = pendente.revisao || {};
+
+    let aero = null;
+    try {
+      const arr = JSON.parse(localStorage.getItem("dv.aircraft.v3") || "[]");
+      aero = arr.find(a => a.tail === ev.aeronave_tail);
+    } catch(e){}
+
+    const unidAero = aero?.unidade_combustivel || "L";
+    const tanqueQtd = Number(aero?.tanque_qtd) || 0;
+    const tanqueUnid = aero?.tanque_unidade || "L";
+    const tanquePreco = Number(aero?.tanque_preco) || 0;
+    const tanqueLitros = tanqueUnid === "LB" ? CONV_LB_PARA_L(tanqueQtd) : tanqueQtd;
+    const tanqueLb = CONV_L_PARA_LB(tanqueLitros);
+
+    const fmtBR = (v) => "R$ " + Number(v||0).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const fmtLb = (l) => Math.round(CONV_L_PARA_LB(l)) + " Lb";
+
+    const horaETA = computeETA(pendente.hora, pendente.duracao) || "";
+
+    openModal(''
+      + '<h2>✓ Revisar trecho</h2>'
+      + '<p style="margin:-10px 0 16px;color:var(--muted);font-size:13px">'
+      +   esc(pendente.origem||"—") + ' → ' + esc(pendente.destino||"—") + ' · ' + esc(fmtData(pendente.data))
+      + '</p>'
+
+      + '<p class="section-title">Tempos reais</p>'
+      + '<div class="field-row">'
+      +   '<div class="field"><label>Decolagem real</label><input type="time" id="rvHoraDec" value="'+esc(rv.hora_decolagem_real || pendente.hora || "")+'" oninput="App.calcularTempo()"></div>'
+      +   '<div class="field"><label>Pouso real</label><input type="time" id="rvHoraPouso" value="'+esc(rv.hora_pouso_real || horaETA)+'" oninput="App.calcularTempo()"></div>'
+      + '</div>'
+      + '<div class="row" style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:14px">'
+      +   '<span>Tempo total de voo</span><span id="rvTempoTotal" style="color:var(--accent);font-family:ui-monospace">00:00</span>'
+      + '</div>'
+
+      + '<p class="section-title">Pouso</p>'
+      + '<div class="field"><label>Local de pouso real</label>'
+      +   '<input id="rvLocalPouso" value="'+esc(rv.local_pouso_real || pendente.destino || "")+'" placeholder="ICAO" style="text-transform:uppercase" maxlength="8">'
+      + '</div>'
+
+      + '<p class="section-title">Combustível</p>'
+      + '<div class="row" style="background:var(--bg);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:block;text-align:left">'
+      +   '<div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:4px">Tanque antes do voo</div>'
+      +   '<div id="rvTanqueAntes" style="font-size:14px;font-weight:700;font-family:ui-monospace">'
+      +     Math.round(tanqueLitros) + ' L · ' + fmtLb(tanqueLitros) + ' · ' + fmtBR(tanquePreco) + '/L'
+      +   '</div>'
+      + '</div>'
+
+      + '<div class="field"><label>Abasteceu antes do voo?</label>'
+      +   '<select id="rvAbasteceu" onchange="App.toggleAbastecimento()">'
+      +     '<option value="false"'+(rv.combustivel?.abasteceu ? '' : ' selected')+'>Não</option>'
+      +     '<option value="true"'+(rv.combustivel?.abasteceu ? ' selected' : '')+'>Sim</option>'
+      +   '</select>'
+      + '</div>'
+
+      + '<div id="rvAbastDetalhes" style="display:'+(rv.combustivel?.abasteceu ? 'block' : 'none')+'">'
+      +   '<div class="field"><label>Quantidade abastecida</label>'
+      +     '<div style="display:flex;gap:8px">'
+      +       '<input type="number" id="rvCombLitros" min="0" step="0.1" placeholder="0" value="'+esc(rv.combustivel?.litros_abastecidos ?? "")+'" style="flex:1" oninput="App.calcularValorGasto()">'
+      +       '<select id="rvCombLitrosUnidade" style="width:80px" onchange="App.calcularValorGasto()">'
+      +         '<option value="L">L</option>'
+      +         '<option value="LB">Lb</option>'
+      +       '</select>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div class="field"><label>Valor pago (R$/L)</label>'
+      +     '<input type="number" id="rvCombValor" min="0" step="0.01" placeholder="0,00" value="'+esc(rv.combustivel?.valor_litro ?? "")+'" oninput="App.calcularValorGasto()">'
+      +   '</div>'
+      +   '<div class="row" style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:14px">'
+      +     '<span>Total do abastecimento</span><span id="rvCombTotal" style="color:var(--yellow);font-family:ui-monospace">R$ 0,00</span>'
+      +   '</div>'
+      + '</div>'
+
+      + '<div class="field"><label>Combustível gasto neste trecho</label>'
+      +   '<div style="display:flex;gap:8px">'
+      +     '<input type="number" id="rvCombGasto" min="0" step="0.1" placeholder="0" value="'+esc(rv.combustivel?.gasto_litros ?? "")+'" style="flex:1" oninput="App.calcularValorGasto()">'
+      +     '<select id="rvCombGastoUnidade" style="width:90px" onchange="App.calcularValorGasto()">'
+      +       '<option value="L"'+(unidAero === "L" ? ' selected' : '')+'>L</option>'
+      +       '<option value="LB"'+(unidAero === "LB" ? ' selected' : '')+'>Lb</option>'
+      +     '</select>'
+      +   '</div>'
+      + '</div>'
+
+      + '<div class="row" style="background:rgba(22,135,255,.10);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:block;text-align:left">'
+      +   '<div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:4px">💵 Valor do combustível gasto</div>'
+      +   '<div id="rvCombGastoValor" style="font-size:18px;font-weight:800;color:var(--accent);font-family:ui-monospace">R$ 0,00</div>'
+      +   '<div id="rvCombGastoDetalhe" style="font-size:11px;color:var(--muted);margin-top:2px"></div>'
+      + '</div>'
+
+      + '<p class="section-title">Observações</p>'
+      + '<div class="field"><textarea id="rvObs" rows="2" placeholder="Opcional">'+esc(rv.observacoes||"")+'</textarea></div>'
+
+      + '<div class="btn-row" style="margin-top:20px">'
+      +   '<button class="btn btn--secondary" onclick="App.closeModal()">Cancelar</button>'
+      +   '<button class="btn btn--success" onclick="App.salvarRevisao()">Confirmar revisão</button>'
+      + '</div>'
+    );
+
+    setTimeout(() => {
+      App.calcularTempo();
+      App.calcularValorGasto();
+    }, 50);
+  }
+
+  function computeETA(hora, duracao) {
+    if (!hora || !duracao || duracao === "00:00") return null;
+    const [h,m] = hora.split(":").map(Number);
+    const [dh,dm] = duracao.split(":").map(Number);
+    if (isNaN(h) || isNaN(m) || isNaN(dh) || isNaN(dm)) return null;
+    const totalMin = h*60 + m + dh*60 + dm;
+    const eh = Math.floor(totalMin/60) % 24;
+    const em = totalMin % 60;
+    return String(eh).padStart(2,"0") + ":" + String(em).padStart(2,"0");
+  }
+
+  function calcTempoEntre(dec, pouso) {
+    if (!dec || !pouso) return "00:00";
+    const [dh,dm] = dec.split(":").map(Number);
+    const [ph,pm] = pouso.split(":").map(Number);
+    if (isNaN(dh) || isNaN(ph)) return "00:00";
+    let total = (ph*60 + pm) - (dh*60 + dm);
+    if (total < 0) total += 24*60;
+    return String(Math.floor(total/60)).padStart(2,"0") + ":" + String(total%60).padStart(2,"0");
+  }
+
+  function calcularTempo() {
+    const dec = document.getElementById("rvHoraDec")?.value;
+    const pouso = document.getElementById("rvHoraPouso")?.value;
+    const el = document.getElementById("rvTempoTotal");
+    if (el) el.textContent = calcTempoEntre(dec, pouso);
+  }
+
+  function toggleAbastecimento() {
+    const ab = document.getElementById("rvAbasteceu")?.value === "true";
+    const det = document.getElementById("rvAbastDetalhes");
+    if (det) det.style.display = ab ? "block" : "none";
+    App.calcularValorGasto();
+  }
+
+  function calcularValorGasto() {
+    const g = (id) => document.getElementById(id);
+    const ev = eventos.find(x => String(x.id) === String(currentEventId));
+    if (!ev) return;
+
+    let aero = null;
+    try {
+      const arr = JSON.parse(localStorage.getItem("dv.aircraft.v3") || "[]");
+      aero = arr.find(a => a.tail === ev.aeronave_tail);
+    } catch(e){}
+
+    const tanqueQtd = Number(aero?.tanque_qtd) || 0;
+    const tanquePreco = Number(aero?.tanque_preco) || 0;
+    const tanqueUnid = aero?.tanque_unidade || "L";
+    const tanqueLitros = tanqueUnid === "LB" ? CONV_LB_PARA_L(tanqueQtd) : tanqueQtd;
+
+    const abasteceu = g("rvAbasteceu")?.value === "true";
+    let abastLitros = 0, abastPreco = 0, abastTotal = 0;
+    if (abasteceu) {
+      const qtdAbast = parseFloat(g("rvCombLitros")?.value) || 0;
+      const unidAbast = g("rvCombLitrosUnidade")?.value || "L";
+      abastLitros = unidAbast === "LB" ? CONV_LB_PARA_L(qtdAbast) : qtdAbast;
+      abastPreco = parseFloat(g("rvCombValor")?.value) || 0;
+      abastTotal = abastLitros * abastPreco;
+    }
+
+    const totalLitros = tanqueLitros + abastLitros;
+    const totalValor = (tanqueLitros * tanquePreco) + abastTotal;
+    const precoMedio = totalLitros > 0 ? (totalValor / totalLitros) : tanquePreco;
+
+    const qtdGasto = parseFloat(g("rvCombGasto")?.value) || 0;
+    const unidGasto = g("rvCombGastoUnidade")?.value || "L";
+    const gastoLitros = unidGasto === "LB" ? CONV_LB_PARA_L(qtdGasto) : qtdGasto;
+    const valorGasto = gastoLitros * precoMedio;
+
+    const fmtBR = (v) => "R$ " + Number(v||0).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const fmtLb = (l) => Math.round(CONV_L_PARA_LB(l)) + " Lb";
+
+    const elTotal = g("rvCombTotal");
+    if (elTotal) elTotal.textContent = fmtBR(abastTotal);
+    const elGasto = g("rvCombGastoValor");
+    if (elGasto) elGasto.textContent = fmtBR(valorGasto);
+    const elDet = g("rvCombGastoDetalhe");
+    if (elDet) elDet.textContent = Math.round(gastoLitros) + " L · " + fmtLb(gastoLitros) + " · " + fmtBR(precoMedio) + "/L";
+    const elAntes = g("rvTanqueAntes");
+    if (elAntes) elAntes.textContent = Math.round(tanqueLitros) + " L · " + fmtLb(tanqueLitros) + " · " + fmtBR(tanquePreco) + "/L";
+  }
+
+  function salvarRevisao() {
+    const ev = eventos.find(e => String(e.id) === String(currentEventId));
+    if (!ev) return;
+    const idx = window.__revisandoIdx ?? 0;
+    const pendente = ev.trechos?.[idx];
+    if (!pendente) return;
+
+    const g = (id) => document.getElementById(id);
+
+    const horaDec = g("rvHoraDec")?.value;
+    const horaPouso = g("rvHoraPouso")?.value;
+    if (!horaDec || !horaPouso) { toast("Preencha hora de decolagem e pouso", "err"); return; }
+    const tempo = calcTempoEntre(horaDec, horaPouso);
+    const localPouso = (g("rvLocalPouso")?.value || pendente.destino || "").toUpperCase();
+
+    const gastoRaw = parseFloat(g("rvCombGasto")?.value) || 0;
+    const gastoUnidade = g("rvCombGastoUnidade")?.value || "L";
+    const gastoLitros = gastoUnidade === "LB" ? CONV_LB_PARA_L(gastoRaw) : gastoRaw;
+
+    const abasteceu = g("rvAbasteceu")?.value === "true";
+    const abastRaw = abasteceu ? (parseFloat(g("rvCombLitros")?.value) || 0) : 0;
+    const abastUnidade = g("rvCombLitrosUnidade")?.value || "L";
+    const abastLitros = abastUnidade === "LB" ? CONV_LB_PARA_L(abastRaw) : abastRaw;
+    const valorLitroAbast = abasteceu ? (parseFloat(g("rvCombValor")?.value) || 0) : 0;
+
+    let aero = null, listaAero = [];
+    try {
+      listaAero = JSON.parse(localStorage.getItem("dv.aircraft.v3") || "[]");
+      aero = listaAero.find(a => a.tail === ev.aeronave_tail);
+    } catch(e){}
+
+    if (!aero) {
+      pendente.revisao = {
+        status: "concluido",
+        hora_decolagem_real: horaDec,
+        hora_pouso_real: horaPouso,
+        tempo_voo: tempo,
+        local_pouso_real: localPouso,
+        combustivel: {
+          gasto_litros: gastoLitros,
+          abasteceu: abasteceu,
+          litros_abastecidos: abastLitros,
+          valor_litro: valorLitroAbast
+        },
+        observacoes: (g("rvObs")?.value || "").trim(),
+        revisado_em: new Date().toISOString()
+      };
+      try { localStorage.setItem("dv.agenda.v1", JSON.stringify(eventos)); } catch(e){}
+      toast("Trecho revisado (sem aeronave no cadastro)", "ok");
+      closeModal();
+      viewDetalhe();
+      return;
+    }
+
+    const revisaoAntiga = pendente.revisao?.combustivel;
+    let tanqueAntesLitros, tanqueAntesPreco;
+    if (revisaoAntiga && revisaoAntiga.tanque_antes_qtd !== undefined) {
+      tanqueAntesLitros = Number(revisaoAntiga.tanque_antes_qtd) || 0;
+      tanqueAntesPreco  = Number(revisaoAntiga.tanque_antes_preco) || 0;
+      const hist = aero.tanque_historico || [];
+      aero.tanque_historico = hist.filter(h => !(String(h.ev_id) === String(ev.id) && h.trecho_idx === idx));
+    } else {
+      const tanqueQtd = Number(aero.tanque_qtd) || 0;
+      const tanqueUnid = aero.tanque_unidade || "L";
+      tanqueAntesLitros = tanqueUnid === "LB" ? CONV_LB_PARA_L(tanqueQtd) : tanqueQtd;
+      tanqueAntesPreco = Number(aero.tanque_preco) || 0;
+    }
+
+    const disponivelLitros = tanqueAntesLitros + abastLitros;
+    if (gastoLitros > disponivelLitros) {
+      toast("Tanque insuficiente: disponível " + disponivelLitros.toFixed(1) + " L, gasto " + gastoLitros.toFixed(1) + " L", "err");
+      return;
+    }
+
+    const valorAbast = abastLitros * valorLitroAbast;
+    const totalLitros = tanqueAntesLitros + abastLitros;
+    const totalValor = (tanqueAntesLitros * tanqueAntesPreco) + valorAbast;
+    const precoMedio = totalLitros > 0 ? (totalValor / totalLitros) : tanqueAntesPreco;
+    const tanqueDepoisLitros = totalLitros - gastoLitros;
+    const valorGasto = gastoLitros * precoMedio;
+
+    const unidAero = aero.tanque_unidade || "L";
+    const convSaida = (l) => unidAero === "LB" ? CONV_L_PARA_LB(l) : l;
+
+    aero.tanque_qtd = +convSaida(tanqueDepoisLitros).toFixed(1);
+    aero.tanque_preco = +precoMedio.toFixed(4);
+
+    if (!Array.isArray(aero.tanque_historico)) aero.tanque_historico = [];
+    if (abasteceu && abastLitros > 0) {
+      aero.tanque_historico.push({
+        ts: new Date().toISOString(),
+        tipo: "abastecimento", qtd: +convSaida(abastLitros).toFixed(1),
+        preco: valorLitroAbast, unidade: unidAero,
+        ev_id: ev.id, trecho_idx: idx,
+        obs: (pendente.origem + "→" + pendente.destino)
+      });
+    }
+    if (gastoLitros > 0) {
+      aero.tanque_historico.push({
+        ts: new Date().toISOString(),
+        tipo: "consumo", qtd: +convSaida(gastoLitros).toFixed(1),
+        preco: precoMedio, unidade: unidAero,
+        ev_id: ev.id, trecho_idx: idx,
+        obs: "Voo " + pendente.origem + "→" + pendente.destino
+      });
+    }
+    if (aero.tanque_historico.length > 500) {
+      aero.tanque_historico = aero.tanque_historico.slice(-500);
+    }
+
+    pendente.revisao = {
+      status: "concluido",
+      hora_decolagem_real: horaDec,
+      hora_pouso_real: horaPouso,
+      tempo_voo: tempo,
+      local_pouso_real: localPouso,
+      combustivel: {
+        gasto_litros: gastoLitros,
+        abasteceu: abasteceu,
+        litros_abastecidos: abastLitros,
+        valor_litro: valorLitroAbast,
+        tanque_antes_qtd: tanqueAntesLitros,
+        tanque_antes_preco: tanqueAntesPreco,
+        preco_medio: precoMedio,
+        valor_gasto: valorGasto,
+        tanque_depois_qtd: tanqueDepoisLitros
+      },
+      observacoes: (g("rvObs")?.value || "").trim(),
+      revisado_em: new Date().toISOString()
+    };
+
+    try { localStorage.setItem("dv.agenda.v1", JSON.stringify(eventos)); } catch(e){}
+    try { localStorage.setItem("dv.aircraft.v3", JSON.stringify(listaAero)); } catch(e){}
+
+    const i = eventos.findIndex(x => String(x.id) === String(ev.id));
+    if (i >= 0) eventos[i] = ev;
+
+    toast("✓ Trecho revisado", "ok");
+    closeModal();
+    viewDetalhe();
+  }
+
+  /* ============ TOAST ============ */
+  let toastTimer = null;
+  function toast(msg, tipo) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.className = "toast show " + (tipo || "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+  }
+
+  /* ============ INIT ============ */
+  function reload() {
+    eventos = loadData();
+    toast("Dados atualizados", "ok");
+    go(view);
+  }
+
+  function init() {
+    eventos = loadData();
+    go("voos");
+  }
+
+  return { init, go, back, reload, openDetalhe, abrirEditar, salvarEdicao, abrirRevisar, salvarRevisao, closeModal, toast, calcularTempo, calcularValorGasto, toggleAbastecimento };
+})();
+
+document.addEventListener("DOMContentLoaded", App.init);
+</script>
+</body>
+</html>

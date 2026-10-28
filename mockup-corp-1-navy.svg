@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="393" height="852" viewBox="0 0 393 852" font-family="-apple-system,BlinkMacSystemFont,sans-serif">
+<rect width="393" height="852" fill="#f8fafc"/>
+<text x="20" y="24" font-size="12" font-weight="600" fill="#0f172a">9:41</text>
+<text x="345" y="24" font-size="12" fill="#0f172a">●●●</text>
+<rect x="0" y="40" width="393" height="110" fill="#1e293b"/>
+<text x="20" y="80" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.2">DIÁRIO DE VOO</text>
+<text x="20" y="112" font-size="26" font-weight="700" fill="#ffffff">Próximos voos</text>
+<text x="20" y="134" font-size="13" fill="#cbd5e1">4 voos agendados · outubro 2026</text>
+<circle cx="345" cy="90" r="18" fill="#334155"/>
+<text x="20" y="190" font-size="10" font-weight="700" fill="#64748b" letter-spacing="1.4">HOJE · QUINTA 09/10</text>
+<rect x="16" y="206" width="361" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+<rect x="16" y="206" width="4" height="120" rx="2" fill="#1e40af"/>
+<rect x="32" y="222" width="72" height="24" rx="6" fill="#1e40af"/>
+<text x="46" y="239" font-size="12" font-weight="700" fill="#ffffff" font-family="monospace">PS-STA</text>
+<text x="360" y="239" font-size="11" font-weight="600" fill="#64748b" text-anchor="end">09/10 · 08:00</text>
+<text x="32" y="280" font-size="20" font-weight="700" fill="#0f172a" font-family="monospace">SIAQ → SBRD</text>
+<text x="32" y="304" font-size="12" fill="#64748b">Voo regular · 3 passageiros · 2 trechos</text>
+<rect x="16" y="340" width="361" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+<rect x="16" y="340" width="4" height="120" rx="2" fill="#0891b2"/>
+<rect x="32" y="356" width="72" height="24" rx="6" fill="#0891b2"/>
+<text x="46" y="373" font-size="12" font-weight="700" fill="#ffffff" font-family="monospace">PS-LKS</text>
+<text x="360" y="373" font-size="11" font-weight="600" fill="#64748b" text-anchor="end">10/10 · 07:30</text>
+<text x="32" y="414" font-size="20" font-weight="700" fill="#0f172a" font-family="monospace">SIAQ → SBAC</text>
+<text x="32" y="438" font-size="12" fill="#64748b">Translado · sem passageiros</text>
+<text x="20" y="500" font-size="10" font-weight="700" fill="#64748b" letter-spacing="1.4">ANTERIORES</text>
+<g opacity="0.65">
+<rect x="16" y="516" width="361" height="110" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+<rect x="16" y="516" width="4" height="110" rx="2" fill="#94a3b8"/>
+<rect x="32" y="532" width="72" height="24" rx="6" fill="#94a3b8"/>
+<text x="46" y="549" font-size="12" font-weight="700" fill="#ffffff" font-family="monospace">PS-STA</text>
+<text x="360" y="549" font-size="11" font-weight="600" fill="#64748b" text-anchor="end">08/10 · 09:00</text>
+<text x="32" y="590" font-size="20" font-weight="700" fill="#0f172a" font-family="monospace">SBAC → SIAQ</text>
+<text x="32" y="614" font-size="12" font-weight="700" fill="#059669">✓ Voo revisado</text>
+</g>
+<rect x="0" y="772" width="393" height="80" fill="#ffffff"/>
+<line x1="0" y1="772" x2="393" y2="772" stroke="#e2e8f0"/>
+<text x="65" y="828" font-size="11" font-weight="700" fill="#1e40af" text-anchor="middle">Voos</text>
+<text x="196" y="828" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">Agenda</text>
+<text x="327" y="828" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">Perfil</text>
+</svg>

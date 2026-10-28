@@ -1,0 +1,63 @@
+# === Backups (nunca commitar) ===
+_backups/
+teste-cache.html.BACKUP-*
+teste-cache.html.NOVO-*
+*.bak
+*.bak[0-9]*
+*.BACKUP-*
+supabase/functions/**/*.BACKUP-*
+ev-*-BACKUP.json
+
+# === Node modules ===
+node_modules/
+capacitor-app/node_modules/
+
+# === Build do Capacitor (gerado por npx cap sync) ===
+capacitor-app/ios/App/App/public/
+capacitor-app/ios/App/Pods/
+capacitor-app/ios/DerivedData/
+capacitor-app/android/.gradle/
+capacitor-app/android/app/build/
+
+# === Xcode (por usuário) ===
+*.xcuserstate
+xcuserdata/
+*.xcodeproj/xcuserdata/
+capacitor-app/ios/App/Pods/
+
+# === macOS ===
+.DS_Store
+._*
+
+# === Logs locais ===
+*.log
+npm-debug.log*
+
+# === IDE ===
+.vscode/
+.idea/
+# Backups locais (não versionar)
+*.bak.*
+*.BACKUP*
+*.VERSAO*
+*.NOVO*
+*.backup-*
+
+# Dependências
+node_modules/
+
+# macOS
+.DS_Store
+
+# Arquivos grandes (não versionar)
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.dmg
+*.iso
+*.py
+scripts/dev/
+
+# Config local por empresa (cada fork tem o seu)
+config.js

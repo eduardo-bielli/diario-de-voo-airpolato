@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Preview 1 — Refined Dark</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--sidebar:#0d1220;--panel:#111827;--card:#1a2233;
+  --border:#232b3d;--border-hi:#2d3a52;--text:#e8ecf4;--text-2:#b4bdce;--muted:#7a8599;
+  --accent:#3b82f6;--accent-soft:rgba(59,130,246,.12);
+}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 12px;position:fixed;inset:0 auto 0 0;overflow-y:auto}
+.brand{padding:8px 12px 20px;font-size:15px;font-weight:700;letter-spacing:-.02em}
+.brand small{display:block;font-size:10px;color:var(--muted);font-weight:500;margin-top:2px}
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;padding:16px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;border:0;background:transparent;width:100%;text-align:left;font-family:inherit}
+.nav-item:hover{background:var(--panel);color:var(--text)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-item .ico{font-size:15px;opacity:.9}
+.main{margin-left:220px;flex:1;min-width:0;padding:28px 32px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.topbar h1{font-size:24px;font-weight:700;letter-spacing:-.03em}
+.topbar .date{font-size:12px;color:var(--muted);margin-top:2px}
+.actions{display:flex;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--text-2);cursor:pointer;display:grid;place-items:center;font-size:14px;transition:all .15s}
+.icon-btn:hover{border-color:var(--border-hi);color:var(--text)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;transition:border-color .2s}
+.kpi:hover{border-color:var(--border-hi)}
+.kpi__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.kpi__icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:14px}
+.kpi__icon--blue{background:rgba(59,130,246,.12);color:#60a5fa}
+.kpi__icon--green{background:rgba(16,185,129,.12);color:#34d399}
+.kpi__icon--amber{background:rgba(245,158,11,.12);color:#fbbf24}
+.kpi__icon--purple{background:rgba(139,92,246,.12);color:#a78bfa}
+.kpi__delta{font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px}
+.kpi__delta--up{background:rgba(16,185,129,.12);color:#34d399}
+.kpi__label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.kpi__value{font-size:28px;font-weight:800;letter-spacing:-.04em;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi__sub{font-size:11px;color:var(--muted);margin-top:4px}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.panel__head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.panel__head h3{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.panel__head .badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:3px 8px;border-radius:5px;background:var(--panel)}
+.panel__body{padding:18px}
+.chart{height:180px;display:flex;align-items:flex-end;gap:8px;padding:8px 0}
+.chart__bar{flex:1;background:linear-gradient(180deg,var(--accent) 0%,rgba(59,130,246,.4) 100%);border-radius:6px 6px 0 0;transition:opacity .2s}
+.chart__bar:hover{opacity:.8}
+.chart__bar:nth-child(2n){background:linear-gradient(180deg,#60a5fa 0%,rgba(96,165,250,.3) 100%)}
+.chart__legend{display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--muted)}
+.chart__legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.list{display:flex;flex-direction:column}
+.item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item__dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.item__main{flex:1;min-width:0}
+.item__title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item__sub{font-size:11px;color:var(--muted);margin-top:2px}
+.tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:5px;background:var(--accent-soft);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">✈️ Diário de Voo<small>Aviação Executiva</small></div>
+    <p class="section-label">Operação</p>
+    <button class="nav-item active"><span class="ico">📊</span>Dashboard</button>
+    <button class="nav-item"><span class="ico">📅</span>Agenda</button>
+    <button class="nav-item"><span class="ico">👨✈️</span>Pilotos</button>
+    <button class="nav-item"><span class="ico">✈️</span>Voos Executados</button>
+    <button class="nav-item"><span class="ico">🎯</span>Mapa / Posição</button>
+    <button class="nav-item"><span class="ico">⚙️</span>Ciclo/ano</button>
+    <p class="section-label">Administração</p>
+    <button class="nav-item"><span class="ico">👤</span>Usuários</button>
+    <button class="nav-item"><span class="ico">🔒</span>Permissões</button>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div><h1>Dashboard</h1><p class="date">Sexta-feira, 9 de outubro de 2026</p></div>
+      <div class="actions"><button class="icon-btn">🔔</button><button class="icon-btn">⚙️</button></div>
+    </header>
+    <section class="kpis">
+      <article class="kpi">
+        <div class="kpi__top"><div class="kpi__icon kpi__icon--blue">✈️</div><span class="kpi__delta kpi__delta--up">+2</span></div>
+        <p class="kpi__label">Aeronaves</p><p class="kpi__value">5</p><p class="kpi__sub">Todas em operação</p>
+      </article>
+      <article class="kpi">
+        <div class="kpi__top"><div class="kpi__icon kpi__icon--green">🕐</div><span class="kpi__delta kpi__delta--up">+12%</span></div>
+        <p class="kpi__label">Horas voadas</p><p class="kpi__value">348,6</p><p class="kpi__sub">No ano de 2026</p>
+      </article>
+      <article class="kpi">
+        <div class="kpi__top"><div class="kpi__icon kpi__icon--purple">📈</div></div>
+        <p class="kpi__label">Voos realizados</p><p class="kpi__value">127</p><p class="kpi__sub">No ano de 2026</p>
+      </article>
+      <article class="kpi">
+        <div class="kpi__top"><div class="kpi__icon kpi__icon--amber">💰</div><span class="kpi__delta kpi__delta--up">-3%</span></div>
+        <p class="kpi__label">Custo operacional</p><p class="kpi__value">R$ 842k</p><p class="kpi__sub">Voos revisados</p>
+      </article>
+    </section>
+    <div class="grid">
+      <section class="panel">
+        <header class="panel__head"><h3>Custos por mês</h3><span class="badge">2026</span></header>
+        <div class="panel__body">
+          <div class="chart">
+            <div class="chart__bar" style="height:40%"></div><div class="chart__bar" style="height:65%"></div>
+            <div class="chart__bar" style="height:52%"></div><div class="chart__bar" style="height:78%"></div>
+            <div class="chart__bar" style="height:90%"></div><div class="chart__bar" style="height:70%"></div>
+            <div class="chart__bar" style="height:85%"></div><div class="chart__bar" style="height:60%"></div>
+            <div class="chart__bar" style="height:45%"></div>
+          </div>
+          <div class="chart__legend"><span><i class="dot"></i>Manutenção</span><span><i class="dot" style="background:#60a5fa"></i>Combustível</span></div>
+        </div>
+      </section>
+      <section class="panel">
+        <header class="panel__head"><h3>Atenção</h3><span class="tag">3 alertas</span></header>
+        <div class="panel__body">
+          <div class="list">
+            <div class="item"><span class="item__dot" style="background:#ef4444"></span><div class="item__main"><div class="item__title">PS-LKS — Aeronave bloqueada</div><div class="item__sub">Dia 12/10/2026</div></div></div>
+            <div class="item"><span class="item__dot" style="background:#f59e0b"></span><div class="item__main"><div class="item__title">PS-STA sem piloto</div><div class="item__sub">14/10 · SIAQ → SBRD</div></div></div>
+            <div class="item"><span class="item__dot" style="background:#3b82f6"></span><div class="item__main"><div class="item__title">PS-ABC em manutenção</div><div class="item__sub">20/10 a 25/10</div></div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

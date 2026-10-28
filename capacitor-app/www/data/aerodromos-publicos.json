@@ -1,0 +1,4466 @@
+[
+{
+"icao": "SBAA",
+"nome": "CONCEIÇÃO DO ARAGUAIA",
+"cidade": "CONCEIÇÃO DO ARAGUAIA",
+"uf": "PA",
+"tipo": "publico",
+"lat": -8.348611111111111,
+"lon": -49.30305555555555
+},
+{
+"icao": "SBAE",
+"nome": "BAURU/AREALVA",
+"cidade": "BAURU",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.157777777777778,
+"lon": -49.068333333333335
+},
+{
+"icao": "SBAQ",
+"nome": "BARTOLOMEU DE GUSMÃO",
+"cidade": "ARARAQUARA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.811944444444446,
+"lon": -48.13305555555556
+},
+{
+"icao": "SBAR",
+"nome": "SANTA MARIA",
+"cidade": "ARACAJU",
+"uf": "SE",
+"tipo": "publico",
+"lat": -10.985277777777776,
+"lon": -37.07333333333334
+},
+{
+"icao": "SBAT",
+"nome": "PILOTO OSVALDO MARQUES DIAS",
+"cidade": "ALTA FLORESTA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -9.866388888888888,
+"lon": -56.105000000000004
+},
+{
+"icao": "SBAU",
+"nome": "ARAÇATUBA",
+"cidade": "ARAÇATUBA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.144166666666667,
+"lon": -50.42638888888889
+},
+{
+"icao": "SBAX",
+"nome": "ROMEU ZEMA",
+"cidade": "ARAXÁ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.563055555555557,
+"lon": -46.96055555555556
+},
+{
+"icao": "SBBE",
+"nome": "INTERNACIONAL DE BELÉM/VAL DE CANS/JÚLIO CEZAR RIBEIRO",
+"cidade": "BELÉM",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.3847222222222222,
+"lon": -48.47888888888889
+},
+{
+"icao": "SBBG",
+"nome": "COMANDANTE GUSTAVO KRAEMER",
+"cidade": "BAGÉ",
+"uf": "RS",
+"tipo": "publico",
+"lat": -31.390833333333333,
+"lon": -54.109722222222224
+},
+{
+"icao": "SBBH",
+"nome": "PAMPULHA - CARLOS DRUMMOND DE ANDRADE",
+"cidade": "BELO HORIZONTE",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.851944444444445,
+"lon": -43.95055555555556
+},
+{
+"icao": "SBBI",
+"nome": "BACACHERI",
+"cidade": "CURITIBA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.403333333333332,
+"lon": -49.23361111111111
+},
+{
+"icao": "SBBP",
+"nome": "ESTADUAL ARTHUR SIQUEIRA",
+"cidade": "BRAGANÇA PAULISTA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.978888888888886,
+"lon": -46.53722222222222
+},
+{
+"icao": "SBBR",
+"nome": "PRESIDENTE JUSCELINO KUBITSCHEK",
+"cidade": "BRASÍLIA",
+"uf": "DF",
+"tipo": "publico",
+"lat": -15.869166666666667,
+"lon": -47.920833333333334
+},
+{
+"icao": "SBBU",
+"nome": "BAURU",
+"cidade": "BAURU",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.345,
+"lon": -49.053888888888885
+},
+{
+"icao": "SBBV",
+"nome": "ATLAS BRASIL CANTANHEDE",
+"cidade": "BOA VISTA",
+"uf": "RR",
+"tipo": "publico",
+"lat": 2.841388888888889,
+"lon": -60.69222222222222
+},
+{
+"icao": "SBBW",
+"nome": "BARRA DO GARÇAS",
+"cidade": "BARRA DO GARÇAS",
+"uf": "MT",
+"tipo": "publico",
+"lat": -15.861388888888888,
+"lon": -52.388888888888886
+},
+{
+"icao": "SBCA",
+"nome": "AEROPORTO REGIONAL DO OESTE - CEL. ADALBERTO MENDES DA SILVA",
+"cidade": "CASCAVEL",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.002222222222223,
+"lon": -53.50194444444445
+},
+{
+"icao": "SBCB",
+"nome": "CABO FRIO",
+"cidade": "CABO FRIO",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.920833333333334,
+"lon": -42.07138888888889
+},
+{
+"icao": "SBCD",
+"nome": "PREFEITO DR. CARLOS ALBERTO DA COSTA NEVES",
+"cidade": "CAÇADOR",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.78805555555556,
+"lon": -50.94
+},
+{
+"icao": "SBCF",
+"nome": "TANCREDO NEVES",
+"cidade": "BELO HORIZONTE",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.624444444444446,
+"lon": -43.971944444444446
+},
+{
+"icao": "SBCG",
+"nome": "AEROPORTO INTERNACIONAL DE CAMPO GRANDE - UEZE ELIAS ZAHRAN",
+"cidade": "CAMPO GRANDE",
+"uf": "MS",
+"tipo": "publico",
+"lat": -20.46944444444444,
+"lon": -54.67027777777778
+},
+{
+"icao": "SBCH",
+"nome": "SERAFIN ENOSS BERTASO",
+"cidade": "CHAPECÓ",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.133888888888887,
+"lon": -52.65888888888889
+},
+{
+"icao": "SBCI",
+"nome": "BRIGADEIRO LYSIAS AUGUSTO RODRIGUES",
+"cidade": "CAROLINA",
+"uf": "MA",
+"tipo": "publico",
+"lat": -7.320555555555555,
+"lon": -47.45861111111111
+},
+{
+"icao": "SBCJ",
+"nome": "CARAJÁS",
+"cidade": "PARAUAPEBAS",
+"uf": "PA",
+"tipo": "publico",
+"lat": -6.1177777777777775,
+"lon": -50.00333333333333
+},
+{
+"icao": "SSIM",
+"nome": "FORQUILHINHA-CRICIÚMA",
+"cidade": "FORQUILHINHA",
+"uf": "SC",
+"tipo": "publico",
+"lat": -28.72583333333333,
+"lon": -49.42472222222222
+},
+{
+"icao": "SBCN",
+"nome": "NELSON RODRIGUES GUIMARÃES",
+"cidade": "CALDAS NOVAS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -17.724999999999998,
+"lon": -48.60638888888889
+},
+{
+"icao": "SBCP",
+"nome": "BARTOLOMEU LISANDRO",
+"cidade": "CAMPOS DOS GOYTACAZES",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -21.70111111111111,
+"lon": -41.30777777777777
+},
+{
+"icao": "SBCR",
+"nome": "CORUMBÁ",
+"cidade": "CORUMBÁ",
+"uf": "MS",
+"tipo": "publico",
+"lat": -19.011944444444445,
+"lon": -57.671388888888885
+},
+{
+"icao": "SBCT",
+"nome": "AFONSO PENA",
+"cidade": "CURITIBA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.531666666666666,
+"lon": -49.17611111111111
+},
+{
+"icao": "SBCX",
+"nome": "HUGO CANTERGIANI",
+"cidade": "CAXIAS DO SUL",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.198055555555555,
+"lon": -51.18666666666666
+},
+{
+"icao": "SBCY",
+"nome": "MARECHAL RONDON",
+"cidade": "CUIABÁ",
+"uf": "MT",
+"tipo": "publico",
+"lat": -15.65,
+"lon": -56.1175
+},
+{
+"icao": "SSCL",
+"nome": "CASSILÂNDIA",
+"cidade": "CASSILÂNDIA",
+"uf": "MS",
+"tipo": "publico",
+"lat": -19.146944444444443,
+"lon": -51.67638888888889
+},
+{
+"icao": "SBDB",
+"nome": "AERÓDROMO PÚBLICO DE BONITO",
+"cidade": "BONITO",
+"uf": "MS",
+"tipo": "publico",
+"lat": -21.247222222222224,
+"lon": -56.4525
+},
+{
+"icao": "SBDN",
+"nome": "PRESIDENTE PRUDENTE",
+"cidade": "PRESIDENTE PRUDENTE",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.175,
+"lon": -51.42444444444444
+},
+{
+"icao": "SBDO",
+"nome": "DOURADOS",
+"cidade": "DOURADOS",
+"uf": "MS",
+"tipo": "publico",
+"lat": -22.200555555555553,
+"lon": -54.925555555555555
+},
+{
+"icao": "SBEG",
+"nome": "EDUARDO GOMES",
+"cidade": "MANAUS",
+"uf": "AM",
+"tipo": "publico",
+"lat": -3.041111111111111,
+"lon": -60.050555555555555
+},
+{
+"icao": "SBEK",
+"nome": "JACAREACANGA",
+"cidade": "JACAREACANGA",
+"uf": "PA",
+"tipo": "publico",
+"lat": -6.235277777777778,
+"lon": -57.77583333333333
+},
+{
+"icao": "SBFI",
+"nome": "CATARATAS",
+"cidade": "FOZ DO IGUAÇU",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.60027777777778,
+"lon": -54.485
+},
+{
+"icao": "SBFL",
+"nome": "HERCÍLIO LUZ",
+"cidade": "FLORIANÓPOLIS",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.67027777777778,
+"lon": -48.552499999999995
+},
+{
+"icao": "SBFN",
+"nome": "FERNANDO DE NORONHA",
+"cidade": "FERNANDO DE NORONHA",
+"uf": "PE",
+"tipo": "publico",
+"lat": -3.854722222222222,
+"lon": -32.42833333333333
+},
+{
+"icao": "SBFZ",
+"nome": "PINTO MARTINS",
+"cidade": "FORTALEZA",
+"uf": "CE",
+"tipo": "publico",
+"lat": -3.7758333333333334,
+"lon": -38.532222222222224
+},
+{
+"icao": "SBGL",
+"nome": "RIO DE JANEIRO/GALEÃO – ANTÔNIO CARLOS JOBIM",
+"cidade": "RIO DE JANEIRO",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.810000000000002,
+"lon": -43.25055555555556
+},
+{
+"icao": "SBGM",
+"nome": "GUAJARÁ-MIRIM",
+"cidade": "GUAJARÁ-MIRIM",
+"uf": "RO",
+"tipo": "publico",
+"lat": -10.788333333333334,
+"lon": -65.28166666666667
+},
+{
+"icao": "SBGO",
+"nome": "SANTA GENOVEVA/GOIÂNIA",
+"cidade": "GOIÂNIA",
+"uf": "GO",
+"tipo": "publico",
+"lat": -16.6325,
+"lon": -49.221111111111114
+},
+{
+"icao": "SBGR",
+"nome": "GUARULHOS - GOVERNADOR ANDRÉ FRANCO MONTORO",
+"cidade": "GUARULHOS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.435555555555556,
+"lon": -46.473055555555554
+},
+{
+"icao": "SSGG",
+"nome": "AEROPORTO REGIONAL DE GUARAPUAVA - TANCREDO THOMÁS DE FARIA",
+"cidade": "GUARAPUAVA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.388333333333332,
+"lon": -51.52361111111111
+},
+{
+"icao": "SBGV",
+"nome": "CORONEL ALTINO MACHADO",
+"cidade": "GOVERNADOR VALADARES",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.89611111111111,
+"lon": -41.983333333333334
+},
+{
+"icao": "SBGW",
+"nome": "GUARATINGUETÁ",
+"cidade": "GUARATINGUETÁ",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.791666666666668,
+"lon": -45.20444444444445
+},
+{
+"icao": "SBHT",
+"nome": "ALTAMIRA",
+"cidade": "ALTAMIRA",
+"uf": "PA",
+"tipo": "publico",
+"lat": -3.2508333333333335,
+"lon": -52.25222222222222
+},
+{
+"icao": "SBIC",
+"nome": "ITACOATIARA",
+"cidade": "ITACOATIARA",
+"uf": "AM",
+"tipo": "publico",
+"lat": -3.126388888888889,
+"lon": -58.48166666666667
+},
+{
+"icao": "SBIH",
+"nome": "ITAITUBA",
+"cidade": "ITAITUBA",
+"uf": "PA",
+"tipo": "publico",
+"lat": -4.242222222222222,
+"lon": -56.00083333333333
+},
+{
+"icao": "SBIL",
+"nome": "BAHIA - JORGE AMADO",
+"cidade": "ILHÉUS",
+"uf": "BA",
+"tipo": "publico",
+"lat": -14.815000000000001,
+"lon": -39.03333333333333
+},
+{
+"icao": "SBIP",
+"nome": "USIMINAS",
+"cidade": "SANTANA DO PARAÍSO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.47861111111111,
+"lon": -42.4925
+},
+{
+"icao": "SBIZ",
+"nome": "PREFEITO RENATO MOREIRA",
+"cidade": "IMPERATRIZ",
+"uf": "MA",
+"tipo": "publico",
+"lat": -5.530555555555556,
+"lon": -47.458333333333336
+},
+{
+"icao": "SBJD",
+"nome": "COMANDANTE ROLIM ADOLFO AMARO",
+"cidade": "JUNDIAÍ",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.18166666666667,
+"lon": -46.94361111111111
+},
+{
+"icao": "SBJF",
+"nome": "FRANCISCO DE ASSIS",
+"cidade": "JUIZ DE FORA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.793055555555558,
+"lon": -43.385555555555555
+},
+{
+"icao": "SBJI",
+"nome": "JI-PARANÁ",
+"cidade": "JI-PARANÁ",
+"uf": "RO",
+"tipo": "publico",
+"lat": -10.870555555555557,
+"lon": -61.84666666666667
+},
+{
+"icao": "SBJP",
+"nome": "PRESIDENTE CASTRO PINTO",
+"cidade": "JOÃO PESSOA",
+"uf": "PB",
+"tipo": "publico",
+"lat": -7.148333333333333,
+"lon": -34.95027777777778
+},
+{
+"icao": "SBJR",
+"nome": "JACAREPAGUÁ - ROBERTO MARINHO",
+"cidade": "RIO DE JANEIRO",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.9875,
+"lon": -43.37
+},
+{
+"icao": "SBJU",
+"nome": "ORLANDO BEZERRA DE MENEZES",
+"cidade": "JUAZEIRO DO NORTE",
+"uf": "CE",
+"tipo": "publico",
+"lat": -7.219166666666667,
+"lon": -39.269444444444446
+},
+{
+"icao": "SBJV",
+"nome": "LAURO CARNEIRO DE LOYOLA",
+"cidade": "JOINVILLE",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.223055555555554,
+"lon": -48.797777777777775
+},
+{
+"icao": "SBKG",
+"nome": "PRESIDENTE JOÃO SUASSUNA",
+"cidade": "CAMPINA GRANDE",
+"uf": "PB",
+"tipo": "publico",
+"lat": -7.269166666666667,
+"lon": -35.894999999999996
+},
+{
+"icao": "SBKP",
+"nome": "VIRACOPOS",
+"cidade": "CAMPINAS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.006944444444443,
+"lon": -47.13444444444444
+},
+{
+"icao": "SBLE",
+"nome": "HORÁCIO DE MATTOS",
+"cidade": "LENÇÓIS",
+"uf": "BA",
+"tipo": "publico",
+"lat": -12.482222222222223,
+"lon": -41.276944444444446
+},
+{
+"icao": "SBLJ",
+"nome": "LAGES",
+"cidade": "LAGES",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.78222222222222,
+"lon": -50.281666666666666
+},
+{
+"icao": "SBLO",
+"nome": "GOVERNADOR JOSÉ RICHA",
+"cidade": "LONDRINA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.330277777777777,
+"lon": -51.13666666666666
+},
+{
+"icao": "SBMA",
+"nome": "JOÃO CORRÊA DA ROCHA",
+"cidade": "MARABÁ",
+"uf": "PA",
+"tipo": "publico",
+"lat": -5.368055555555555,
+"lon": -49.13805555555555
+},
+{
+"icao": "SBMD",
+"nome": "MONTE DOURADO",
+"cidade": "ALMEIRIM",
+"uf": "PA",
+"tipo": "publico",
+"lat": -0.8897222222222222,
+"lon": -52.602222222222224
+},
+{
+"icao": "SBME",
+"nome": "AEROPORTO DE MACAÉ/RIO DE JANEIRO - JOAQUIM DE AZEVEDO MANCEBO",
+"cidade": "MACAÉ",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.341666666666665,
+"lon": -41.76611111111111
+},
+{
+"icao": "SBMG",
+"nome": "SÍLVIO NAME JÚNIOR",
+"cidade": "MARINGÁ",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.476388888888888,
+"lon": -52.01777777777777
+},
+{
+"icao": "SBMK",
+"nome": "MÁRIO RIBEIRO",
+"cidade": "MONTES CLAROS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -16.70611111111111,
+"lon": -43.82194444444445
+},
+{
+"icao": "SBML",
+"nome": "FRANK MILOYE MILENKOVICH",
+"cidade": "MARÍLIA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.196944444444444,
+"lon": -49.92638888888889
+},
+{
+"icao": "SBMO",
+"nome": "ZUMBI DOS PALMARES",
+"cidade": "MACEIÓ",
+"uf": "AL",
+"tipo": "publico",
+"lat": -9.510833333333334,
+"lon": -35.791666666666664
+},
+{
+"icao": "SBMQ",
+"nome": "ALBERTO ALCOLUMBRE",
+"cidade": "MACAPÁ",
+"uf": "AP",
+"tipo": "publico",
+"lat": 0.050555555555555555,
+"lon": -51.07222222222222
+},
+{
+"icao": "SBMS",
+"nome": "DIX-SEPT ROSADO",
+"cidade": "MOSSORÓ",
+"uf": "RN",
+"tipo": "publico",
+"lat": -5.195833333333334,
+"lon": -37.361666666666665
+},
+{
+"icao": "SBMT",
+"nome": "CAMPO DE MARTE",
+"cidade": "SÃO PAULO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.509166666666665,
+"lon": -46.6375
+},
+{
+"icao": "SBMY",
+"nome": "MANICORÉ",
+"cidade": "MANICORÉ",
+"uf": "AM",
+"tipo": "publico",
+"lat": -5.811111111111111,
+"lon": -61.27833333333333
+},
+{
+"icao": "SBNF",
+"nome": "MINISTRO VICTOR KONDER",
+"cidade": "NAVEGANTES",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.878611111111113,
+"lon": -48.65083333333333
+},
+{
+"icao": "SBNM",
+"nome": "SANTO ÂNGELO",
+"cidade": "SANTO ÂNGELO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.281666666666666,
+"lon": -54.16833333333333
+},
+{
+"icao": "SBOI",
+"nome": "OIAPOQUE",
+"cidade": "OIAPOQUE",
+"uf": "AP",
+"tipo": "publico",
+"lat": 3.854166666666667,
+"lon": -51.79722222222222
+},
+{
+"icao": "SBPA",
+"nome": "SALGADO FILHO",
+"cidade": "PORTO ALEGRE",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.994722222222222,
+"lon": -51.17111111111111
+},
+{
+"icao": "SBPB",
+"nome": "PREFEITO DOUTOR JOÃO SILVA FILHO",
+"cidade": "PARNAÍBA",
+"uf": "PI",
+"tipo": "publico",
+"lat": -2.893333333333333,
+"lon": -41.73027777777778
+},
+{
+"icao": "SBPC",
+"nome": "EMBAIXADOR WALTHER MOREIRA SALLES",
+"cidade": "POÇOS DE CALDAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.842499999999998,
+"lon": -46.56944444444445
+},
+{
+"icao": "SBPF",
+"nome": "LAURO KURTZ",
+"cidade": "PASSO FUNDO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.24416666666667,
+"lon": -52.32833333333333
+},
+{
+"icao": "SBPJ",
+"nome": "BRIGADEIRO LYSIAS RODRIGUES",
+"cidade": "PALMAS",
+"uf": "TO",
+"tipo": "publico",
+"lat": -10.29,
+"lon": -48.35777777777778
+},
+{
+"icao": "SBPK",
+"nome": "JOÃO SIMÕES LOPES NETO",
+"cidade": "PELOTAS",
+"uf": "RS",
+"tipo": "publico",
+"lat": -31.71611111111111,
+"lon": -52.33111111111111
+},
+{
+"icao": "SBPL",
+"nome": "AEROPORTO INTERNACIONAL SENADOR NILO COELHO",
+"cidade": "PETROLINA",
+"uf": "PE",
+"tipo": "publico",
+"lat": -9.3675,
+"lon": -40.56361111111111
+},
+{
+"icao": "SDPE",
+"nome": "PORTO NACIONAL",
+"cidade": "PORTO NACIONAL",
+"uf": "TO",
+"tipo": "publico",
+"lat": -10.718055555555555,
+"lon": -48.39888888888889
+},
+{
+"icao": "SBPP",
+"nome": "PONTA PORÃ",
+"cidade": "PONTA PORÃ",
+"uf": "MS",
+"tipo": "publico",
+"lat": -22.549722222222226,
+"lon": -55.70305555555556
+},
+{
+"icao": "SBNV",
+"nome": "AERÓDROMO NACIONAL DE AVIAÇÃO",
+"cidade": "GOIÂNIA",
+"uf": "GO",
+"tipo": "publico",
+"lat": -16.625555555555557,
+"lon": -49.349444444444444
+},
+{
+"icao": "SBPS",
+"nome": "PORTO SEGURO",
+"cidade": "PORTO SEGURO",
+"uf": "BA",
+"tipo": "publico",
+"lat": -16.438055555555557,
+"lon": -39.07777777777778
+},
+{
+"icao": "SBPV",
+"nome": "GOVERNADOR JORGE TEIXEIRA DE OLIVEIRA",
+"cidade": "PORTO VELHO",
+"uf": "RO",
+"tipo": "publico",
+"lat": -8.71361111111111,
+"lon": -63.90277777777778
+},
+{
+"icao": "SBRB",
+"nome": "PLÁCIDO DE CASTRO",
+"cidade": "RIO BRANCO",
+"uf": "AC",
+"tipo": "publico",
+"lat": -9.868333333333334,
+"lon": -67.89805555555556
+},
+{
+"icao": "SBRD",
+"nome": "RONDONÓPOLIS - MAESTRO MARINHO FRANCO",
+"cidade": "RONDONÓPOLIS",
+"uf": "MT",
+"tipo": "publico",
+"lat": -16.588055555555556,
+"lon": -54.72166666666667
+},
+{
+"icao": "SBRF",
+"nome": "AEROPORTO INTERNACIONAL RECIFE/GUARARAPES - GILBERTO FREYRE",
+"cidade": "RECIFE",
+"uf": "PE",
+"tipo": "publico",
+"lat": -8.12638888888889,
+"lon": -34.922777777777775
+},
+{
+"icao": "SBRJ",
+"nome": "SANTOS DUMONT",
+"cidade": "RIO DE JANEIRO",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.91,
+"lon": -43.1625
+},
+{
+"icao": "SBRP",
+"nome": "LEITE LOPES",
+"cidade": "RIBEIRÃO PRETO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.136388888888888,
+"lon": -47.776666666666664
+},
+{
+"icao": "SBSG",
+"nome": "AEROPORTO INTERNACIONAL DO RIO GRANDE DO NORTE / SÃO GONÇALO DO AMARANTE - GOVERNADOR ALUIZIO ALVES",
+"cidade": "NATAL",
+"uf": "RN",
+"tipo": "publico",
+"lat": -5.768888888888889,
+"lon": -35.36638888888889
+},
+{
+"icao": "SBSJ",
+"nome": "PROFESSOR URBANO ERNESTO STUMPF",
+"cidade": "SÃO JOSÉ DOS CAMPOS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.228888888888886,
+"lon": -45.87111111111111
+},
+{
+"icao": "SBSL",
+"nome": "MARECHAL CUNHA MACHADO",
+"cidade": "SÃO LUÍS",
+"uf": "MA",
+"tipo": "publico",
+"lat": -2.5869444444444447,
+"lon": -44.236111111111114
+},
+{
+"icao": "SBSM",
+"nome": "SANTA MARIA",
+"cidade": "SANTA MARIA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.710833333333333,
+"lon": -53.69222222222222
+},
+{
+"icao": "SBSN",
+"nome": "MAESTRO WILSON FONSECA",
+"cidade": "SANTARÉM",
+"uf": "PA",
+"tipo": "publico",
+"lat": -2.424722222222222,
+"lon": -54.78583333333333
+},
+{
+"icao": "SBSP",
+"nome": "SÃO PAULO/CONGONHAS - DEPUTADO FREITAS NOBRE",
+"cidade": "SÃO PAULO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.62611111111111,
+"lon": -46.656388888888884
+},
+{
+"icao": "SBSR",
+"nome": "PROFESSOR ERIBELTO MANOEL REINO",
+"cidade": "SÃO JOSÉ DO RIO PRETO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.81722222222222,
+"lon": -49.40694444444444
+},
+{
+"icao": "SBSV",
+"nome": "DEPUTADO LUÍS EDUARDO MAGALHÃES",
+"cidade": "SALVADOR",
+"uf": "BA",
+"tipo": "publico",
+"lat": -12.908611111111112,
+"lon": -38.322500000000005
+},
+{
+"icao": "SBTB",
+"nome": "TROMBETAS",
+"cidade": "ORIXIMINÁ",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.4897222222222224,
+"lon": -56.39694444444444
+},
+{
+"icao": "SBTD",
+"nome": "LUIZ DALCANALE FILHO",
+"cidade": "TOLEDO",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.685277777777777,
+"lon": -53.69638888888888
+},
+{
+"icao": "SBTE",
+"nome": "SENADOR PETRÔNIO PORTELLA",
+"cidade": "TERESINA",
+"uf": "PI",
+"tipo": "publico",
+"lat": -5.060555555555555,
+"lon": -42.824444444444445
+},
+{
+"icao": "SBTF",
+"nome": "PREFEITO ORLANDO MARINHO",
+"cidade": "TEFÉ",
+"uf": "AM",
+"tipo": "publico",
+"lat": -3.3802777777777777,
+"lon": -64.72527777777778
+},
+{
+"icao": "SBTG",
+"nome": "TRÊS LAGOAS",
+"cidade": "TRÊS LAGOAS",
+"uf": "MS",
+"tipo": "publico",
+"lat": -20.75138888888889,
+"lon": -51.680277777777775
+},
+{
+"icao": "SBTK",
+"nome": "TARAUACÁ",
+"cidade": "TARAUACÁ",
+"uf": "AC",
+"tipo": "publico",
+"lat": -8.155277777777778,
+"lon": -70.78305555555555
+},
+{
+"icao": "SSTE",
+"nome": "TORRES",
+"cidade": "TORRES",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.415,
+"lon": -49.809999999999995
+},
+{
+"icao": "SBTT",
+"nome": "TABATINGA",
+"cidade": "TABATINGA",
+"uf": "AM",
+"tipo": "publico",
+"lat": -4.250555555555556,
+"lon": -69.93777777777778
+},
+{
+"icao": "SBTU",
+"nome": "TUCURUÍ",
+"cidade": "TUCURUÍ",
+"uf": "PA",
+"tipo": "publico",
+"lat": -3.776944444444444,
+"lon": -49.719722222222224
+},
+{
+"icao": "SBUA",
+"nome": "SÃO GABRIEL DA CACHOEIRA",
+"cidade": "SÃO GABRIEL DA CACHOEIRA",
+"uf": "AM",
+"tipo": "publico",
+"lat": -0.14805555555555555,
+"lon": -66.98583333333333
+},
+{
+"icao": "SBUF",
+"nome": "PAULO AFONSO",
+"cidade": "PAULO AFONSO",
+"uf": "BA",
+"tipo": "publico",
+"lat": -9.401111111111112,
+"lon": -38.25111111111111
+},
+{
+"icao": "SBUG",
+"nome": "RUBEM BERTA",
+"cidade": "URUGUAIANA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.783333333333335,
+"lon": -57.036944444444444
+},
+{
+"icao": "SBUL",
+"nome": "TEN CEL AVIADOR CÉSAR BOMBONATO",
+"cidade": "UBERLÂNDIA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.88361111111111,
+"lon": -48.22527777777778
+},
+{
+"icao": "SBUR",
+"nome": "MARIO DE ALMEIDA FRANCO",
+"cidade": "UBERABA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.764722222222222,
+"lon": -47.96611111111111
+},
+{
+"icao": "SBVG",
+"nome": "MAJOR BRIGADEIRO TROMPOWSKY",
+"cidade": "VARGINHA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.58888888888889,
+"lon": -45.473333333333336
+},
+{
+"icao": "SBVH",
+"nome": "VILHENA",
+"cidade": "VILHENA",
+"uf": "RO",
+"tipo": "publico",
+"lat": -12.694444444444445,
+"lon": -60.098333333333336
+},
+{
+"icao": "SBVT",
+"nome": "EURICO DE AGUIAR SALLES",
+"cidade": "VITÓRIA",
+"uf": "ES",
+"tipo": "publico",
+"lat": -20.258055555555554,
+"lon": -40.28638888888889
+},
+{
+"icao": "SBZM",
+"nome": "PRESIDENTE ITAMAR FRANCO",
+"cidade": "GOIANÁ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.513055555555557,
+"lon": -43.17305555555555
+},
+{
+"icao": "SDAA",
+"nome": "ARARAS",
+"cidade": "ARARAS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.336944444444445,
+"lon": -47.358333333333334
+},
+{
+"icao": "SDAD",
+"nome": "EVERALDO MORAES BARRETO",
+"cidade": "ADAMANTINA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.69611111111111,
+"lon": -51.09638888888889
+},
+{
+"icao": "SDAG",
+"nome": "ANGRA DOS REIS",
+"cidade": "ANGRA DOS REIS",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.975277777777777,
+"lon": -44.30722222222222
+},
+{
+"icao": "SDAI",
+"nome": "AMERICANA",
+"cidade": "AMERICANA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.755277777777778,
+"lon": -47.268055555555556
+},
+{
+"icao": "SDAM",
+"nome": "ESTADUAL DE CAMPOS DOS AMARAIS - PREFEITO FRANCISCO AMARAL",
+"cidade": "CAMPINAS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.859166666666667,
+"lon": -47.10805555555556
+},
+{
+"icao": "SDAE",
+"nome": "SÃO PEDRO",
+"cidade": "SÃO PEDRO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.58361111111111,
+"lon": -47.89611111111111
+},
+{
+"icao": "SDBB",
+"nome": "BEBEDOURO",
+"cidade": "BEBEDOURO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.900277777777777,
+"lon": -48.47361111111111
+},
+{
+"icao": "SDBK",
+"nome": "JOSÉ CARLOS DE BARROS NEIVA",
+"cidade": "BOTUCATU",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.93777777777778,
+"lon": -48.46805555555556
+},
+{
+"icao": "SDBY",
+"nome": "BARIRI",
+"cidade": "BARIRI",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.069166666666668,
+"lon": -48.70638888888889
+},
+{
+"icao": "SDCA",
+"nome": "CAPÃO BONITO",
+"cidade": "CAPÃO BONITO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -24.033611111111114,
+"lon": -48.356944444444444
+},
+{
+"icao": "SDCO",
+"nome": "SOROCABA",
+"cidade": "SOROCABA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.477777777777778,
+"lon": -47.49
+},
+{
+"icao": "SDDN",
+"nome": "PAULINO RIBEIRO DE ANDRADE",
+"cidade": "ANDRADINA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.925,
+"lon": -51.38194444444444
+},
+{
+"icao": "SDDR",
+"nome": "DRACENA",
+"cidade": "DRACENA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.460555555555555,
+"lon": -51.606944444444444
+},
+{
+"icao": "SDEP",
+"nome": "GERALDO MOACIR BORDON",
+"cidade": "PRESIDENTE EPITÁCIO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.775,
+"lon": -52.14361111111111
+},
+{
+"icao": "SDET",
+"nome": "TIETÊ",
+"cidade": "TIETÊ",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.104722222222225,
+"lon": -47.724444444444444
+},
+{
+"icao": "SDFD",
+"nome": "CORONEL AVIADOR CARLOS ORLEANS GUIMARÃES",
+"cidade": "FERNANDÓPOLIS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.276666666666667,
+"lon": -50.21388888888889
+},
+{
+"icao": "SDFX",
+"nome": "CASA NOVA",
+"cidade": "CASA NOVA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -9.1575,
+"lon": -40.9375
+},
+{
+"icao": "SDGC",
+"nome": "GARÇA",
+"cidade": "GARÇA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.183611111111112,
+"lon": -49.65611111111111
+},
+{
+"icao": "SDCG",
+"nome": "SENADORA EUNICE MICHILES",
+"cidade": "SÃO PAULO DE OLIVENÇA",
+"uf": "AM",
+"tipo": "publico",
+"lat": -3.4691666666666667,
+"lon": -68.92111111111112
+},
+{
+"icao": "SDIM",
+"nome": "DR. ANTONIO RIBEIRO NOGUEIRA JÚNIOR",
+"cidade": "ITANHAÉM",
+"uf": "SP",
+"tipo": "publico",
+"lat": -24.16472222222222,
+"lon": -46.785555555555554
+},
+{
+"icao": "SDIV",
+"nome": "ITUVERAVA",
+"cidade": "ITUVERAVA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.37527777777778,
+"lon": -47.76861111111111
+},
+{
+"icao": "SDJC",
+"nome": "JABOTICABAL",
+"cidade": "JABOTICABAL",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.230833333333333,
+"lon": -48.285555555555554
+},
+{
+"icao": "SDJO",
+"nome": "SÃO JOAQUIM DA BARRA",
+"cidade": "SÃO JOAQUIM DA BARRA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.593333333333334,
+"lon": -47.842222222222226
+},
+{
+"icao": "SDJV",
+"nome": "MUNICIPAL DE SÃO JOÃO DA BOA VISTA",
+"cidade": "SÃO JOÃO DA BOA VISTA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.017777777777777,
+"lon": -46.840833333333336
+},
+{
+"icao": "SDKJ",
+"nome": "FORMOSA DO RIO PRETO",
+"cidade": "FORMOSA DO RIO PRETO",
+"uf": "BA",
+"tipo": "publico",
+"lat": -11.021111111111113,
+"lon": -45.18722222222222
+},
+{
+"icao": "SDIG",
+"nome": "IBITINGA",
+"cidade": "IBITINGA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.747222222222224,
+"lon": -48.85583333333334
+},
+{
+"icao": "SDLL",
+"nome": "YOLANDA PENTEADO",
+"cidade": "LEME",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.22583333333333,
+"lon": -47.380833333333335
+},
+{
+"icao": "SDLP",
+"nome": "MUNICIPAL JOSÉ BOSO",
+"cidade": "LENÇÓIS PAULISTA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.578333333333333,
+"lon": -48.77444444444444
+},
+{
+"icao": "SDLY",
+"nome": "ARMANDO NATALI",
+"cidade": "MATÃO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.624166666666667,
+"lon": -48.350833333333334
+},
+{
+"icao": "SBMI",
+"nome": "MARICÁ",
+"cidade": "MARICÁ",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.918055555555558,
+"lon": -42.82888888888889
+},
+{
+"icao": "SDKK",
+"nome": "MOCOCA",
+"cidade": "MOCOCA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.487222222222222,
+"lon": -47.03388888888889
+},
+{
+"icao": "SDMJ",
+"nome": "MOGI MIRIM",
+"cidade": "MOGI MIRIM",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.410833333333333,
+"lon": -46.90555555555555
+},
+{
+"icao": "SDMO",
+"nome": "MONTE ALTO",
+"cidade": "MONTE ALTO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.258055555555554,
+"lon": -48.524166666666666
+},
+{
+"icao": "SDNH",
+"nome": "NOVO HORIZONTE",
+"cidade": "NOVO HORIZONTE",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.497777777777777,
+"lon": -49.23444444444444
+},
+{
+"icao": "SDNM",
+"nome": "BRIGADEIRO EDUARDO GOMES",
+"cidade": "NOVA MUTUM",
+"uf": "MT",
+"tipo": "publico",
+"lat": -13.821111111111112,
+"lon": -56.03861111111111
+},
+{
+"icao": "SDNO",
+"nome": "NELSON GARÓFALO",
+"cidade": "SÃO MANUEL",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.69611111111111,
+"lon": -48.57611111111112
+},
+{
+"icao": "SDOU",
+"nome": "JORNALISTA BENEDITO PIMENTEL",
+"cidade": "OURINHOS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.973611111111108,
+"lon": -49.91138888888889
+},
+{
+"icao": "SDMH",
+"nome": "MIRASSOL",
+"cidade": "MIRASSOL",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.807222222222222,
+"lon": -49.486111111111114
+},
+{
+"icao": "SDOV",
+"nome": "MOZARLÂNDIA",
+"cidade": "MOZARLÂNDIA",
+"uf": "GO",
+"tipo": "publico",
+"lat": -14.76888888888889,
+"lon": -50.565
+},
+{
+"icao": "SDPD",
+"nome": "PINDAMONHANGABA",
+"cidade": "PINDAMONHANGABA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.94388888888889,
+"lon": -45.43194444444444
+},
+{
+"icao": "SDPN",
+"nome": "PENÁPOLIS",
+"cidade": "PENÁPOLIS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.41,
+"lon": -50.03361111111111
+},
+{
+"icao": "SDPV",
+"nome": "PRESIDENTE VENCESLAU",
+"cidade": "PRESIDENTE VENCESLAU",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.893333333333334,
+"lon": -51.88444444444444
+},
+{
+"icao": "SDPW",
+"nome": "PEDRO MORGANTI",
+"cidade": "PIRACICABA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.711944444444445,
+"lon": -47.61805555555556
+},
+{
+"icao": "SDPY",
+"nome": "PIRASSUNUNGA",
+"cidade": "PIRASSUNUNGA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.02777777777778,
+"lon": -47.42166666666667
+},
+{
+"icao": "SDRK",
+"nome": "RIO CLARO",
+"cidade": "RIO CLARO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.43166666666667,
+"lon": -47.5625
+},
+{
+"icao": "SDRR",
+"nome": "AVARÉ-ARANDU",
+"cidade": "AVARÉ",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.092222222222222,
+"lon": -48.98722222222222
+},
+{
+"icao": "SDRS",
+"nome": "RESENDE",
+"cidade": "RESENDE",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.47861111111111,
+"lon": -44.48166666666667
+},
+{
+"icao": "SDSC",
+"nome": "MÁRIO PEREIRA LOPES",
+"cidade": "SÃO CARLOS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.87638888888889,
+"lon": -47.90333333333333
+},
+{
+"icao": "SBSO",
+"nome": "REGIONAL DE SORRISO ADOLINO BEDIN",
+"cidade": "SORRISO",
+"uf": "MT",
+"tipo": "publico",
+"lat": -12.472777777777777,
+"lon": -55.66888888888889
+},
+{
+"icao": "SDOW",
+"nome": "OURILÂNDIA DO NORTE",
+"cidade": "OURILÂNDIA DO NORTE",
+"uf": "PA",
+"tipo": "publico",
+"lat": -6.763055555555556,
+"lon": -51.05
+},
+{
+"icao": "SDTF",
+"nome": "TATUÍ",
+"cidade": "TATUÍ",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.331944444444446,
+"lon": -47.88
+},
+{
+"icao": "SDTI",
+"nome": "TUPI PAULISTA",
+"cidade": "TUPI PAULISTA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.393333333333334,
+"lon": -51.600833333333334
+},
+{
+"icao": "SDTK",
+"nome": "PARATY",
+"cidade": "PARATY",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -23.223888888888887,
+"lon": -44.723333333333336
+},
+{
+"icao": "SDTP",
+"nome": "JOSÉ VICENTE FARIA LIMA",
+"cidade": "TUPÃ",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.89,
+"lon": -50.505833333333335
+},
+{
+"icao": "SDUB",
+"nome": "ESTADUAL GASTÃO MADEIRA",
+"cidade": "UBATUBA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.441388888888888,
+"lon": -45.07611111111112
+},
+{
+"icao": "SDUN",
+"nome": "ITAPERUNA",
+"cidade": "ITAPERUNA",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -21.219166666666666,
+"lon": -41.87583333333333
+},
+{
+"icao": "SDTB",
+"nome": "ATIBAIA",
+"cidade": "ATIBAIA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.128333333333334,
+"lon": -46.57472222222223
+},
+{
+"icao": "SDVE",
+"nome": "VERA CRUZ",
+"cidade": "VERA CRUZ",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.230277777777776,
+"lon": -49.816944444444445
+},
+{
+"icao": "SDVG",
+"nome": "DOMINGOS PIGNATARI",
+"cidade": "VOTUPORANGA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.45722222222222,
+"lon": -50.0025
+},
+{
+"icao": "SDWQ",
+"nome": "ALENQUER",
+"cidade": "ALENQUER",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.9169444444444443,
+"lon": -54.72277777777778
+},
+{
+"icao": "SDXF",
+"nome": "ALTO PARAÍSO DE GOIÁS",
+"cidade": "ALTO PARAÍSO DE GOIÁS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -14.119166666666667,
+"lon": -47.530277777777776
+},
+{
+"icao": "SDXJ",
+"nome": "COSTA RICA",
+"cidade": "COSTA RICA",
+"uf": "MS",
+"tipo": "publico",
+"lat": -18.49138888888889,
+"lon": -53.16833333333333
+},
+{
+"icao": "SDZG",
+"nome": "PEDRO TEIXEIRA CASTELO REGIONAL TAUÁ",
+"cidade": "TAUÁ",
+"uf": "CE",
+"tipo": "publico",
+"lat": -5.933333333333334,
+"lon": -40.2975
+},
+{
+"icao": "SIBU",
+"nome": "JERÔNIMO SÉRGIO ROSADO MAIA",
+"cidade": "CATOLÉ DO ROCHA",
+"uf": "PB",
+"tipo": "publico",
+"lat": -6.3625,
+"lon": -37.75527777777778
+},
+{
+"icao": "SDUQ",
+"nome": "PARAGUAÇU PAULISTA",
+"cidade": "PARAGUAÇU PAULISTA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.426944444444445,
+"lon": -50.606944444444444
+},
+{
+"icao": "SIBZ",
+"nome": "ITAPORANGA",
+"cidade": "ITAPORANGA",
+"uf": "PB",
+"tipo": "publico",
+"lat": -7.311111111111111,
+"lon": -38.11361111111111
+},
+{
+"icao": "SILC",
+"nome": "AEROPORTO MUNICIPAL BOM FUTURO",
+"cidade": "LUCAS DO RIO VERDE",
+"uf": "MT",
+"tipo": "publico",
+"lat": -13.037777777777778,
+"lon": -55.95027777777778
+},
+{
+"icao": "SIMK",
+"nome": "TENENTE LUND PRESSOTO",
+"cidade": "FRANCA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.592222222222222,
+"lon": -47.38305555555556
+},
+{
+"icao": "SIZX",
+"nome": "JUARA SUL",
+"cidade": "JUARA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -11.296666666666667,
+"lon": -57.54888888888889
+},
+{
+"icao": "SIBY",
+"nome": "LOURIVAL NUNES DE FARIAS",
+"cidade": "MONTEIRO",
+"uf": "PB",
+"tipo": "publico",
+"lat": -7.878333333333334,
+"lon": -37.13666666666666
+},
+{
+"icao": "SJAU",
+"nome": "ARAGUACEMA",
+"cidade": "ARAGUACEMA",
+"uf": "TO",
+"tipo": "publico",
+"lat": -8.837777777777779,
+"lon": -49.55777777777777
+},
+{
+"icao": "SJBY",
+"nome": "JOÃO SILVA",
+"cidade": "SANTA INÊS",
+"uf": "MA",
+"tipo": "publico",
+"lat": -3.654444444444444,
+"lon": -45.34527777777778
+},
+{
+"icao": "SBJA",
+"nome": "REGIONAL SUL",
+"cidade": "JAGUARUNA",
+"uf": "SC",
+"tipo": "publico",
+"lat": -28.67527777777778,
+"lon": -49.059444444444445
+},
+{
+"icao": "SJOG",
+"nome": "ARIQUEMES",
+"cidade": "ARIQUEMES",
+"uf": "RO",
+"tipo": "publico",
+"lat": -9.880555555555556,
+"lon": -63.04722222222222
+},
+{
+"icao": "SJQN",
+"nome": "QUIRINÓPOLIS",
+"cidade": "QUIRINÓPOLIS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -18.44611111111111,
+"lon": -50.409166666666664
+},
+{
+"icao": "SJRG",
+"nome": "REGIONAL DE RIO GRANDE",
+"cidade": "RIO GRANDE",
+"uf": "RS",
+"tipo": "publico",
+"lat": -32.08361111111111,
+"lon": -52.16777777777777
+},
+{
+"icao": "SJGU",
+"nome": "ARAGUATINS",
+"cidade": "ARAGUATINS",
+"uf": "TO",
+"tipo": "publico",
+"lat": -5.685833333333334,
+"lon": -48.11416666666667
+},
+{
+"icao": "SJTS",
+"nome": "TERRA SANTA",
+"cidade": "TERRA SANTA",
+"uf": "PA",
+"tipo": "publico",
+"lat": -2.072777777777778,
+"lon": -56.48888888888889
+},
+{
+"icao": "SJZA",
+"nome": "PEDRO VIEIRA MOREIRA",
+"cidade": "CAJAZEIRAS",
+"uf": "PB",
+"tipo": "publico",
+"lat": -6.882777777777778,
+"lon": -38.615833333333335
+},
+{
+"icao": "SNAB",
+"nome": "ARARIPINA",
+"cidade": "ARARIPINA",
+"uf": "PE",
+"tipo": "publico",
+"lat": -7.586388888888888,
+"lon": -40.53527777777778
+},
+{
+"icao": "SJVO",
+"nome": "ARAGARÇAS",
+"cidade": "ARAGARÇAS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -15.899444444444445,
+"lon": -52.240833333333335
+},
+{
+"icao": "SNAE",
+"nome": "ARCOVERDE",
+"cidade": "ARCOVERDE",
+"uf": "PE",
+"tipo": "publico",
+"lat": -8.407777777777778,
+"lon": -37.08833333333334
+},
+{
+"icao": "SNAL",
+"nome": "ARAPIRACA",
+"cidade": "ARAPIRACA",
+"uf": "AL",
+"tipo": "publico",
+"lat": -9.77638888888889,
+"lon": -36.63055555555555
+},
+{
+"icao": "SNAP",
+"nome": "JANAÚBA",
+"cidade": "JANAÚBA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -15.731944444444444,
+"lon": -43.323055555555555
+},
+{
+"icao": "SNAG",
+"nome": "ARAGUARI",
+"cidade": "ARAGUARI",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.668055555555558,
+"lon": -48.19027777777777
+},
+{
+"icao": "SNAS",
+"nome": "TRÊS MARIAS",
+"cidade": "TRÊS MARIAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.224999999999998,
+"lon": -45.190555555555555
+},
+{
+"icao": "SBAC",
+"nome": "AEROPORTO REGIONAL DE CANOA QUEBRADA DRAGÃO DO MAR",
+"cidade": "ARACATI",
+"uf": "CE",
+"tipo": "publico",
+"lat": -4.568611111111111,
+"lon": -37.80472222222222
+},
+{
+"icao": "SNAX",
+"nome": "MARCELO PIRES HALZHAUSEN",
+"cidade": "ASSIS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.63861111111111,
+"lon": -50.45583333333334
+},
+{
+"icao": "SNBA",
+"nome": "CHAFEI AMSEI",
+"cidade": "BARRETOS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -20.585555555555555,
+"lon": -48.59583333333334
+},
+{
+"icao": "SNBC",
+"nome": "BARRA DO CORDA",
+"cidade": "BARRA DO CORDA",
+"uf": "MA",
+"tipo": "publico",
+"lat": -5.5025,
+"lon": -45.21611111111111
+},
+{
+"icao": "SNAR",
+"nome": "CIRILO QUEIRÓZ",
+"cidade": "ALMENARA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -16.16583333333333,
+"lon": -40.68416666666666
+},
+{
+"icao": "SNBI",
+"nome": "BACABAL",
+"cidade": "BACABAL",
+"uf": "MA",
+"tipo": "publico",
+"lat": -4.228055555555556,
+"lon": -44.819722222222225
+},
+{
+"icao": "SNBM",
+"nome": "CRISTIANO FERREIRA VARELLA",
+"cidade": "MURIAÉ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.12611111111111,
+"lon": -42.394444444444446
+},
+{
+"icao": "SNBR",
+"nome": "DOM RICARDO WEBERBERGER",
+"cidade": "BARREIRAS",
+"uf": "BA",
+"tipo": "publico",
+"lat": -12.079166666666666,
+"lon": -45.00944444444445
+},
+{
+"icao": "SNBS",
+"nome": "BALSAS",
+"cidade": "BALSAS",
+"uf": "MA",
+"tipo": "publico",
+"lat": -7.525277777777777,
+"lon": -46.05333333333333
+},
+{
+"icao": "SNBX",
+"nome": "BARRA",
+"cidade": "BARRA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -11.081111111111111,
+"lon": -43.1475
+},
+{
+"icao": "SNBZ",
+"nome": "PARAMIRIM",
+"cidade": "PARAMIRIM",
+"uf": "BA",
+"tipo": "publico",
+"lat": -13.490555555555554,
+"lon": -42.22916666666667
+},
+{
+"icao": "SNCA",
+"nome": "CAMPO BELO",
+"cidade": "CAMPO BELO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.8925,
+"lon": -45.33555555555556
+},
+{
+"icao": "SNCS",
+"nome": "CAMPOS SALES",
+"cidade": "CAMPOS SALES",
+"uf": "CE",
+"tipo": "publico",
+"lat": -7.051666666666667,
+"lon": -40.358333333333334
+},
+{
+"icao": "SNCT",
+"nome": "CARATINGA",
+"cidade": "UBAPORANGA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.725277777777777,
+"lon": -42.11222222222222
+},
+{
+"icao": "SNCX",
+"nome": "COLATINA",
+"cidade": "COLATINA",
+"uf": "ES",
+"tipo": "publico",
+"lat": -19.4875,
+"lon": -40.57944444444445
+},
+{
+"icao": "SNBG",
+"nome": "BAIXO GUANDU - AIMORÉS",
+"cidade": "BAIXO GUANDU",
+"uf": "ES",
+"tipo": "publico",
+"lat": -19.49888888888889,
+"lon": -41.04194444444444
+},
+{
+"icao": "SNDC",
+"nome": "REDENÇÃO",
+"cidade": "REDENÇÃO",
+"uf": "PA",
+"tipo": "publico",
+"lat": -8.031111111111112,
+"lon": -49.97972222222222
+},
+{
+"icao": "SNDT",
+"nome": "JUSCELINO KUBITSCHEK",
+"cidade": "DIAMANTINA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.23222222222222,
+"lon": -43.650277777777774
+},
+{
+"icao": "SNDV",
+"nome": "BRIGADEIRO ANTÔNIO CABRAL",
+"cidade": "DIVINÓPOLIS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.181944444444447,
+"lon": -44.87
+},
+{
+"icao": "SNEB",
+"nome": "NAGIB DEMACHKI",
+"cidade": "PARAGOMINAS",
+"uf": "PA",
+"tipo": "publico",
+"lat": -3.019722222222222,
+"lon": -47.31638888888889
+},
+{
+"icao": "SNCZ",
+"nome": "PONTE NOVA",
+"cidade": "PONTE NOVA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.403055555555554,
+"lon": -42.916666666666664
+},
+{
+"icao": "SNEE",
+"nome": "VACARIA NOVO",
+"cidade": "VACARIA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.431944444444447,
+"lon": -51.022777777777776
+},
+{
+"icao": "SNFE",
+"nome": "COMANDANTE PASCHOAL PATROCÍNIO FILHO",
+"cidade": "ALFENAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.43138888888889,
+"lon": -45.93222222222222
+},
+{
+"icao": "SNFO",
+"nome": "FORMIGA",
+"cidade": "FORMIGA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.39472222222222,
+"lon": -45.48305555555556
+},
+{
+"icao": "SNFU",
+"nome": "FRUTAL",
+"cidade": "FRUTAL",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.004722222222224,
+"lon": -48.95888888888889
+},
+{
+"icao": "SNFX",
+"nome": "SÃO FÉLIX DO XINGU",
+"cidade": "SÃO FÉLIX DO XINGU",
+"uf": "PA",
+"tipo": "publico",
+"lat": -6.641388888888889,
+"lon": -51.952222222222225
+},
+{
+"icao": "SNGA",
+"nome": "GUARAPARI",
+"cidade": "GUARAPARI",
+"uf": "ES",
+"tipo": "publico",
+"lat": -20.64638888888889,
+"lon": -40.49166666666667
+},
+{
+"icao": "SNGG",
+"nome": "BOM JESUS DO GURGUÉIA",
+"cidade": "BOM JESUS",
+"uf": "PI",
+"tipo": "publico",
+"lat": -9.059444444444445,
+"lon": -44.369166666666665
+},
+{
+"icao": "SNGI",
+"nome": "AERÓDROMO DE GUANAMBI",
+"cidade": "GUANAMBI",
+"uf": "BA",
+"tipo": "publico",
+"lat": -14.208055555555555,
+"lon": -42.74611111111111
+},
+{
+"icao": "SNED",
+"nome": "SÓCRATES REZENDE",
+"cidade": "CANAVIEIRAS",
+"uf": "BA",
+"tipo": "publico",
+"lat": -15.66638888888889,
+"lon": -38.95527777777778
+},
+{
+"icao": "SNGX",
+"nome": "GUAXUPÉ",
+"cidade": "GUAXUPÉ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.326666666666668,
+"lon": -46.73027777777778
+},
+{
+"icao": "SNHS",
+"nome": "SANTA MAGALHÃES",
+"cidade": "SERRA TALHADA",
+"uf": "PE",
+"tipo": "publico",
+"lat": -8.061388888888889,
+"lon": -38.328611111111115
+},
+{
+"icao": "SNIB",
+"nome": "ITABERABA",
+"cidade": "ITABERABA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -12.499722222222221,
+"lon": -40.27027777777778
+},
+{
+"icao": "SNIC",
+"nome": "IRECÊ",
+"cidade": "IRECÊ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -11.34,
+"lon": -41.846944444444446
+},
+{
+"icao": "SNIE",
+"nome": "CAETITÉ",
+"cidade": "CAETITÉ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -14.012222222222222,
+"lon": -42.49388888888889
+},
+{
+"icao": "SNIG",
+"nome": "IGUATU",
+"cidade": "IGUATU",
+"uf": "CE",
+"tipo": "publico",
+"lat": -6.346666666666667,
+"lon": -39.294444444444444
+},
+{
+"icao": "SNIO",
+"nome": "CIPÓ",
+"cidade": "CIPÓ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -11.125277777777779,
+"lon": -38.48694444444445
+},
+{
+"icao": "SNGN",
+"nome": "GARANHUNS",
+"cidade": "GARANHUNS",
+"uf": "PE",
+"tipo": "publico",
+"lat": -8.834444444444445,
+"lon": -36.47138888888889
+},
+{
+"icao": "SNIP",
+"nome": "ITAPETINGA",
+"cidade": "ITAPETINGA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -15.244444444444444,
+"lon": -40.27722222222222
+},
+{
+"icao": "SNIU",
+"nome": "IPIAÚ",
+"cidade": "IPIAÚ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -14.173333333333332,
+"lon": -39.68416666666666
+},
+{
+"icao": "SNJB",
+"nome": "JACOBINA",
+"cidade": "JACOBINA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -11.163055555555555,
+"lon": -40.55333333333333
+},
+{
+"icao": "SDIY",
+"nome": "JOÃO DURVAL CARNEIRO",
+"cidade": "FEIRA DE SANTANA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -12.200555555555555,
+"lon": -38.906388888888884
+},
+{
+"icao": "SNJK",
+"nome": "JEQUIÉ",
+"cidade": "JEQUIÉ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -13.877777777777778,
+"lon": -40.07138888888889
+},
+{
+"icao": "SNJM",
+"nome": "REGIONAL DE SANTO AMARO DE MINAS",
+"cidade": "MANHUAÇU",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.259722222222223,
+"lon": -42.18388888888889
+},
+{
+"icao": "SNJP",
+"nome": "JOÃO PINHEIRO",
+"cidade": "JOÃO PINHEIRO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -17.7875,
+"lon": -46.12027777777778
+},
+{
+"icao": "SNJQ",
+"nome": "JEQUITINHONHA",
+"cidade": "JEQUITINHONHA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -16.441388888888888,
+"lon": -41.03722222222222
+},
+{
+"icao": "SNJR",
+"nome": "PREFEITO OCTÁVIO DE ALMEIDA NEVES",
+"cidade": "SÃO JOÃO DEL REI",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.085555555555555,
+"lon": -44.22527777777778
+},
+{
+"icao": "SNIT",
+"nome": "IBOTIRAMA",
+"cidade": "IBOTIRAMA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -12.168333333333333,
+"lon": -43.222500000000004
+},
+{
+"icao": "SNKF",
+"nome": "DAS BANDEIRINHAS",
+"cidade": "CONSELHEIRO LAFAIETE",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.738611111111112,
+"lon": -43.7975
+},
+{
+"icao": "SNKI",
+"nome": "AERÓDROMO DE CACHOEIRO DE ITAPEMIRIM",
+"cidade": "CACHOEIRO DE ITAPEMIRIM",
+"uf": "ES",
+"tipo": "publico",
+"lat": -20.835277777777776,
+"lon": -41.186388888888885
+},
+{
+"icao": "SNKN",
+"nome": "CURRAIS NOVOS",
+"cidade": "CURRAIS NOVOS",
+"uf": "RN",
+"tipo": "publico",
+"lat": -6.280833333333334,
+"lon": -36.540277777777774
+},
+{
+"icao": "SNKR",
+"nome": "CORRENTE",
+"cidade": "CORRENTE",
+"uf": "PI",
+"tipo": "publico",
+"lat": -10.451944444444443,
+"lon": -45.13638888888889
+},
+{
+"icao": "SNLN",
+"nome": "MUNICIPAL DE LINHARES",
+"cidade": "LINHARES",
+"uf": "ES",
+"tipo": "publico",
+"lat": -19.35527777777778,
+"lon": -40.07138888888889
+},
+{
+"icao": "SNLO",
+"nome": "SÃO LOURENÇO",
+"cidade": "SÃO LOURENÇO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -22.090833333333332,
+"lon": -45.044444444444444
+},
+{
+"icao": "SNMA",
+"nome": "MONTE ALEGRE",
+"cidade": "MONTE ALEGRE",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.9966666666666668,
+"lon": -54.07138888888889
+},
+{
+"icao": "SNMH",
+"nome": "PIRENÓPOLIS",
+"cidade": "PIRENÓPOLIS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -15.848611111111111,
+"lon": -48.98277777777778
+},
+{
+"icao": "SNLI",
+"nome": "ABAETÉ",
+"cidade": "ABAETÉ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.15583333333333,
+"lon": -45.495
+},
+{
+"icao": "SNMK",
+"nome": "MOCAMBINHO",
+"cidade": "JAÍBA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -15.093055555555557,
+"lon": -43.97916666666667
+},
+{
+"icao": "SNMJ",
+"nome": "MARACÁS",
+"cidade": "MARACÁS",
+"uf": "BA",
+"tipo": "publico",
+"lat": -13.386111111111111,
+"lon": -40.46611111111111
+},
+{
+"icao": "SNMN",
+"nome": "MINAS NOVAS",
+"cidade": "MINAS NOVAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -17.26388888888889,
+"lon": -42.53916666666667
+},
+{
+"icao": "SNMX",
+"nome": "SÃO MATEUS",
+"cidade": "SÃO MATEUS",
+"uf": "ES",
+"tipo": "publico",
+"lat": -18.72138888888889,
+"lon": -39.83361111111111
+},
+{
+"icao": "SNMR",
+"nome": "MARAÚ",
+"cidade": "MARAÚ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -14.143333333333333,
+"lon": -39.00666666666667
+},
+{
+"icao": "SNNE",
+"nome": "SEBASTIÃO CARLOS LEITE",
+"cidade": "SÃO JOÃO NEPOMUCENO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.542222222222225,
+"lon": -43.02111111111111
+},
+{
+"icao": "SNNU",
+"nome": "NANUQUE",
+"cidade": "NANUQUE",
+"uf": "MG",
+"tipo": "publico",
+"lat": -17.823055555555555,
+"lon": -40.32972222222222
+},
+{
+"icao": "SNOE",
+"nome": "OEIRAS",
+"cidade": "OEIRAS",
+"uf": "PI",
+"tipo": "publico",
+"lat": -7.0183333333333335,
+"lon": -42.16722222222222
+},
+{
+"icao": "SNOS",
+"nome": "MUNICIPAL JOSÉ FIGUEIREDO",
+"cidade": "PASSOS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.731944444444444,
+"lon": -46.661944444444444
+},
+{
+"icao": "SNOX",
+"nome": "ORIXIMINÁ",
+"cidade": "ORIXIMINÁ",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.713611111111111,
+"lon": -55.83583333333333
+},
+{
+"icao": "SNPA",
+"nome": "PARÁ DE MINAS",
+"cidade": "PARÁ DE MINAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.842499999999998,
+"lon": -44.600833333333334
+},
+{
+"icao": "SNPC",
+"nome": "PICOS",
+"cidade": "PICOS",
+"uf": "PI",
+"tipo": "publico",
+"lat": -7.061388888888889,
+"lon": -41.52583333333333
+},
+{
+"icao": "SNPD",
+"nome": "PATOS DE MINAS",
+"cidade": "PATOS DE MINAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.672222222222224,
+"lon": -46.49138888888889
+},
+{
+"icao": "SNPJ",
+"nome": "PATROCÍNIO",
+"cidade": "PATROCÍNIO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.909166666666664,
+"lon": -46.98277777777778
+},
+{
+"icao": "SNMZ",
+"nome": "PORTO DE MOZ",
+"cidade": "PORTO DE MOZ",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.7413888888888889,
+"lon": -52.23583333333333
+},
+{
+"icao": "SBCZ",
+"nome": "CRUZEIRO DO SUL",
+"cidade": "CRUZEIRO DO SUL",
+"uf": "AC",
+"tipo": "publico",
+"lat": -7.599444444444444,
+"lon": -72.76944444444445
+},
+{
+"icao": "SNPQ",
+"nome": "PESQUEIRA",
+"cidade": "PESQUEIRA",
+"uf": "PE",
+"tipo": "publico",
+"lat": -8.374722222222223,
+"lon": -36.63777777777778
+},
+{
+"icao": "SNPY",
+"nome": "SÃO SEBASTIÃO DO PARAÍSO",
+"cidade": "SÃO SEBASTIÃO DO PARAÍSO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.948333333333334,
+"lon": -46.98305555555556
+},
+{
+"icao": "SNQD",
+"nome": "SOUSA",
+"cidade": "SOUSA",
+"uf": "PB",
+"tipo": "publico",
+"lat": -6.785555555555556,
+"lon": -38.23388888888889
+},
+{
+"icao": "SNQG",
+"nome": "CANGAPARA",
+"cidade": "FLORIANO",
+"uf": "PI",
+"tipo": "publico",
+"lat": -6.846111111111111,
+"lon": -43.07805555555556
+},
+{
+"icao": "SNPU",
+"nome": "COMANDANTE VIRGILIO BORIM",
+"cidade": "PARAGUAÇU",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.56138888888889,
+"lon": -45.75472222222222
+},
+{
+"icao": "SNQV",
+"nome": "CURVELO",
+"cidade": "CURVELO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.749444444444446,
+"lon": -44.45805555555556
+},
+{
+"icao": "SNPX",
+"nome": "PIRAPORA",
+"cidade": "PIRAPORA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -17.31388888888889,
+"lon": -44.85861111111111
+},
+{
+"icao": "SNRD",
+"nome": "PRADO",
+"cidade": "PRADO",
+"uf": "BA",
+"tipo": "publico",
+"lat": -17.296944444444446,
+"lon": -39.27194444444444
+},
+{
+"icao": "SNRM",
+"nome": "REMANSO",
+"cidade": "REMANSO",
+"uf": "BA",
+"tipo": "publico",
+"lat": -9.58,
+"lon": -42.115833333333335
+},
+{
+"icao": "SNRP",
+"nome": "RIO PARANAÍBA",
+"cidade": "RIO PARANAÍBA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.2125,
+"lon": -46.24055555555556
+},
+{
+"icao": "SNRU",
+"nome": "CARUARU",
+"cidade": "CARUARU",
+"uf": "PE",
+"tipo": "publico",
+"lat": -8.284444444444444,
+"lon": -36.01083333333333
+},
+{
+"icao": "SNQU",
+"nome": "MUCUGÊ",
+"cidade": "MUCUGÊ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -13.031666666666668,
+"lon": -41.44444444444444
+},
+{
+"icao": "SNRZ",
+"nome": "OLIVEIRA",
+"cidade": "OLIVEIRA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.714444444444442,
+"lon": -44.86527777777778
+},
+{
+"icao": "SNSE",
+"nome": "SENTO SÉ",
+"cidade": "SENTO SÉ",
+"uf": "BA",
+"tipo": "publico",
+"lat": -9.7575,
+"lon": -41.855000000000004
+},
+{
+"icao": "SNQX",
+"nome": "QUIXADÁ",
+"cidade": "QUIXADÁ",
+"uf": "CE",
+"tipo": "publico",
+"lat": -4.978888888888889,
+"lon": -38.98777777777778
+},
+{
+"icao": "SNRX",
+"nome": "RIACHÃO",
+"cidade": "RIACHÃO",
+"uf": "MA",
+"tipo": "publico",
+"lat": -7.346388888888889,
+"lon": -46.6275
+},
+{
+"icao": "SNSM",
+"nome": "SALINÓPOLIS",
+"cidade": "SALINÓPOLIS",
+"uf": "PA",
+"tipo": "publico",
+"lat": -0.696388888888889,
+"lon": -47.336666666666666
+},
+{
+"icao": "SNSS",
+"nome": "SALINAS",
+"cidade": "SALINAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -16.208333333333332,
+"lon": -42.32194444444445
+},
+{
+"icao": "SNTF",
+"nome": "TEIXEIRA DE FREITAS",
+"cidade": "TEIXEIRA DE FREITAS",
+"uf": "BA",
+"tipo": "publico",
+"lat": -17.524444444444445,
+"lon": -39.66833333333333
+},
+{
+"icao": "SNTI",
+"nome": "ÓBIDOS",
+"cidade": "ÓBIDOS",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.8680555555555556,
+"lon": -55.51444444444444
+},
+{
+"icao": "SNSG",
+"nome": "SALGUEIRO",
+"cidade": "SALGUEIRO",
+"uf": "PE",
+"tipo": "publico",
+"lat": -8.046666666666667,
+"lon": -39.13388888888889
+},
+{
+"icao": "SNTQ",
+"nome": "BURITIRAMA",
+"cidade": "BURITIRAMA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -10.721666666666668,
+"lon": -43.65361111111111
+},
+{
+"icao": "SNTS",
+"nome": "BRIGADEIRO FIRMINO AYRES",
+"cidade": "PATOS",
+"uf": "PB",
+"tipo": "publico",
+"lat": -7.0377777777777775,
+"lon": -37.2575
+},
+{
+"icao": "SNUB",
+"nome": "UBÁ",
+"cidade": "UBÁ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.12,
+"lon": -42.88361111111111
+},
+{
+"icao": "SNUH",
+"nome": "PIUMHI",
+"cidade": "PIUMHI",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.43888888888889,
+"lon": -45.992222222222225
+},
+{
+"icao": "SNUI",
+"nome": "ARAÇUAÍ",
+"cidade": "ARAÇUAÍ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -16.851944444444445,
+"lon": -42.04611111111111
+},
+{
+"icao": "SNUN",
+"nome": "UNAÍ",
+"cidade": "UNAÍ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -16.35388888888889,
+"lon": -46.926944444444445
+},
+{
+"icao": "SNSI",
+"nome": "SANTA MARIA DO SUAÇUÍ",
+"cidade": "SANTA MARIA DO SUAÇUÍ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -18.198611111111113,
+"lon": -42.46611111111111
+},
+{
+"icao": "SNVC",
+"nome": "VIÇOSA",
+"cidade": "VIÇOSA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.745,
+"lon": -42.84138888888889
+},
+{
+"icao": "SNVD",
+"nome": "SANTA MARIA DA VITÓRIA",
+"cidade": "SANTA MARIA DA VITÓRIA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -13.404722222222222,
+"lon": -44.223055555555554
+},
+{
+"icao": "SNVI",
+"nome": "MELLO VIANA",
+"cidade": "TRÊS CORAÇÕES",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.789166666666667,
+"lon": -45.268055555555556
+},
+{
+"icao": "SNVS",
+"nome": "BREVES",
+"cidade": "BREVES",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.636388888888889,
+"lon": -50.44333333333333
+},
+{
+"icao": "SNWC",
+"nome": "CAMOCIM",
+"cidade": "CAMOCIM",
+"uf": "CE",
+"tipo": "publico",
+"lat": -2.8958333333333335,
+"lon": -40.85888888888889
+},
+{
+"icao": "SNWS",
+"nome": "CRATEÚS",
+"cidade": "CRATEÚS",
+"uf": "CE",
+"tipo": "publico",
+"lat": -5.211111111111111,
+"lon": -40.70416666666667
+},
+{
+"icao": "SNXB",
+"nome": "CAXAMBU",
+"cidade": "CAXAMBU",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.9175,
+"lon": -44.96944444444445
+},
+{
+"icao": "SNTO",
+"nome": "JUSCELINO KUBITSCHECK",
+"cidade": "TEÓFILO OTONI",
+"uf": "MG",
+"tipo": "publico",
+"lat": -17.890833333333333,
+"lon": -41.515
+},
+{
+"icao": "SNYA",
+"nome": "AERÓDROMO PÚBLICO DE ALMEIRIM",
+"cidade": "ALMEIRIM",
+"uf": "PA",
+"tipo": "publico",
+"lat": -1.4791666666666667,
+"lon": -52.57805555555556
+},
+{
+"icao": "SNYB",
+"nome": "TITO TEIXEIRA",
+"cidade": "ITUIUTABA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.00138888888889,
+"lon": -49.48722222222222
+},
+{
+"icao": "SNVB",
+"nome": "VALENÇA",
+"cidade": "VALENÇA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -13.296388888888888,
+"lon": -38.9925
+},
+{
+"icao": "SNYU",
+"nome": "ITURAMA",
+"cidade": "ITURAMA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.71722222222222,
+"lon": -50.22027777777778
+},
+{
+"icao": "SNZA",
+"nome": "POUSO ALEGRE",
+"cidade": "POUSO ALEGRE",
+"uf": "MG",
+"tipo": "publico",
+"lat": -22.28888888888889,
+"lon": -45.919444444444444
+},
+{
+"icao": "SNZR",
+"nome": "PEDRO RABELO DE SOUZA",
+"cidade": "PARACATU",
+"uf": "MG",
+"tipo": "publico",
+"lat": -17.24277777777778,
+"lon": -46.88305555555556
+},
+{
+"icao": "SSAB",
+"nome": "MOISÉS LUPION",
+"cidade": "IBAITI",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.762777777777778,
+"lon": -50.26305555555555
+},
+{
+"icao": "SSAE",
+"nome": "ARROIO GRANDE",
+"cidade": "ARROIO GRANDE",
+"uf": "RS",
+"tipo": "publico",
+"lat": -32.22916666666667,
+"lon": -53.05583333333333
+},
+{
+"icao": "SSAK",
+"nome": "CARLOS RUHL",
+"cidade": "CRUZ ALTA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.65861111111111,
+"lon": -53.61138888888889
+},
+{
+"icao": "SSAN",
+"nome": "JOÃO GALDINO",
+"cidade": "ANDIRÁ",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.02722222222222,
+"lon": -50.22694444444445
+},
+{
+"icao": "SSAP",
+"nome": "CAPITÃO JOÃO BUSSE",
+"cidade": "APUCARANA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.612222222222222,
+"lon": -51.385
+},
+{
+"icao": "SSAQ",
+"nome": "AEROCLUBE DE PASSO FUNDO",
+"cidade": "PASSO FUNDO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.250555555555554,
+"lon": -52.516666666666666
+},
+{
+"icao": "SSBL",
+"nome": "BLUMENAU",
+"cidade": "BLUMENAU",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.831666666666667,
+"lon": -49.093611111111116
+},
+{
+"icao": "SSBN",
+"nome": "BELÉM NOVO",
+"cidade": "PORTO ALEGRE",
+"uf": "RS",
+"tipo": "publico",
+"lat": -30.189166666666665,
+"lon": -51.1825
+},
+{
+"icao": "SNXQ",
+"nome": "XIQUE-XIQUE",
+"cidade": "XIQUE-XIQUE",
+"uf": "BA",
+"tipo": "publico",
+"lat": -10.834166666666667,
+"lon": -42.68333333333333
+},
+{
+"icao": "SSCD",
+"nome": "CHAPADÃO DO SUL",
+"cidade": "CHAPADÃO DO SUL",
+"uf": "MS",
+"tipo": "publico",
+"lat": -18.839166666666664,
+"lon": -52.488055555555555
+},
+{
+"icao": "SSCI",
+"nome": "COXIM",
+"cidade": "COXIM",
+"uf": "MS",
+"tipo": "publico",
+"lat": -18.481388888888887,
+"lon": -54.715833333333336
+},
+{
+"icao": "SSCK",
+"nome": "OLAVO CECCO RIGON",
+"cidade": "CONCÓRDIA",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.180555555555557,
+"lon": -52.051111111111105
+},
+{
+"icao": "SNYE",
+"nome": "PINHEIRO",
+"cidade": "PINHEIRO",
+"uf": "MA",
+"tipo": "publico",
+"lat": -2.4775,
+"lon": -45.105000000000004
+},
+{
+"icao": "SSCN",
+"nome": "CANELA",
+"cidade": "CANELA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.370555555555555,
+"lon": -50.83222222222223
+},
+{
+"icao": "SSCP",
+"nome": "FRANCISCO LACERDA JÚNIOR",
+"cidade": "CORNÉLIO PROCÓPIO",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.1525,
+"lon": -50.6025
+},
+{
+"icao": "SSCB",
+"nome": "MUNICIPAL DE CASA BRANCA",
+"cidade": "CASA BRANCA",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.78805555555556,
+"lon": -47.05555555555555
+},
+{
+"icao": "SSCT",
+"nome": "ENGENHEIRO GASTÃO DE MESQUITA FILHO",
+"cidade": "CIANORTE",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.691666666666666,
+"lon": -52.64222222222222
+},
+{
+"icao": "SSEE",
+"nome": "REGIONAL DO VALE DO TAQUARI",
+"cidade": "ESTRELA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.455,
+"lon": -51.93611111111111
+},
+{
+"icao": "SSEP",
+"nome": "SÃO SEPÉ",
+"cidade": "SÃO SEPÉ",
+"uf": "RS",
+"tipo": "publico",
+"lat": -30.182222222222222,
+"lon": -53.57944444444445
+},
+{
+"icao": "SSER",
+"nome": "ERECHIM",
+"cidade": "ERECHIM",
+"uf": "RS",
+"tipo": "publico",
+"lat": -27.66333333333333,
+"lon": -52.27194444444444
+},
+{
+"icao": "SSEZ",
+"nome": "ESPUMOSO",
+"cidade": "ESPUMOSO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.738055555555558,
+"lon": -52.855555555555554
+},
+{
+"icao": "SSFB",
+"nome": "PAULO ABDALA",
+"cidade": "FRANCISCO BELTRÃO",
+"uf": "PR",
+"tipo": "publico",
+"lat": -26.05888888888889,
+"lon": -53.06333333333333
+},
+{
+"icao": "SSCR",
+"nome": "BALDUINO HELMUTH JOPE",
+"cidade": "MARECHAL CÂNDIDO RONDON",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.512777777777778,
+"lon": -54.05472222222222
+},
+{
+"icao": "SSGA",
+"nome": "GARIBALDI",
+"cidade": "GARIBALDI",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.26833333333333,
+"lon": -51.532222222222224
+},
+{
+"icao": "SSGB",
+"nome": "MUNICIPAL DE GUARATUBA",
+"cidade": "GUARATUBA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.880555555555556,
+"lon": -48.61222222222222
+},
+{
+"icao": "SSGW",
+"nome": "MANOEL RIBAS",
+"cidade": "GOIOERÊ",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.21972222222222,
+"lon": -53.04388888888889
+},
+{
+"icao": "SSGY",
+"nome": "GUAÍRA",
+"cidade": "GUAÍRA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.079722222222223,
+"lon": -54.18805555555555
+},
+{
+"icao": "SSHZ",
+"nome": "WALTER BÜNDCHEN",
+"cidade": "HORIZONTINA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -27.638333333333332,
+"lon": -54.33888888888889
+},
+{
+"icao": "SSIE",
+"nome": "TERUEL IPANEMA ESTÂNCIA",
+"cidade": "CAMPO GRANDE",
+"uf": "MS",
+"tipo": "publico",
+"lat": -20.60388888888889,
+"lon": -54.59527777777778
+},
+{
+"icao": "SSIJ",
+"nome": "IJUÍ",
+"cidade": "IJUÍ",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.36861111111111,
+"lon": -53.84638888888889
+},
+{
+"icao": "SSIR",
+"nome": "IBIRUBÁ",
+"cidade": "IBIRUBÁ",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.604166666666668,
+"lon": -53.078611111111115
+},
+{
+"icao": "SSJA",
+"nome": "SANTA TEREZINHA",
+"cidade": "JOAÇABA",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.17138888888889,
+"lon": -51.55333333333333
+},
+{
+"icao": "SSJI",
+"nome": "JARDIM",
+"cidade": "JARDIM",
+"uf": "MS",
+"tipo": "publico",
+"lat": -21.49277777777778,
+"lon": -56.152499999999996
+},
+{
+"icao": "SSIQ",
+"nome": "ITAQUI",
+"cidade": "ITAQUI",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.171944444444446,
+"lon": -56.538333333333334
+},
+{
+"icao": "SSKG",
+"nome": "ESTÂNCIA SANTA MARIA",
+"cidade": "CAMPO GRANDE",
+"uf": "MS",
+"tipo": "publico",
+"lat": -20.505555555555556,
+"lon": -54.52472222222222
+},
+{
+"icao": "SSKK",
+"nome": "CAPÃO DA CANOA",
+"cidade": "CAPÃO DA CANOA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.76361111111111,
+"lon": -50.036944444444444
+},
+{
+"icao": "SSKM",
+"nome": "CAMPO MOURÃO",
+"cidade": "CAMPO MOURÃO",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.0025,
+"lon": -52.356944444444444
+},
+{
+"icao": "SSKS",
+"nome": "BRIGADEIRO NERO MOURA",
+"cidade": "CACHOEIRA DO SUL",
+"uf": "RS",
+"tipo": "publico",
+"lat": -30.002222222222223,
+"lon": -52.94027777777777
+},
+{
+"icao": "SSKU",
+"nome": "LAURO ANTÔNIO DA COSTA",
+"cidade": "CURITIBANOS",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.287222222222223,
+"lon": -50.60388888888889
+},
+{
+"icao": "SSKW",
+"nome": "CACOAL",
+"cidade": "CACOAL",
+"uf": "RO",
+"tipo": "publico",
+"lat": -11.495555555555555,
+"lon": -61.450833333333335
+},
+{
+"icao": "SSKZ",
+"nome": "CARAZINHO",
+"cidade": "CARAZINHO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.321666666666665,
+"lon": -52.81666666666667
+},
+{
+"icao": "SSLG",
+"nome": "SÃO LUIZ GONZAGA",
+"cidade": "SÃO LUIZ GONZAGA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.37638888888889,
+"lon": -55.0375
+},
+{
+"icao": "SSLN",
+"nome": "HELMUTH BAUNGARTEM",
+"cidade": "LONTRAS",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.15972222222222,
+"lon": -49.54277777777778
+},
+{
+"icao": "SSJK",
+"nome": "JÚLIO DE CASTILHOS",
+"cidade": "JÚLIO DE CASTILHOS",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.153055555555554,
+"lon": -53.74333333333333
+},
+{
+"icao": "SSLT",
+"nome": "GAUDÊNCIO MACHADO RAMOS",
+"cidade": "ALEGRETE",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.8125,
+"lon": -55.89333333333333
+},
+{
+"icao": "SSMJ",
+"nome": "MARACAJU",
+"cidade": "MARACAJU",
+"uf": "MS",
+"tipo": "publico",
+"lat": -21.633888888888887,
+"lon": -55.144999999999996
+},
+{
+"icao": "SSMR",
+"nome": "MANOEL RIBAS",
+"cidade": "MANOEL RIBAS",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.529444444444444,
+"lon": -51.651666666666664
+},
+{
+"icao": "SSLO",
+"nome": "ATTILLIO ACCORSI",
+"cidade": "LOANDA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -22.91777777777778,
+"lon": -53.14972222222222
+},
+{
+"icao": "SSNB",
+"nome": "ARIOSTO DA RIVA",
+"cidade": "NAVIRAÍ",
+"uf": "MS",
+"tipo": "publico",
+"lat": -23.034166666666668,
+"lon": -54.17777777777778
+},
+{
+"icao": "SSNG",
+"nome": "HELIO ALVES DE OLIVEIRA",
+"cidade": "MONTENEGRO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.71972222222222,
+"lon": -51.48888888888889
+},
+{
+"icao": "SSNH",
+"nome": "NOVO HAMBURGO",
+"cidade": "NOVO HAMBURGO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.699166666666667,
+"lon": -51.081944444444446
+},
+{
+"icao": "SSNP",
+"nome": "ILMO ALOÍSIO BLUME",
+"cidade": "NOVA PRATA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.80388888888889,
+"lon": -51.602222222222224
+},
+{
+"icao": "SSMT",
+"nome": "MOSTARDAS",
+"cidade": "MOSTARDAS",
+"uf": "RS",
+"tipo": "publico",
+"lat": -31.101111111111113,
+"lon": -50.908055555555556
+},
+{
+"icao": "SSOE",
+"nome": "HÉLIO WASUM",
+"cidade": "SÃO MIGUEL DO OESTE",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.78111111111111,
+"lon": -53.50333333333333
+},
+{
+"icao": "SSNQ",
+"nome": "NIOAQUE",
+"cidade": "NIOAQUE",
+"uf": "MS",
+"tipo": "publico",
+"lat": -21.184444444444445,
+"lon": -55.83111111111111
+},
+{
+"icao": "SSOI",
+"nome": "PEDERNEIRAS",
+"cidade": "PEDERNEIRAS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -22.307222222222222,
+"lon": -48.77305555555555
+},
+{
+"icao": "SSOL",
+"nome": "PADRE ISRAEL (ISRAEL BATISTA DE CARVALHO)",
+"cidade": "LAVRAS",
+"uf": "MG",
+"tipo": "publico",
+"lat": -21.240555555555556,
+"lon": -44.96416666666667
+},
+{
+"icao": "SSOS",
+"nome": "OSÓRIO",
+"cidade": "OSÓRIO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.90222222222222,
+"lon": -50.24916666666667
+},
+{
+"icao": "SBPO",
+"nome": "AEROPORTO REGIONAL DE PATO BRANCO - PROFESSOR JUVENAL LOUREIRO CARDOSO",
+"cidade": "PATO BRANCO",
+"uf": "PR",
+"tipo": "publico",
+"lat": -26.21722222222222,
+"lon": -52.69444444444444
+},
+{
+"icao": "SSPG",
+"nome": "SANTOS DUMONT",
+"cidade": "PARANAGUÁ",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.540277777777778,
+"lon": -48.53111111111111
+},
+{
+"icao": "SSOG",
+"nome": "ARAPONGAS",
+"cidade": "ARAPONGAS",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.352777777777778,
+"lon": -51.49166666666667
+},
+{
+"icao": "SSPL",
+"nome": "PALMEIRA DAS MISSÕES",
+"cidade": "PALMEIRA DAS MISSÕES",
+"uf": "RS",
+"tipo": "publico",
+"lat": -27.901666666666664,
+"lon": -53.330000000000005
+},
+{
+"icao": "SSPM",
+"nome": "PORTO MURTINHO",
+"cidade": "PORTO MURTINHO",
+"uf": "MS",
+"tipo": "publico",
+"lat": -21.712777777777777,
+"lon": -57.87916666666667
+},
+{
+"icao": "SSPI",
+"nome": "EDU CHAVES",
+"cidade": "PARANAVAÍ",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.09,
+"lon": -52.48861111111111
+},
+{
+"icao": "SSPS",
+"nome": "DIMORVAN CARRARO",
+"cidade": "PALMAS",
+"uf": "PR",
+"tipo": "publico",
+"lat": -26.47222222222222,
+"lon": -51.97555555555556
+},
+{
+"icao": "SSPT",
+"nome": "BRASÍLIO MARQUES",
+"cidade": "PALOTINA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.343333333333334,
+"lon": -53.828611111111115
+},
+{
+"icao": "SSPN",
+"nome": "PARANAÍBA",
+"cidade": "PARANAÍBA",
+"uf": "MS",
+"tipo": "publico",
+"lat": -19.65111111111111,
+"lon": -51.19944444444444
+},
+{
+"icao": "SSQP",
+"nome": "MONTE SANTO",
+"cidade": "MONTE SANTO",
+"uf": "BA",
+"tipo": "publico",
+"lat": -10.465277777777777,
+"lon": -39.28611111111111
+},
+{
+"icao": "SSQT",
+"nome": "CASTRO",
+"cidade": "CASTRO",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.8075,
+"lon": -49.95944444444445
+},
+{
+"icao": "SSRE",
+"nome": "REALEZA",
+"cidade": "REALEZA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.801111111111112,
+"lon": -53.51305555555555
+},
+{
+"icao": "SSRF",
+"nome": "CASTRO ALVES",
+"cidade": "CASTRO ALVES",
+"uf": "BA",
+"tipo": "publico",
+"lat": -12.767777777777779,
+"lon": -39.44472222222222
+},
+{
+"icao": "SSRG",
+"nome": "AEROPORTO ESTADUAL DE REGISTRO",
+"cidade": "REGISTRO",
+"uf": "SP",
+"tipo": "publico",
+"lat": -24.531666666666666,
+"lon": -47.84027777777778
+},
+{
+"icao": "SSRS",
+"nome": "BARREIRINHAS",
+"cidade": "BARREIRINHAS",
+"uf": "MA",
+"tipo": "publico",
+"lat": -2.756666666666667,
+"lon": -42.80333333333333
+},
+{
+"icao": "SSRU",
+"nome": "SÃO LOURENÇO DO SUL",
+"cidade": "SÃO LOURENÇO DO SUL",
+"uf": "RS",
+"tipo": "publico",
+"lat": -31.384722222222223,
+"lon": -52.0325
+},
+{
+"icao": "SSRZ",
+"nome": "DÁRIO BRASIL CAPOANO DE OLIVEIRA",
+"cidade": "ROSÁRIO DO SUL",
+"uf": "RS",
+"tipo": "publico",
+"lat": -30.2775,
+"lon": -54.92527777777777
+},
+{
+"icao": "SSQC",
+"nome": "SIQUEIRA CAMPOS",
+"cidade": "SIQUEIRA CAMPOS",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.674722222222222,
+"lon": -49.815555555555555
+},
+{
+"icao": "SSSC",
+"nome": "SANTA CRUZ DO SUL",
+"cidade": "SANTA CRUZ DO SUL",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.684166666666666,
+"lon": -52.41222222222222
+},
+{
+"icao": "SSSD",
+"nome": "SOLEDADE",
+"cidade": "SOLEDADE",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.863333333333333,
+"lon": -52.54055555555556
+},
+{
+"icao": "SSSG",
+"nome": "SÃO GABRIEL",
+"cidade": "SÃO GABRIEL",
+"uf": "RS",
+"tipo": "publico",
+"lat": -30.345,
+"lon": -54.26777777777777
+},
+{
+"icao": "SSSS",
+"nome": "SÃO FRANCISCO DO SUL",
+"cidade": "SÃO FRANCISCO DO SUL",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.22111111111111,
+"lon": -48.56444444444444
+},
+{
+"icao": "SSST",
+"nome": "SANTIAGO",
+"cidade": "SANTIAGO",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.215,
+"lon": -54.84166666666667
+},
+{
+"icao": "SSSZ",
+"nome": "SERTANÓPOLIS",
+"cidade": "SERTANÓPOLIS",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.061944444444446,
+"lon": -51.013888888888886
+},
+{
+"icao": "SSTB",
+"nome": "TRÊS BARRAS",
+"cidade": "TRÊS BARRAS",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.135277777777777,
+"lon": -50.31055555555555
+},
+{
+"icao": "SSUM",
+"nome": "ORLANDO DE CARVALHO",
+"cidade": "UMUARAMA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -23.799166666666668,
+"lon": -53.31388888888888
+},
+{
+"icao": "SSUV",
+"nome": "JOSÉ CLETO",
+"cidade": "UNIÃO DA VITÓRIA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -26.231944444444444,
+"lon": -51.0675
+},
+{
+"icao": "SBVC",
+"nome": "GLAUBER DE ANDRADE ROCHA",
+"cidade": "VITÓRIA DA CONQUISTA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -14.907777777777778,
+"lon": -40.914722222222224
+},
+{
+"icao": "SSVI",
+"nome": "ÂNGELO PONZONI",
+"cidade": "VIDEIRA",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.999722222222225,
+"lon": -51.14138888888889
+},
+{
+"icao": "SSVL",
+"nome": "TELÊMACO BORBA",
+"cidade": "TELÊMACO BORBA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -24.31638888888889,
+"lon": -50.65222222222222
+},
+{
+"icao": "SSVN",
+"nome": "VERANÓPOLIS",
+"cidade": "VERANÓPOLIS",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.935555555555556,
+"lon": -51.56777777777778
+},
+{
+"icao": "SBJE",
+"nome": "COMANDANTE ARISTON PESSOA",
+"cidade": "CRUZ",
+"uf": "CE",
+"tipo": "publico",
+"lat": -2.9066666666666667,
+"lon": -40.35805555555556
+},
+{
+"icao": "SSWS",
+"nome": "CAÇAPAVA DO SUL",
+"cidade": "CAÇAPAVA DO SUL",
+"uf": "RS",
+"tipo": "publico",
+"lat": -30.549722222222226,
+"lon": -53.45805555555556
+},
+{
+"icao": "SSXX",
+"nome": "MUNICIPAL JOÃO WINCKLER",
+"cidade": "XANXERÊ",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.875,
+"lon": -52.37277777777778
+},
+{
+"icao": "SSZR",
+"nome": "LUIS ALBERTO LEHR",
+"cidade": "SANTA ROSA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -27.90888888888889,
+"lon": -54.52222222222222
+},
+{
+"icao": "SBPG",
+"nome": "COMANDANTE ANTÔNIO AMILTON BERALDO",
+"cidade": "PONTA GROSSA",
+"uf": "PR",
+"tipo": "publico",
+"lat": -25.184444444444445,
+"lon": -50.14388888888889
+},
+{
+"icao": "SWBC",
+"nome": "BARCELOS",
+"cidade": "BARCELOS",
+"uf": "AM",
+"tipo": "publico",
+"lat": -0.9811111111111112,
+"lon": -62.919444444444444
+},
+{
+"icao": "SWBE",
+"nome": "WALFRIDO SALMITO DE ALMEIDA",
+"cidade": "SÃO BENEDITO",
+"uf": "CE",
+"tipo": "publico",
+"lat": -4.042777777777777,
+"lon": -40.89388888888889
+},
+{
+"icao": "SSSB",
+"nome": "SÃO BORJA",
+"cidade": "SÃO BORJA",
+"uf": "RS",
+"tipo": "publico",
+"lat": -28.654722222222222,
+"lon": -56.03472222222222
+},
+{
+"icao": "SWBR",
+"nome": "BORBA",
+"cidade": "BORBA",
+"uf": "AM",
+"tipo": "publico",
+"lat": -4.4061111111111115,
+"lon": -59.6025
+},
+{
+"icao": "SWCA",
+"nome": "CARAUARI",
+"cidade": "CARAUARI",
+"uf": "AM",
+"tipo": "publico",
+"lat": -4.871388888888889,
+"lon": -66.89750000000001
+},
+{
+"icao": "SWCB",
+"nome": "CAMPOS BELOS",
+"cidade": "CAMPOS BELOS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -13.006944444444445,
+"lon": -46.71083333333333
+},
+{
+"icao": "SWBG",
+"nome": "ANDRÉ ANTÔNIO MAGGI",
+"cidade": "PONTES E LACERDA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -15.193333333333333,
+"lon": -59.38527777777778
+},
+{
+"icao": "SWCQ",
+"nome": "COSTA MARQUES",
+"cidade": "COSTA MARQUES",
+"uf": "RO",
+"tipo": "publico",
+"lat": -12.420555555555556,
+"lon": -64.25166666666667
+},
+{
+"icao": "SWDM",
+"nome": "DIAMANTINO",
+"cidade": "DIAMANTINO",
+"uf": "MT",
+"tipo": "publico",
+"lat": -14.376666666666667,
+"lon": -56.400555555555556
+},
+{
+"icao": "SWCZ",
+"nome": "CERES",
+"cidade": "CERES",
+"uf": "GO",
+"tipo": "publico",
+"lat": -15.34388888888889,
+"lon": -49.60444444444445
+},
+{
+"icao": "SWDN",
+"nome": "DIANÓPOLIS",
+"cidade": "DIANÓPOLIS",
+"uf": "TO",
+"tipo": "publico",
+"lat": -11.595277777777778,
+"lon": -46.84777777777778
+},
+{
+"icao": "SWEK",
+"nome": "CANARANA",
+"cidade": "CANARANA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -13.5775,
+"lon": -52.268055555555556
+},
+{
+"icao": "SWFN",
+"nome": "FLORES",
+"cidade": "MANAUS",
+"uf": "AM",
+"tipo": "publico",
+"lat": -3.072777777777778,
+"lon": -60.02111111111111
+},
+{
+"icao": "SWFR",
+"nome": "FORMOSA",
+"cidade": "FORMOSA",
+"uf": "GO",
+"tipo": "publico",
+"lat": -15.556111111111111,
+"lon": -47.344722222222224
+},
+{
+"icao": "SWEI",
+"nome": "EIRUNEPÉ",
+"cidade": "EIRUNEPÉ",
+"uf": "AM",
+"tipo": "publico",
+"lat": -6.639444444444444,
+"lon": -69.87972222222221
+},
+{
+"icao": "SWGI",
+"nome": "GURUPI",
+"cidade": "GURUPI",
+"uf": "TO",
+"tipo": "publico",
+"lat": -11.739444444444443,
+"lon": -49.13333333333333
+},
+{
+"icao": "SWGN",
+"nome": "ARAGUAÍNA",
+"cidade": "ARAGUAÍNA",
+"uf": "TO",
+"tipo": "publico",
+"lat": -7.2283333333333335,
+"lon": -48.240833333333335
+},
+{
+"icao": "SWHP",
+"nome": "FREDERICO CARLOS MÜLLER",
+"cidade": "ÁGUA BOA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -14.019722222222223,
+"lon": -52.151944444444446
+},
+{
+"icao": "SWFX",
+"nome": "SÃO FÉLIX DO ARAGUAIA",
+"cidade": "SÃO FÉLIX DO ARAGUAIA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -11.6325,
+"lon": -50.68944444444444
+},
+{
+"icao": "SWII",
+"nome": "IPIRANGA",
+"cidade": "SANTO ANTÔNIO DO IÇÁ",
+"uf": "AM",
+"tipo": "publico",
+"lat": -2.940277777777778,
+"lon": -69.69416666666667
+},
+{
+"icao": "SWIQ",
+"nome": "AEROPORTO MUNICIPAL JOSÉ CAIRES DE OLIVEIRA",
+"cidade": "MINAÇU",
+"uf": "GO",
+"tipo": "publico",
+"lat": -13.549166666666666,
+"lon": -48.19555555555555
+},
+{
+"icao": "SWJN",
+"nome": "JUÍNA",
+"cidade": "JUÍNA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -11.419444444444444,
+"lon": -58.71
+},
+{
+"icao": "SWJW",
+"nome": "JATAÍ",
+"cidade": "JATAÍ",
+"uf": "GO",
+"tipo": "publico",
+"lat": -17.83,
+"lon": -51.775277777777774
+},
+{
+"icao": "SWKC",
+"nome": "CÁCERES",
+"cidade": "CÁCERES",
+"uf": "MT",
+"tipo": "publico",
+"lat": -16.0425,
+"lon": -57.63
+},
+{
+"icao": "SWKO",
+"nome": "COARI",
+"cidade": "COARI",
+"uf": "AM",
+"tipo": "publico",
+"lat": -4.134166666666667,
+"lon": -63.1325
+},
+{
+"icao": "SWKQ",
+"nome": "SERRA DA CAPIVARA/SÃO RAIMUNDO NONATO",
+"cidade": "SÃO RAIMUNDO NONATO",
+"uf": "PI",
+"tipo": "publico",
+"lat": -9.083333333333334,
+"lon": -42.64472222222222
+},
+{
+"icao": "SWHT",
+"nome": "HUMAITÁ",
+"cidade": "HUMAITÁ",
+"uf": "AM",
+"tipo": "publico",
+"lat": -7.534722222222222,
+"lon": -63.07222222222222
+},
+{
+"icao": "SWKT",
+"nome": "CATALÃO",
+"cidade": "CATALÃO",
+"uf": "GO",
+"tipo": "publico",
+"lat": -18.216944444444444,
+"lon": -47.89944444444444
+},
+{
+"icao": "SWLC",
+"nome": "GENERAL LEITE DE CASTRO",
+"cidade": "RIO VERDE",
+"uf": "GO",
+"tipo": "publico",
+"lat": -17.834722222222222,
+"lon": -50.95611111111111
+},
+{
+"icao": "SWME",
+"nome": "MINEIROS",
+"cidade": "MINEIROS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -17.55138888888889,
+"lon": -52.556666666666665
+},
+{
+"icao": "SWMW",
+"nome": "MAUÉS",
+"cidade": "MAUÉS",
+"uf": "AM",
+"tipo": "publico",
+"lat": -3.3719444444444444,
+"lon": -57.724722222222226
+},
+{
+"icao": "SWNH",
+"nome": "ARUANÃ",
+"cidade": "ARUANÃ",
+"uf": "GO",
+"tipo": "publico",
+"lat": -14.933055555555555,
+"lon": -51.04833333333333
+},
+{
+"icao": "SWNK",
+"nome": "NOVO CAMPO",
+"cidade": "BOCA DO ACRE",
+"uf": "AM",
+"tipo": "publico",
+"lat": -8.834722222222222,
+"lon": -67.3125
+},
+{
+"icao": "SWLB",
+"nome": "LÁBREA",
+"cidade": "LÁBREA",
+"uf": "AM",
+"tipo": "publico",
+"lat": -7.278888888888889,
+"lon": -64.76944444444445
+},
+{
+"icao": "SWNS",
+"nome": "ANÁPOLIS",
+"cidade": "ANÁPOLIS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -16.3625,
+"lon": -48.92805555555555
+},
+{
+"icao": "SWNQ",
+"nome": "NIQUELÂNDIA",
+"cidade": "NIQUELÂNDIA",
+"uf": "GO",
+"tipo": "publico",
+"lat": -14.436388888888889,
+"lon": -48.49194444444444
+},
+{
+"icao": "SWOB",
+"nome": "FONTE BOA",
+"cidade": "FONTE BOA",
+"uf": "AM",
+"tipo": "publico",
+"lat": -2.5324999999999998,
+"lon": -66.08333333333333
+},
+{
+"icao": "SWPG",
+"nome": "PORTO DOS GAÚCHOS",
+"cidade": "PORTO DOS GAÚCHOS",
+"uf": "MT",
+"tipo": "publico",
+"lat": -11.54,
+"lon": -57.378055555555555
+},
+{
+"icao": "SWPI",
+"nome": "PARINTINS",
+"cidade": "PARINTINS",
+"uf": "AM",
+"tipo": "publico",
+"lat": -2.673611111111111,
+"lon": -56.777499999999996
+},
+{
+"icao": "SWPK",
+"nome": "POCONÉ",
+"cidade": "POCONÉ",
+"uf": "MT",
+"tipo": "publico",
+"lat": -16.271666666666665,
+"lon": -56.651111111111106
+},
+{
+"icao": "SWPM",
+"nome": "PIMENTA BUENO",
+"cidade": "PIMENTA BUENO",
+"uf": "RO",
+"tipo": "publico",
+"lat": -11.641388888888889,
+"lon": -61.178888888888885
+},
+{
+"icao": "SWPR",
+"nome": "PIRES DO RIO",
+"cidade": "PIRES DO RIO",
+"uf": "GO",
+"tipo": "publico",
+"lat": -17.31888888888889,
+"lon": -48.33527777777778
+},
+{
+"icao": "SWPY",
+"nome": "PRIMAVERA DO LESTE",
+"cidade": "PRIMAVERA DO LESTE",
+"uf": "MT",
+"tipo": "publico",
+"lat": -15.5625,
+"lon": -54.330555555555556
+},
+{
+"icao": "SWPZ",
+"nome": "OURIÇANGA DE ABREU",
+"cidade": "POSSE",
+"uf": "GO",
+"tipo": "publico",
+"lat": -14.118055555555555,
+"lon": -46.34527777777778
+},
+{
+"icao": "SBSI",
+"nome": "PRESIDENTE JOÃO BATISTA FIGUEIREDO",
+"cidade": "SINOP",
+"uf": "MT",
+"tipo": "publico",
+"lat": -11.885,
+"lon": -55.586111111111116
+},
+{
+"icao": "SWTO",
+"nome": "PARAÍSO DO TOCANTINS",
+"cidade": "PARAÍSO DO TOCANTINS",
+"uf": "TO",
+"tipo": "publico",
+"lat": -10.173888888888888,
+"lon": -48.93277777777777
+},
+{
+"icao": "SWTP",
+"nome": "SANTA ISABEL DO RIO NEGRO",
+"cidade": "SANTA ISABEL DO RIO NEGRO",
+"uf": "AM",
+"tipo": "publico",
+"lat": -0.37861111111111106,
+"lon": -64.99305555555556
+},
+{
+"icao": "SWTS",
+"nome": "TANGARÁ DA SERRA",
+"cidade": "TANGARÁ DA SERRA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -14.661944444444444,
+"lon": -57.443888888888885
+},
+{
+"icao": "SWTY",
+"nome": "TAGUATINGA",
+"cidade": "TAGUATINGA",
+"uf": "TO",
+"tipo": "publico",
+"lat": -12.435,
+"lon": -46.400277777777774
+},
+{
+"icao": "SWUA",
+"nome": "SÃO MIGUEL DO ARAGUAIA",
+"cidade": "SÃO MIGUEL DO ARAGUAIA",
+"uf": "GO",
+"tipo": "publico",
+"lat": -13.33388888888889,
+"lon": -50.20583333333334
+},
+{
+"icao": "SWUD",
+"nome": "DEPUTADO OSWALDO TOLENTINO",
+"cidade": "CLÁUDIO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -20.445833333333333,
+"lon": -44.81305555555555
+},
+{
+"icao": "SWUZ",
+"nome": "BRIGADEIRO ARARIPE MACEDO",
+"cidade": "LUZIÂNIA",
+"uf": "GO",
+"tipo": "publico",
+"lat": -16.261666666666667,
+"lon": -47.968611111111116
+},
+{
+"icao": "SWVC",
+"nome": "VILA RICA",
+"cidade": "VILA RICA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -9.981111111111112,
+"lon": -51.14055555555556
+},
+{
+"icao": "SWWA",
+"nome": "PORANGATU",
+"cidade": "PORANGATU",
+"uf": "GO",
+"tipo": "publico",
+"lat": -13.404444444444445,
+"lon": -49.157222222222224
+},
+{
+"icao": "SWWU",
+"nome": "URUAÇU",
+"cidade": "URUAÇU",
+"uf": "GO",
+"tipo": "publico",
+"lat": -14.544722222222221,
+"lon": -49.09111111111111
+},
+{
+"icao": "SWXM",
+"nome": "REGIONAL ORLANDO VILLAS BOAS",
+"cidade": "MATUPÁ",
+"uf": "MT",
+"tipo": "publico",
+"lat": -10.17,
+"lon": -54.95388888888889
+},
+{
+"icao": "SWXQ",
+"nome": "LINS",
+"cidade": "LINS",
+"uf": "SP",
+"tipo": "publico",
+"lat": -21.662777777777777,
+"lon": -49.73111111111111
+},
+{
+"icao": "SWXV",
+"nome": "NOVA XAVANTINA",
+"cidade": "NOVA XAVANTINA",
+"uf": "MT",
+"tipo": "publico",
+"lat": -14.697777777777778,
+"lon": -52.34722222222222
+},
+{
+"icao": "SWYN",
+"nome": "APUÍ",
+"cidade": "APUÍ",
+"uf": "AM",
+"tipo": "publico",
+"lat": -7.1722222222222225,
+"lon": -59.83888888888889
+},
+{
+"icao": "SBJH",
+"nome": "SÃO PAULO CATARINA AEROPORTO EXECUTIVO",
+"cidade": "SÃO ROQUE",
+"uf": "SP",
+"tipo": "publico",
+"lat": -23.426944444444445,
+"lon": -47.16583333333333
+},
+{
+"icao": "SJXI",
+"nome": "SANTA RITA DO SAPUCAÍ",
+"cidade": "SANTA RITA DO SAPUCAÍ",
+"uf": "MG",
+"tipo": "publico",
+"lat": -22.272777777777776,
+"lon": -45.64
+},
+{
+"icao": "SNCP",
+"nome": "AEROPORTO RICARDO SELL WAGNER - REGIONAL DA SERRA CATARINENSE",
+"cidade": "CORREIA PINTO",
+"uf": "SC",
+"tipo": "publico",
+"lat": -27.634166666666665,
+"lon": -50.358333333333334
+},
+{
+"icao": "SBTC",
+"nome": "UNA/COMANDATUBA",
+"cidade": "UNA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -15.353333333333333,
+"lon": -38.99722222222222
+},
+{
+"icao": "SDH2",
+"nome": "PORTO ALEGRE DO NORTE",
+"cidade": "PORTO ALEGRE DO NORTE",
+"uf": "MT",
+"tipo": "publico",
+"lat": -10.918055555555554,
+"lon": -51.60888888888889
+},
+{
+"icao": "SNOF",
+"nome": "OURO FINO",
+"cidade": "OURO FINO",
+"uf": "MG",
+"tipo": "publico",
+"lat": -22.297222222222224,
+"lon": -46.3925
+},
+{
+"icao": "SDK7",
+"nome": "NOVA ANDRADINA",
+"cidade": "NOVA ANDRADINA",
+"uf": "MS",
+"tipo": "publico",
+"lat": -22.162499999999998,
+"lon": -53.33027777777778
+},
+{
+"icao": "SJ4Y",
+"nome": "MORRINHOS",
+"cidade": "MORRINHOS",
+"uf": "GO",
+"tipo": "publico",
+"lat": -17.761666666666667,
+"lon": -49.12166666666667
+},
+{
+"icao": "SI68",
+"nome": "GELINDO STEFANUTO",
+"cidade": "CAMPO NOVO DO PARECIS",
+"uf": "MT",
+"tipo": "publico",
+"lat": -13.731388888888889,
+"lon": -57.891666666666666
+},
+{
+"icao": "SN6L",
+"nome": "DR. LUCIANO DE ARRUDA COELHO",
+"cidade": "SOBRAL",
+"uf": "CE",
+"tipo": "publico",
+"lat": -3.6147222222222224,
+"lon": -40.23222222222223
+},
+{
+"icao": "SBFS",
+"nome": "FAROL DE SÃO TOMÉ",
+"cidade": "CAMPOS DOS GOYTACAZES",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -22.030555555555555,
+"lon": -41.06861111111112
+},
+{
+"icao": "SN3Y",
+"nome": "NOVO AEROPORTO DE BOM JESUS DA LAPA",
+"cidade": "BOM JESUS DA LAPA",
+"uf": "BA",
+"tipo": "publico",
+"lat": -13.2725,
+"lon": -43.31472222222222
+},
+{
+"icao": "SJO7",
+"nome": "MUNICIPAL ELBER PEREIRA",
+"cidade": "IPANEMA",
+"uf": "MG",
+"tipo": "publico",
+"lat": -19.83222222222222,
+"lon": -41.69611111111111
+},
+{
+"icao": "SJO9",
+"nome": "SENHOR DO BONFIM",
+"cidade": "SENHOR DO BONFIM",
+"uf": "BA",
+"tipo": "publico",
+"lat": -10.518611111111111,
+"lon": -40.081944444444446
+},
+{
+"icao": "SBPW",
+"nome": "PORTO DO AÇU",
+"cidade": "SÃO JOÃO DA BARRA",
+"uf": "RJ",
+"tipo": "publico",
+"lat": -21.804166666666667,
+"lon": -41.10888888888889
+},
+{
+"icao": "SSBG",
+"nome": "MUNICIPAL DE BENTO GONÇALVES",
+"cidade": "BENTO GONÇALVES",
+"uf": "RS",
+"tipo": "publico",
+"lat": -29.1475,
+"lon": -51.54083333333333
+},
+{
+"icao": "SND4",
+"nome": "ISMAEL NUNES",
+"cidade": "SÃO JOAQUIM",
+"uf": "SC",
+"tipo": "publico",
+"lat": -28.245555555555555,
+"lon": -49.8975
+},
+{
+"icao": "SND6",
+"nome": "DIONÍSIO CERQUEIRA",
+"cidade": "DIONÍSIO CERQUEIRA",
+"uf": "SC",
+"tipo": "publico",
+"lat": -26.28805555555556,
+"lon": -53.630833333333335
+},
+{
+"icao": "SD5Q",
+"nome": "INOCÊNCIA",
+"cidade": "INOCÊNCIA",
+"uf": "MS",
+"tipo": "publico",
+"lat": -19.760555555555555,
+"lon": -51.896388888888886
+}
+]

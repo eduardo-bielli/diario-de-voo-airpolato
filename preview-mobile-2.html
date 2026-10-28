@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mobile 2 — Bento Modern</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --border:rgba(255,255,255,.08);--border-hi:rgba(255,255,255,.16);
+  --text:#fff;--text-2:#b8c0d0;--muted:#7c8698;
+  --glass:rgba(20,24,35,.55);--card:rgba(28,34,48,.65);
+}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:#08090d;color:var(--text);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:contain;
+  padding-bottom:calc(80px + env(safe-area-inset-bottom));min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(34,211,238,.15), transparent 35%),
+    radial-gradient(circle at 90% 100%, rgba(167,139,250,.15), transparent 35%);
+}
+body>*{position:relative;z-index:1}
+
+.hdr{padding:calc(env(safe-area-inset-top) + 20px) 20px 14px}
+.hdr__row{display:flex;justify-content:space-between;align-items:flex-start}
+.hdr h1{font-size:26px;font-weight:800;letter-spacing:-.04em;
+  background:linear-gradient(135deg,#fff,#b8c0d0);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+.hdr small{font-size:12px;color:var(--muted);font-weight:500;margin-top:4px;display:block}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);
+  background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  color:var(--text-2);cursor:pointer;display:grid;place-items:center;font-size:15px}
+.icon-btn:active{transform:scale(.95)}
+
+.main{padding:0 16px}
+
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);font-weight:700;margin:20px 4px 12px}
+
+.flight{background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:20px;padding:18px;margin-bottom:12px;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.flight:active{transform:scale(.98)}
+.flight__glow{position:absolute;left:0;top:0;bottom:0;width:3px;
+  box-shadow:0 0 24px 3px currentColor}
+.flight__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.flight__tail{font-family:ui-monospace,monospace;font-size:12px;font-weight:800;
+  padding:5px 10px;border-radius:8px;color:#fff;
+  background:linear-gradient(135deg,#22d3ee,#0891b2)}
+.flight__date{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.flight__route{font-size:22px;font-weight:800;letter-spacing:-.03em;
+  font-family:ui-monospace,monospace;margin-bottom:10px;line-height:1.1}
+.flight__meta{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.flight__meta b{color:var(--text);font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:8px;margin-top:12px}
+.badge--pending{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.25)}
+.badge--done{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.25)}
+.badge--future{background:rgba(34,211,238,.15);color:#22d3ee;border:1px solid rgba(34,211,238,.25)}
+
+.card{background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:14px}
+.card h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);font-weight:700;margin-bottom:16px}
+.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
+.row:last-child{border-bottom:0}
+.row span:first-child{color:var(--muted)}
+.row span:last-child{text-align:right;font-weight:600;color:var(--text)}
+.chip{display:inline-flex;padding:7px 14px;border-radius:12px;font-size:12px;font-weight:700;
+  background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(34,211,238,.08));color:#22d3ee;
+  border:1px solid rgba(34,211,238,.25);margin-right:8px;margin-top:6px}
+.chip--p2{background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(167,139,250,.08));
+  color:#a78bfa;border-color:rgba(167,139,250,.25)}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:16px 20px;border-radius:14px;border:0;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .15s;width:100%;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn--primary{background:linear-gradient(135deg,#22d3ee,#0891b2);color:#001820;
+  box-shadow:0 8px 24px rgba(34,211,238,.25)}
+.btn--ghost{background:var(--glass);backdrop-filter:blur(20px);
+  color:var(--text);border:1px solid var(--border-hi)}
+.btn--success{background:linear-gradient(135deg,#34d399,#059669);color:#002210;
+  box-shadow:0 8px 24px rgba(52,211,153,.25)}
+.btn--disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.btn-row{display:flex;gap:10px;margin-top:20px}
+
+.back{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
+  margin:0 0 16px 4px;cursor:pointer;font-weight:600;background:var(--glass);
+  border:1px solid var(--border);font-family:inherit;padding:8px 14px;border-radius:10px}
+.back:active{transform:scale(.95)}
+
+.field{margin-bottom:18px}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);font-weight:700;margin-bottom:8px}
+.field input,.field select{width:100%;padding:16px;background:var(--glass);
+  backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:14px;
+  color:var(--text);font-size:15px;font-family:inherit}
+.field input:focus,.field select:focus{outline:none;border-color:#22d3ee;box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:rgba(8,9,13,.85);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-top:1px solid var(--border);display:flex;
+  padding-bottom:env(safe-area-inset-bottom)}
+.bnav button{flex:1;background:transparent;border:0;color:var(--muted);
+  padding:14px 4px 16px;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:5px;font-size:10px;font-weight:700;font-family:inherit;
+  letter-spacing:.03em;transition:all .15s}
+.bnav button.active{color:#22d3ee}
+.bnav button.active .ico{filter:drop-shadow(0 0 8px rgba(34,211,238,.6))}
+.bnav .ico{font-size:22px;line-height:1;transition:filter .15s}
+
+.screen{display:none}
+.screen.active{display:block}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr__row">
+    <div><h1 id="hdrTitle">Próximos voos</h1><small id="hdrSub">4 agendados</small></div>
+    <button class="icon-btn">🔔</button>
+  </div>
+</header>
+
+<main class="main">
+  <section class="screen active" id="scr-lista">
+    <p class="section-title">Hoje · 09/10</p>
+    <article class="flight" onclick="go('detalhe')">
+      <span class="flight__glow" style="color:#fbbf24"></span>
+      <div class="flight__top"><span class="flight__tail">PS-STA</span><span class="flight__date">Qui 09/10</span></div>
+      <div class="flight__route">SIAQ → SBRD</div>
+      <div class="flight__meta"><span>🕐 <b>08:00</b></span><span>Voo regular</span><span>👥 <b>3</b></span></div>
+      <span class="badge badge--pending">⚠ Aguardando</span>
+    </article>
+    <article class="flight" onclick="go('detalhe')">
+      <span class="flight__glow" style="color:#22d3ee"></span>
+      <div class="flight__top"><span class="flight__tail">PS-LKS</span><span class="flight__date">Sex 10/10</span></div>
+      <div class="flight__route">SIAQ → SBAC</div>
+      <div class="flight__meta"><span>🕐 <b>07:30</b></span><span>Translado</span></div>
+      <span class="badge badge--future">● Agendado</span>
+    </article>
+    <p class="section-title" style="margin-top:24px">Anteriores</p>
+    <article class="flight" style="opacity:.55" onclick="go('detalhe')">
+      <span class="flight__glow" style="color:#34d399"></span>
+      <div class="flight__top"><span class="flight__tail" style="background:linear-gradient(135deg,#34d399,#059669)">PS-STA</span><span class="flight__date">Qua 08/10</span></div>
+      <div class="flight__route">SBAC → SIAQ</div>
+      <div class="flight__meta"><span>🕐 <b>09:00</b></span><span>Voo regular</span></div>
+      <span class="badge badge--done">✓ Revisado</span>
+    </article>
+  </section>
+
+  <section class="screen" id="scr-detalhe">
+    <button class="back" onclick="go('lista')">← Voltar</button>
+    <div class="card" style="position:relative;overflow:hidden">
+      <span class="flight__glow" style="color:#fbbf24"></span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span class="flight__tail">PS-STA</span>
+        <span class="badge badge--pending" style="margin-top:0">⚠ Aguardando</span>
+      </div>
+      <div class="flight__route" style="font-size:26px">SIAQ → SBRD</div>
+    </div>
+    <div class="card">
+      <h3>Informações</h3>
+      <div class="row"><span>Tipo</span><span>Voo regular</span></div>
+      <div class="row"><span>Solicitante</span><span>Administrador</span></div>
+      <div class="row"><span>Trechos</span><span>2</span></div>
+      <div class="row"><span>Passageiros</span><span>3</span></div>
+    </div>
+    <div class="card">
+      <h3>Tripulação</h3>
+      <div><span class="chip">P1 · Admin</span><span class="chip chip--p2">P2 · Copiloto</span></div>
+    </div>
+    <div class="card">
+      <h3>Trechos</h3>
+      <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:800;margin-bottom:8px;font-family:ui-monospace,monospace">SIAQ → SBRD</div>
+        <div style="font-size:12px;color:var(--muted);display:flex;gap:14px"><span>📅 09/10</span><span>🕐 08:00</span><span>⏱ 01:30</span></div>
+      </div>
+      <div style="padding:12px 0">
+        <div style="font-size:16px;font-weight:800;margin-bottom:8px;font-family:ui-monospace,monospace">SBRD → SIAQ</div>
+        <div style="font-size:12px;color:var(--muted);display:flex;gap:14px"><span>📅 09/10</span><span>🕐 14:00</span><span>⏱ 01:30</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn--ghost">✎ Editar</button>
+      <button class="btn btn--success btn--disabled">✓ Revisar</button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+      Revisão disponível após o voo acontecer
+    </p>
+  </section>
+</main>
+
+<nav class="bnav">
+  <button class="active"><span class="ico">✈️</span>Voos</button>
+  <button><span class="ico">📅</span>Agenda</button>
+  <button><span class="ico">👤</span>Perfil</button>
+</nav>
+
+<script>
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('scr-' + id).classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locks App Preview</title>
+    <style>
+        :root {
+            --bg: #f5f7fa; --panel: #ffffff; --line: #e2e8f0;
+            --text: #0f172a; --muted: #64748b; --accent: #2563eb;
+            --green: #16a34a; --yellow: #eab308; --red: #dc2626;
+            --sidebar-bg: #ffffff;
+        }
+        [data-theme="dark"] {
+            --bg: #06101b; --panel: #091b2c; --line: #173651;
+            --text: #f1f7ff; --muted: #8fa7bc; --accent: #1687ff;
+            --green: #30cf8a; --yellow: #f2c94c; --red: #ff5a5f;
+            --sidebar-bg: #030c15;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0; background: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh;
+        }
+        .iphone-frame {
+            width: 390px; height: 844px; background: var(--bg);
+            border-radius: 40px; border: 8px solid #333; overflow: hidden;
+            position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+        }
+        .notch {
+            width: 120px; height: 30px; background: #333;
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; z-index: 100;
+        }
+        .header {
+            padding: 50px 16px 12px; background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--line);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-logo {
+            width: 32px; height: 32px; border-radius: 8px;
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+            background-color: var(--panel);
+        }
+        .brand-logo:not(.has-logo)::after { content: '🏢'; display: flex; align-items: center; justify-content: center; height: 100%; font-size: 16px; }
+        .brand-name { font-size: 15px; font-weight: 800; color: var(--text); }
+        .header-actions { display: flex; gap: 6px; }
+        .icon-btn {
+            background: var(--panel); border: 1px solid var(--line);
+            width: 34px; height: 34px; border-radius: 10px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; font-size: 14px; color: var(--text);
+        }
+        .main-content { flex: 1; overflow-y: auto; padding: 12px 12px 90px; }
+        
+        /* Calendário estilo Google Agenda */
+        .cal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 4px; margin-bottom: 8px;
+        }
+        .cal-header button {
+            background: transparent; border: none; font-size: 22px;
+            color: var(--accent); cursor: pointer; font-weight: 700; padding: 4px 10px;
+        }
+        .cal-title { font-size: 15px; font-weight: 800; color: var(--text); }
+        .cal-weekdays {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 4px; padding: 0 2px; margin-bottom: 4px;
+        }
+        .cal-weekdays span {
+            font-size: 9px; text-align: center; color: var(--muted);
+            font-weight: 800; text-transform: uppercase; padding: 4px 0;
+        }
+        .cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 3px; padding: 2px;
+        }
+        .cal-day {
+            background: var(--panel); border: 1px solid var(--line);
+            border-radius: 6px; padding: 3px; cursor: pointer;
+            display: flex; flex-direction: column; gap: 2px;
+            min-height: 54px; position: relative;
+        }
+        .cal-day.is-other { opacity: 0.3; }
+        .cal-day.is-today { border-color: var(--accent); border-width: 1.5px; }
+        .cal-day.is-selected { background: rgba(37,99,235,0.08); border-color: var(--accent); }
+        .cal-num { font-size: 10px; font-weight: 700; color: var(--text); text-align: center; }
+        .cal-day.is-today .cal-num { color: var(--accent); font-weight: 800; }
+        .cal-bars { display: flex; flex-direction: column; gap: 1.5px; }
+        .cal-bar {
+            height: 4px; border-radius: 2px; width: 100%;
+        }
+        .cal-more {
+            font-size: 7px; font-weight: 700; color: var(--muted);
+            text-align: center; line-height: 1;
+        }
+        
+        /* Voos do dia */
+        .day-title {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--muted); font-weight: 800;
+            margin: 14px 4px 8px; display: flex; justify-content: space-between;
+        }
+        .flight-card {
+            background: var(--panel); border: 1px solid var(--line);
+            border-radius: 12px; padding: 12px; margin-bottom: 8px;
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+        .flight-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; background: var(--accent);
+        }
+        .flight-card.yellow::before { background: var(--yellow); }
+        .flight-card.red::before { background: var(--red); }
+        .flight-card.gray::before { background: #9aa9b8; }
+        .flight-header {
+            display: flex; justify-content: space-between;
+            font-size: 10px; color: var(--muted); font-weight: 700;
+            text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.05em;
+        }
+        .flight-badge {
+            background: rgba(37,99,235,0.12); color: var(--accent);
+            padding: 2px 7px; border-radius: 5px; font-size: 9px;
+        }
+        .flight-route {
+            font-size: 16px; font-weight: 800; color: var(--text);
+            margin-bottom: 5px; letter-spacing: -0.2px;
+        }
+        .flight-info {
+            font-size: 11px; color: var(--muted);
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        }
+        .flight-info .pill {
+            background: var(--sidebar-bg); padding: 1px 6px;
+            border-radius: 5px; font-weight: 600;
+        }
+        .empty-state {
+            text-align: center; padding: 30px 20px; color: var(--muted);
+            font-size: 12px;
+        }
+        
+        /* Tab Bar */
+        .tab-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 78px; background: var(--sidebar-bg);
+            border-top: 1px solid var(--line);
+            display: flex; justify-content: space-around; padding-top: 8px;
+        }
+        .tab {
+            display: flex; flex-direction: column; align-items: center;
+            color: var(--muted); font-size: 10px; font-weight: 700;
+            cursor: pointer; gap: 3px;
+        }
+        .tab.active { color: var(--accent); }
+        .tab .icon { font-size: 20px; }
+        
+        /* Modais */
+        .modal {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); display: none;
+            align-items: flex-end; z-index: 200;
+        }
+        .modal.open { display: flex; }
+        .sheet {
+            background: var(--bg); width: 100%; max-height: 88%;
+            border-top-left-radius: 24px; border-top-right-radius: 24px;
+            padding: 20px; display: flex; flex-direction: column;
+            animation: slideUp 0.25s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .sheet-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 18px;
+        }
+        .sheet-header h2 { margin: 0; font-size: 18px; color: var(--text); }
+        .close-btn {
+            background: var(--panel); border: 1px solid var(--line);
+            color: var(--text); width: 30px; height: 30px;
+            border-radius: 50%; display: flex; justify-content: center;
+            align-items: center; cursor: pointer; font-weight: bold;
+        }
+        .sheet-body { flex: 1; overflow-y: auto; }
+        
+        .timeline { border-left: 2px solid var(--line); margin: 5px 0 18px 8px; padding-left: 14px; }
+        .leg { position: relative; margin-bottom: 14px; }
+        .leg::before {
+            content: ''; position: absolute; left: -21px; top: 4px;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent); border: 2px solid var(--bg);
+        }
+        .leg-route { font-size: 13px; font-weight: 800; color: var(--text); }
+        .leg-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+        .info-item { background: var(--panel); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); }
+        .info-label { font-size: 9px; text-transform: uppercase; color: var(--muted); font-weight: 800; margin-bottom: 3px; }
+        .info-value { font-size: 13px; color: var(--text); font-weight: 700; }
+        
+        .btn-primary {
+            background: var(--accent); color: white; border: none;
+            padding: 14px; border-radius: 12px; font-size: 15px;
+            font-weight: 800; width: 100%; cursor: pointer;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
+        .form-control {
+            width: 100%; background: var(--panel); border: 1px solid var(--line);
+            color: var(--text); padding: 11px; border-radius: 10px; font-size: 14px;
+        }
+        .radio-group { display: flex; gap: 8px; }
+        .radio-btn {
+            flex: 1; background: var(--panel); border: 1px solid var(--line);
+            padding: 11px; text-align: center; border-radius: 10px;
+            font-weight: 700; cursor: pointer; color: var(--muted); font-size: 13px;
+        }
+        .radio-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(37,99,235,0.08); }
+        
+        .settings-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 14px; background: var(--panel); border-radius: 10px;
+            margin-bottom: 6px; border: 1px solid var(--line);
+        }
+        .settings-row-label { font-size: 13px; color: var(--text); font-weight: 600; }
+        .toggle {
+            width: 42px; height: 24px; border-radius: 12px;
+            background: var(--line); position: relative; cursor: pointer;
+        }
+        .toggle.on { background: var(--accent); }
+        .toggle::after {
+            content: ''; position: absolute; top: 3px; left: 3px;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: white; transition: transform 0.2s;
+        }
+        .toggle.on::after { transform: translateX(18px); }
+        
+        .section-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--muted); font-weight: 800;
+            margin: 16px 4px 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="iphone-frame">
+    <div class="notch"></div>
+    
+    <div class="header">
+        <div class="brand">
+            <div id="brandLogo" class="brand-logo"></div>
+            <div id="brandName" class="brand-name">Air Locks</div>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+            <button class="icon-btn" onclick="openSettings()">⚙️</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="cal-header">
+            <button onclick="changeMonth(-1)">‹</button>
+            <div class="cal-title" id="calTitle">Outubro 2026</div>
+            <button onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-weekdays">
+            <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+
+        <div class="day-title">
+            <span id="dayTitle">Selecione um dia</span>
+        </div>
+        <div id="flightsContainer">
+            <div class="empty-state">Nenhum voo agendado para este dia.</div>
+        </div>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab active"><span class="icon">📅</span>Agenda</div>
+        <div class="tab"><span class="icon">📝</span>Revisões</div>
+        <div class="tab"><span class="icon">⚙️</span>Perfil</div>
+    </div>
+
+    <!-- MODAL DETALHES -->
+    <div class="modal" id="modalDetails">
+        <div class="sheet">
+            <div class="sheet-header">
+                <h2>Detalhes do Voo</h2>
+                <div class="close-btn" onclick="closeModal('modalDetails')">✕</div>
+            </div>
+            <div class="sheet-body" id="detailsBody"></div>
+            <button class="btn-primary" onclick="startReview()" style="margin-top:14px">Revisar Voo</button>
+        </div>
+    </div>
+
+    <!-- MODAL REVISÃO -->
+    <div class="modal" id="modalReview">
+        <div class="sheet">
+            <div class="sheet-header">
+                <h2>Revisar Voo</h2>
+                <div class="close-btn" onclick="closeModal('modalReview')">✕</div>
+            </div>
+            <div class="sheet-body">
+                <div class="form-group">
+                    <label>Pousou no aeroporto programado?</label>
+                    <div class="radio-group">
+                        <div class="radio-btn active" onclick="selectRadio(this)">Sim</div>
+                        <div class="radio-btn" onclick="selectRadio(this)">Não</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Hora real de decolagem</label>
+                    <input type="time" class="form-control" value="14:05">
+                </div>
+                <div class="form-group">
+                    <label>Hora real de pouso</label>
+                    <input type="time" class="form-control" value="15:35">
+                </div>
+                <div class="form-group">
+                    <label>Abasteceu antes do voo?</label>
+                    <div class="radio-group" style="margin-bottom:10px">
+                        <div class="radio-btn" onclick="selectRadio(this)">Não</div>
+                        <div class="radio-btn active" onclick="selectRadio(this)">Sim</div>
+                    </div>
+                    <input type="number" class="form-control" placeholder="Litros abastecidos" value="100" style="margin-bottom:8px">
+                    <input type="number" class="form-control" placeholder="Valor pago R$" value="800">
+                </div>
+                <div class="form-group">
+                    <label>Combustível gasto (L)</label>
+                    <input type="number" class="form-control" value="450">
+                </div>
+                <div class="form-group">
+                    <label>Passageiros</label>
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                        <div class="settings-row" style="margin:0;padding:10px"><span class="settings-row-label">João Silva</span><span style="color:var(--red);cursor:pointer">✕</span></div>
+                        <div class="settings-row" style="margin:0;padding:10px"><span class="settings-row-label">Maria Souza</span><span style="color:var(--red);cursor:pointer">✕</span></div>
+                    </div>
+                    <button class="btn-primary" style="background:transparent;border:1px dashed var(--accent);color:var(--accent);margin-top:8px;padding:10px;font-size:12px">+ Adicionar Passageiro</button>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="finishReview()" style="background:var(--green);margin-top:14px">Finalizar Revisão</button>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIGURAÇÕES -->
+    <div class="modal" id="modalSettings">
+        <div class="sheet">
+            <div class="sheet-header">
+                <h2>Configurações</h2>
+                <div class="close-btn" onclick="closeModal('modalSettings')">✕</div>
+            </div>
+            <div class="sheet-body">
+                <div class="section-label">Aparência</div>
+                <div class="settings-row">
+                    <span class="settings-row-label">🌙 Modo escuro</span>
+                    <div class="toggle" id="toggleDark" onclick="toggleTheme()"></div>
+                </div>
+                
+                <div class="section-label">Agenda</div>
+                <div class="settings-row">
+                    <span class="settings-row-label">Mostrar filtro de aeronaves</span>
+                    <div class="toggle on" id="toggleFilter" onclick="toggleFilterSetting()"></div>
+                </div>
+                
+                <div id="filterBox" style="margin-top:8px">
+                    <div class="section-label" style="margin-top:0">Aeronaves visíveis</div>
+                    <div id="aircraftFiltersList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============ TEMA ============
+    let currentTheme = localStorage.getItem('app_theme') || 'light';
+    function applyTheme() {
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = currentTheme === 'light' ? '🌙' : '☀️';
+        const tgl = document.getElementById('toggleDark');
+        if (tgl) tgl.classList.toggle('on', currentTheme === 'dark');
+    }
+    function toggleTheme() {
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('app_theme', currentTheme);
+        applyTheme();
+    }
+    
+    // ============ LOGO ============
+    function loadLogo() {
+        try {
+            const st = JSON.parse(localStorage.getItem('dv.settings.v3') || '{}');
+            const logoEl = document.getElementById('brandLogo');
+            const nomeEl = document.getElementById('brandName');
+            if (st.logo) { logoEl.style.backgroundImage = `url(${st.logo})`; logoEl.classList.add('has-logo'); }
+            if (st.companyName) nomeEl.textContent = st.companyName;
+            else if (st.nomeEmpresa) nomeEl.textContent = st.nomeEmpresa;
+        } catch(e) {}
+    }
+    
+    // ============ AERONAVES (com cor) ============
+    const aircraft = [
+        { id: 'ac1', tail: 'PS-STA', cor: '#2563eb', visible: true },
+        { id: 'ac2', tail: 'PS-STB', cor: '#16a34a', visible: true },
+        { id: 'ac3', tail: 'PS-STC', cor: '#9333ea', visible: true }
+    ];
+    
+    function renderAircraftFilters() {
+        const list = document.getElementById('aircraftFiltersList');
+        if (!list) return;
+        list.innerHTML = aircraft.map(a => `
+            <label class="settings-row" style="cursor:pointer;margin-bottom:6px">
+                <span class="settings-row-label" style="display:flex;align-items:center;gap:8px">
+                    <span style="width:10px;height:10px;border-radius:3px;background:${a.cor};display:inline-block"></span>
+                    ${a.tail}
+                </span>
+                <input type="checkbox" ${a.visible ? 'checked' : ''} onchange="toggleAircraft('${a.id}', this.checked)" style="width:18px;height:18px;accent-color:var(--accent)">
+            </label>
+        `).join('');
+    }
+    function toggleAircraft(id, visible) {
+        const a = aircraft.find(x => x.id === id);
+        if (a) a.visible = visible;
+        renderCalendar();
+        if (selectedDay) renderFlights(selectedDay);
+    }
+    
+    // ============ DADOS SIMULADOS ============
+    // Mapa de eventos por dia: { 'YYYY-MM-DD': [{aero, hora, rota, tipo, cor}] }
+    const eventosMap = {
+        '2026-10-15': [
+            { aero: 'PS-STB', hora: '08:00', rota: 'SBBR → SBSP', tipo: 'Voo regular', status: 'Agendado' }
+        ],
+        '2026-10-18': [
+            { aero: 'PS-STA', hora: '09:30', rota: 'SBCF → SBGR', tipo: 'Voo regular', status: 'Aguardando Revisão' }
+        ],
+        '2026-10-22': [
+            { aero: 'PS-STC', hora: '11:00', rota: 'SBSP → SBBR', tipo: 'Voo regular', status: 'Agendado' }
+        ],
+        '2026-10-28': [
+            { aero: 'PS-STA', hora: '14:00', rota: 'SBBR → SBGR', tipo: 'Voo regular', status: 'Agendado' },
+            { aero: 'PS-STA', hora: '16:30', rota: 'SBGR → SBRJ', tipo: 'Voo regular', status: 'Agendado' },
+            { aero: 'PS-STB', hora: '10:00', rota: 'SBSP → SBGL', tipo: 'Voo Extra', status: 'Agendado' }
+        ],
+        '2026-10-29': [
+            { aero: 'PS-STC', hora: '13:00', rota: 'SBCF → SBGR', tipo: 'Manutenção', status: 'Agendado' }
+        ]
+    };
+    
+    function getEventosDoDia(key) {
+        const evs = eventosMap[key] || [];
+        return evs.filter(e => {
+            const ac = aircraft.find(a => a.tail === e.aero);
+            return !ac || ac.visible;
+        });
+    }
+    
+    function corDoEvento(e) {
+        const ac = aircraft.find(a => a.tail === e.aero);
+        if (e.tipo === 'Voo Extra') return '#f2c94c';
+        if (e.tipo === 'Manutenção') return '#ff5a5f';
+        if (e.tipo === 'Translado') return '#9aa9b8';
+        return ac ? ac.cor : '#2563eb';
+    }
+    
+    // ============ CALENDÁRIO ============
+    let currentDate = new Date(2026, 9, 1);
+    let selectedDay = null;
+    const today = new Date();
+    
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        document.getElementById('calTitle').textContent = `${monthNames[month]} ${year}`;
+        
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const prevDays = new Date(year, month, 0).getDate();
+        
+        let html = '';
+        // Dias do mês anterior
+        for (let i = firstDay - 1; i >= 0; i--) {
+            html += cellHtml(new Date(year, month - 1, prevDays - i), true);
+        }
+        // Dias do mês
+        for (let d = 1; d <= daysInMonth; d++) {
+            html += cellHtml(new Date(year, month, d), false);
+        }
+        // Dias do próximo mês para completar a grade
+        const total = firstDay + daysInMonth;
+        const rem = (42 - total) % 7 === 0 && total <= 35 ? 35 - total : 42 - total;
+        for (let i = 1; i <= rem; i++) {
+            html += cellHtml(new Date(year, month + 1, i), true);
+        }
+        document.getElementById('calGrid').innerHTML = html;
+    }
+    
+    function cellHtml(date, isOther) {
+        const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+        const evs = getEventosDoDia(key);
+        const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+        const isSel = key === selectedDay;
+        
+        let cls = 'cal-day';
+        if (isOther) cls += ' is-other';
+        if (isToday) cls += ' is-today';
+        if (isSel) cls += ' is-selected';
+        
+        // Mostra até 3 barras + "mais"
+        const maxBars = 3;
+        const barsHtml = evs.slice(0, maxBars).map(e => {
+            const cor = corDoEvento(e);
+            const isListrado = (e.tipo === 'Voo Extra' || e.tipo === 'Manutenção' || e.tipo === 'Translado');
+            if (isListrado) {
+                const ac = aircraft.find(a => a.tail === e.aero);
+                const corAero = ac ? ac.cor : '#2563eb';
+                return `<div class="cal-bar" style="background-image:repeating-linear-gradient(90deg, ${cor} 0, ${cor} 2px, ${corAero} 2px, ${corAero} 4px)"></div>`;
+            }
+            return `<div class="cal-bar" style="background:${cor}"></div>`;
+        }).join('');
+        const moreHtml = evs.length > maxBars ? `<div class="cal-more">+${evs.length - maxBars}</div>` : '';
+        
+        return `<div class="${cls}" onclick="selectDay('${key}')">
+            <div class="cal-num">${date.getDate()}</div>
+            <div class="cal-bars">${barsHtml}</div>
+            ${moreHtml}
+        </div>`;
+    }
+    
+    function changeMonth(dir) {
+        currentDate.setMonth(currentDate.getMonth() + dir);
+        renderCalendar();
+    }
+    
+    function selectDay(key) {
+        selectedDay = key;
+        renderCalendar();
+        renderFlights(key);
+    }
+    
+    // ============ VOOS DO DIA ============
+    function renderFlights(key) {
+        const container = document.getElementById('flightsContainer');
+        const title = document.getElementById('dayTitle');
+        const [y, m, d] = key.split('-');
+        title.innerHTML = `<span>${d}/${m}/${y}</span><span>${getEventosDoDia(key).length} voo(s)</span>`;
+        
+        const evs = getEventosDoDia(key);
+        if (!evs.length) {
+            container.innerHTML = '<div class="empty-state">Nenhum voo agendado para este dia.</div>';
+            return;
+        }
+        
+        container.innerHTML = evs.map((f, i) => {
+            const cor = corDoEvento(f);
+            let cls = 'flight-card';
+            if (f.status === 'Aguardando Revisão') cls += ' yellow';
+            const pilots = f.aero === 'PS-STA' ? 'João / Marcos' : (f.aero === 'PS-STB' ? 'Carlos / Pedro' : 'Ana / Rui');
+            return `<div class="${cls}" style="--accent:${cor}" onclick="openFlightDetails(${i})">
+                <div class="flight-header">
+                    <span>${d}/${m} · ${f.hora}</span>
+                    <span class="flight-badge" style="${f.status==='Aguardando Revisão'?'background:rgba(234,179,8,0.15);color:var(--yellow)':`background:${cor}22;color:${cor}`}">${f.status}</span>
+                </div>
+                <div class="flight-route">${f.rota}</div>
+                <div class="flight-info">
+                    <span class="pill">✈️ ${f.aero}</span>
+                    <span class="pill">👤 ${pilots}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+    
+    function openFlightDetails(idx) {
+        const evs = getEventosDoDia(selectedDay);
+        const f = evs[idx];
+        if (!f) return;
+        document.getElementById('detailsBody').innerHTML = `
+            <div class="timeline">
+                <div class="leg">
+                    <div class="leg-route">${f.rota.split(' → ')[0]} (Origem)</div>
+                    <div class="leg-time">${f.hora}</div>
+                </div>
+                <div class="leg">
+                    <div class="leg-route">${f.rota.split(' → ')[1]} (Destino)</div>
+                    <div class="leg-time">Pouso previsto</div>
+                </div>
+            </div>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-label">Aeronave</div><div class="info-value">${f.aero}</div></div>
+                <div class="info-item"><div class="info-label">Tipo</div><div class="info-value">${f.tipo}</div></div>
+                <div class="info-item"><div class="info-label">Pilotos</div><div class="info-value">${f.aero === 'PS-STA' ? 'João / Marcos' : 'Carlos / Pedro'}</div></div>
+                <div class="info-item"><div class="info-label">Status</div><div class="info-value">${f.status}</div></div>
+            </div>
+        `;
+        document.getElementById('modalDetails').classList.add('open');
+    }
+    
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    function openSettings() { document.getElementById('modalSettings').classList.add('open'); }
+    function startReview() { closeModal('modalDetails'); document.getElementById('modalReview').classList.add('open'); }
+    function finishReview() { alert('✅ Voo revisado com sucesso!'); closeModal('modalReview'); }
+    function selectRadio(btn) {
+        btn.parentElement.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    
+    // ============ CONFIG: FILTRO ============
+    let showFilter = localStorage.getItem('app_show_filter') !== 'false';
+    function applyFilterSetting() {
+        const box = document.getElementById('filterBox');
+        const tgl = document.getElementById('toggleFilter');
+        if (box) box.style.display = showFilter ? 'block' : 'none';
+        if (tgl) tgl.classList.toggle('on', showFilter);
+    }
+    function toggleFilterSetting() {
+        showFilter = !showFilter;
+        localStorage.setItem('app_show_filter', showFilter);
+        applyFilterSetting();
+    }
+    
+    // ============ INIT ============
+    applyTheme();
+    loadLogo();
+    renderCalendar();
+    renderAircraftFilters();
+    applyFilterSetting();
+</script>
+
+</body>
+</html>
