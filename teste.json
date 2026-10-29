@@ -1,0 +1,7 @@
+{
+  "from": "air-polato@outlook.com.br",
+  "from_name": "Air Polato",
+  "to": ["eduardonb1982@hotmail.com"],
+  "subject": "Teste de Envio",
+  "html": "Teste de email sem tags"
+}

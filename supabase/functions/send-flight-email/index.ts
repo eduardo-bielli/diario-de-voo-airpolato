@@ -467,3 +467,4 @@ function montarHTML({ tipo, empresa, voo, mudancas, dest }) {
   </table>
 </body></html>`;
 }
+ 
