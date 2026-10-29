@@ -24,15 +24,15 @@ Deno.serve(async (req) => {
 
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SECRET_KEY")!
+    Deno.env.get("APP_SECRET_KEY")!
   );
   const { data: { user }, error: authErr } = await sb.auth.getUser(token);
   if (authErr || !user) return json({ error: "Invalid token" }, 401);
 
   /* ==== Config de e-mail: banco (SendPulse) com fallback pra env vars (Resend) ==== */
   const KEPLARS_KEY = Deno.env.get("KEPLARS_API_KEY");
-  const FROM_EMAIL = "eduardonb1982@hotmail.com";
-  const FROM_NAME  = "Agenda Grupo Locks";
+  const FROM_EMAIL = "air-polato@outlook.com.br";
+  const FROM_NAME  = "Air Polato";
   if (!KEPLARS_KEY) return json({ error: "KEPLARS_API_KEY não configurada" }, 500);
 
   let body;
@@ -294,8 +294,8 @@ function montarHTML({ tipo, empresa, voo, mudancas, dest }) {
   const cor1 = empresa.cor1 || "#1e293b";
   const cor2 = empresa.cor2 || "#38a8ff";
   /* Cor do header: 45% mais escura que a cor primária — destaca a logo */
-  const cor1Header = escurecer(cor1, 0.55);
-  const nomeEmp = empresa.nome || "Air Locks";
+  const cor1Header = (empresa.corEmail && empresa.corEmail.trim() !== "") ? empresa.corEmail : cor1;
+  const nomeEmp = empresa.nome || "Air Polato";
   const paraPiloto = isPiloto(dest);
   const logoSrc = empresa._logo_src || (empresa.logo_b64 && empresa.logo_mime ? "cid:logo" : null);
 
@@ -356,14 +356,16 @@ function montarHTML({ tipo, empresa, voo, mudancas, dest }) {
     : "";
 
   return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<html><head>
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:28px 12px">
     <tr><td align="center">
       <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px ${hexToRgba(cor1Header, .15)}">
 
         <!-- HEADER (mais escuro pra destacar a logo) -->
-        <tr><td style="background:${cor1Header};padding:26px 32px">
+        <tr><td bgcolor="${cor1Header}" style="background:${cor1Header};padding:26px 32px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td style="vertical-align:middle">${marcaHTML}</td>
