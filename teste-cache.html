@@ -3291,6 +3291,18 @@ body.is-booting .app {
     }
   }
 </style>
+
+<style>
+.aircraft-cards.is-solo { display: block !important; }
+.aircraft-cards.is-solo .aircraft-card { display: flex !important; flex-direction: row !important; width: 100% !important; min-height: 350px; }
+.aircraft-cards.is-solo .aircraft-card__media { width: 60% !important; height: auto !important; flex: none; }
+.aircraft-cards.is-solo .aircraft-card__media img { height: 100% !important; object-fit: cover !important; }
+.aircraft-cards.is-solo .aircraft-card__body { width: 40% !important; display: flex !important; flex-direction: column; justify-content: center !important; padding: 30px !important; }
+@media (max-width: 850px) {
+    .aircraft-cards.is-solo .aircraft-card { flex-direction: column !important; }
+    .aircraft-cards.is-solo .aircraft-card__media, .aircraft-cards.is-solo .aircraft-card__body { width: 100% !important; }
+}
+</style>
 </head>
 
 
@@ -7224,6 +7236,7 @@ const Aircraft = (() => {
   function render() {
     const box = document.getElementById("aircraftCards"); if (!box) return;
     const visiveis = list.filter(a => a.ativo !== false);
+    if (visiveis.length === 1) { box.classList.add("is-solo"); } else { box.classList.remove("is-solo"); }
     box.innerHTML = visiveis.map(cardHTML).join("");
     hydrateIcons(box);
     preencherManutencoes();
