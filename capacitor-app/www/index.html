@@ -12,7 +12,7 @@
      like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=ca65f46b-f664-4856-a2e4-0d0b72b668cf
      Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<title>Controle Web — Air Locks</title>
+<title>Controle Web — Air Polato</title>
 <link rel="stylesheet" href="leaflet.css" />
   
   
@@ -4933,7 +4933,7 @@ const Auth = (() => {
       }
       
       if (loginName) {
-        loginName.textContent = st.companyName || window.APP_CONFIG.APP_NAME || "Air Locks";
+        loginName.textContent = st.companyName || window.APP_CONFIG.APP_NAME || "Air Polato";
       }
     } catch(e) { console.warn("[Login] erro ao carregar logo:", e); }
     const ov = document.getElementById("authCheckOverlay");
@@ -6184,7 +6184,7 @@ window.EmailRoteiro = (() => {
         if (m) { _logoMime = m[1]; _logoB64 = m[2]; }
       }
       const empresa = {
-        nome: localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Locks",
+        nome: localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Polato",
         logo: "",                              /* deprecated: usamos logo_mime + logo_b64 */
         logo_mime: _logoMime,
         logo_b64: _logoB64,
@@ -14217,7 +14217,7 @@ const Manutencao = (() => {
 
     /* 7. Monta matriz */
     const rows = [];
-    const nomeEmpresa = localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Locks";
+    const nomeEmpresa = localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Polato";
 
     rows.push(["", nomeEmpresa, "", "", ""]);
     rows.push(["", "RELATÓRIO DE MANUTENÇÕES", "", "", ""]);
@@ -18084,7 +18084,7 @@ const Backup = (() => {
     const data = new Date().toISOString().slice(0,10);
     const hora = new Date().toTimeString().slice(0,5).replace(":", "");
     a.href = url;
-    a.download = "backup-airlocks-" + data + "-" + hora + ".json";
+    a.download = "backup-airpolato-" + data + "-" + hora + ".json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -18185,7 +18185,7 @@ const Relatorios = (() => {
     return localStorage.getItem("dv_company_logo") || "";
   }
   function nomeEmpresa() {
-    return localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Locks";
+    return localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Polato";
   }
 
   function _solNome(id) {
@@ -20165,7 +20165,7 @@ Router.init();
     <div style="text-align:center;margin-bottom:24px">
       <div id="loginBrand" style="display:flex; flex-direction:column; align-items:center; gap:4px; margin-bottom:20px;">
   <div id="loginBrandLogo" style="width:140px; height:70px; background-size:contain; background-repeat:no-repeat; background-position:center;"></div>
-  <div id="loginBrandName" style="font-size:18px;font-weight:800;letter-spacing:.02em">Air Locks</div>
+  <div id="loginBrandName" style="font-size:18px;font-weight:800;letter-spacing:.02em">Air Polato</div>
 </div>
       <div style="font-size:12px;color:var(--muted, #94a3b8);margin-top:6px">Entre com seu email e senha</div>
     </div>
