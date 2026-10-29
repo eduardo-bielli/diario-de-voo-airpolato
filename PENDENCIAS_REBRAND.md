@@ -1,52 +1,50 @@
 # Rebrand — Air Locks (master) → Air Polato (fork)
 
-> **Contexto**: Air Locks é o **produto base/master**. Air Polato é o **primeiro fork**.
-> Cada fork tem seu próprio Supabase (dados do zero) e seu próprio `config.js`.
->
-> Última atualização: 2026-10-29
+> Air Locks é o produto base/master. Air Polato é o primeiro fork.
+> Cada fork tem seu próprio Supabase (dados do zero) e seu próprio config.js.
+> Atualizado: 2026-10-29
 
-## Arquitetura multi-cliente
+## Arquitetura
 
 | | Air Locks (master) | Air Polato (fork) |
 |---|---|---|
-| Deploy | `locks-agenda.netlify.app` | `airpolato.netlify.app` |
-| Supabase | `onoqei...` (`diario-de-voo`) | `lxejhx...` (`air-polato`) |
-| Repo | outro chat | este (`diario-de-voo-airpolato`) |
+| Deploy | locks-agenda.netlify.app | airpolato.netlify.app |
+| Supabase | onoqei... (diario-de-voo) | lxejhx... (air-polato) |
+| Repo | outro chat | este |
 
-**Regra**: código genérico via `APP_CONFIG` → cada deploy só muda `config.js`.
+Regra: código genérico via APP_CONFIG → cada deploy só muda config.js.
 
-## Feito neste fork (Air Polato)
+## Feito
 
-- [x] `Air Locks` → `Air Polato` nos 6 arquivos ativos
-- [x] `backup-airlocks-` → `backup-airpolato-`
-- [x] Placeholder/login: `seu.email@dominio.com` / `E-mail`
-- [x] `APP_NAME: "Air Polato"` nos 3 `config.js`
-- [x] `DOMINIO_PADRAO: "airpolato.com.br"` nos 3 `config.js`
-- [x] Supabase URL/key via `APP_CONFIG` nos 3 web HTMLs
-- [x] `resetarSenha` → `airpolato.netlify.app` nos 4 HTMLs
-- [x] iOS: Supabase URL/key + `DOMINIO_PADRAO` (`airpolato.com.br` ou via APP_CONFIG)
-- [x] iOS: `config.js` copiado pro pacote
+- [x] Air Locks → Air Polato nos 6 arquivos
+- [x] backup-airlocks- → backup-airpolato-
+- [x] Placeholder/login (seu.email@dominio.com / E-mail)
+- [x] APP_CONFIG.APP_NAME = "Air Polato" nos 3 config.js
+- [x] APP_CONFIG.DOMINIO_PADRAO = "airpolato.com.br" nos 3 config.js
+- [x] Supabase URL/key via APP_CONFIG nos 3 web HTMLs
+- [x] resetarSenha → airpolato.netlify.app nos 4 HTMLs
+- [x] iOS alinhado via npx cap sync (14 matches APP_CONFIG, sem vestígios)
+- [x] iOS config.js copiado + <script src> adicionado
 
 ## Pendências (curto prazo)
 
-- [ ] Confirmar que o commit `662b896` incluiu iOS + config.js
-- [ ] iOS carregar `config.js` via `<script src="config.js"></script>` e usar `APP_CONFIG.*`
-- [ ] `normalizarEmail`: exigir email completo (remover concatenação com `DOMINIO_PADRAO`)
-- [ ] Push `origin/main` e confirmar deploy Netlify
-- [ ] Testar login Eduardo + Jonathas em `airpolato.netlify.app`
-- [ ] Testar "esqueci senha" → link `airpolato.netlify.app`
-- [ ] iOS rebuild via Capacitor
+- [ ] Push origin/main (commit 662b896 + docs)
+- [ ] Confirmar Netlify deploy source
+- [ ] Testar login Eduardo + Jonathas em airpolato.netlify.app
+- [ ] Testar "esqueci senha" → link airpolato.netlify.app
+- [ ] iOS: rebuild via Xcode + testar
+- [ ] normalizarEmail: exigir email completo (remover concatenação)
 
-## Pendências (quando `www.airpolato.com.br` existir)
+## Pendências (quando www.airpolato.com.br existir)
 
-- [ ] Supabase Auth → URL Configuration: `https://www.airpolato.com.br` + redirects
-- [ ] `config.js` (3 arquivos): `RESET_URL: "https://www.airpolato.com.br/"`
-- [ ] `resetarSenha` (4 HTMLs): `airpolato.netlify.app` → `www.airpolato.com.br`
+- [ ] Supabase Auth → URL Configuration: https://www.airpolato.com.br
+- [ ] config.js (3 arquivos): RESET_URL: "https://www.airpolato.com.br/"
+- [ ] resetarSenha (4 HTMLs): airpolato.netlify.app → www.airpolato.com.br
 - [ ] Netlify custom domain + HTTPS
 - [ ] iOS rebuild
 
 ## Notas
 
-- **Não apagar** projeto Supabase `onoqeiekjbjlfnfukgbh` (é o do Air Locks master, outro chat).
-- **Não apagar** projeto Supabase `lxejhxguoyfkszdfwrow` (é o do Air Polato, este fork).
-- `config.js` do `capacitor-app/www/` tinha key diferente (`sbp_fca0...`) — confirmar no dashboard do `air-polato` qual é a key oficial.
+- NÃO apagar Supabase onoqei... (é do Air Locks master)
+- NÃO apagar Supabase lxejhx... (é do Air Polato)
+- capacitor-app/www/ é fonte da verdade do iOS (não editar ios/App/App/public/ direto)
