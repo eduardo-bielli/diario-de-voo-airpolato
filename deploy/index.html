@@ -4276,7 +4276,8 @@ body.is-booting .app {
 <div class="formgrid">
 <label class="field"><span>Cor primária</span><div class="color-row"><input id="setReportColor1" type="color" value="#1e293b"><code id="reportColor1Value">#1E293B</code></div></label>
 <label class="field"><span>Cor secundária</span><div class="color-row"><input id="setReportColor2" type="color" value="#38a8ff"><code id="reportColor2Value">#38A8FF</code></div></label>
-<label class="field" style="grid-column: 1 / -1;"><span>Cor do Cabeçalho do E-mail</span><div class="color-row"><input id="setEmailHeaderColor" type="color" value="#1e293b"><code id="emailHeaderColorValue">#1E293B</code></div></label>
+    <label class="field" style="grid-column: 1 / -1; margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px;"><span>Fundo do Cabeçalho do E-mail (Logo)</span><div class="color-row"><input id="setEmailHeaderColor" type="color" value="#1e293b"><code id="emailHeaderColorValue">#1E293B</code></div></label>
+    <label class="field" style="grid-column: 1 / -1;"><span>Fundo da Barra de Trechos (E-mail)</span><div class="color-row"><input id="setEmailSegmentsColor" type="color" value="#1687ff"><code id="emailSegmentsColorValue">#1687FF</code></div></label>
 </div>
 </div>
 <div class="settings-section"><h3>Cards específicos</h3><p class="hint" style="margin-top:0;margin-bottom:12px">Cor de fundo dos cards de acordo com o tipo</p><div class="formgrid">
@@ -6188,7 +6189,8 @@ window.EmailRoteiro = (() => {
         logo_mime: _logoMime,
         logo_b64: _logoB64,
         cor1: localStorage.getItem("dv_report_color1") || "#1e293b",
-        corEmail: localStorage.getItem("dv_email_color") || "", // TESTE FORÇADO
+        corHeaderEmail: localStorage.getItem("dv_email_header_color") || "#1e293b",
+        corSegmentosEmail: localStorage.getItem("dv_email_segments_color") || "#1687ff", // TESTE FORÇADO
         cor2: localStorage.getItem("dv_report_color2") || "#38a8ff"
       };
       const voo = {
@@ -22433,6 +22435,26 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 </style>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const loadColor = (inputId, labelId, storageKey, defaultColor) => {
+        const el = document.getElementById(inputId);
+        const lbl = document.getElementById(labelId);
+        if (!el) return;
+        const color = localStorage.getItem(storageKey) || defaultColor;
+        el.value = color;
+        if (lbl) lbl.textContent = color.toUpperCase();
+        el.addEventListener('input', (e) => {
+            localStorage.setItem(storageKey, e.target.value);
+            if (lbl) lbl.textContent = e.target.value.toUpperCase();
+        });
+    };
+    loadColor('setEmailHeaderColor', 'emailHeaderColorValue', 'dv_email_header_color', '#1e293b');
+    loadColor('setEmailSegmentsColor', 'emailSegmentsColorValue', 'dv_email_segments_color', '#1687ff');
+});
+</script>
 </body>
 
 

@@ -290,11 +290,25 @@ async function enviarViaKeplars(apiKey, { from_name, from_email, to_email, to_na
 
 
 
+
+function getContrastColor(hex) {
+  if (!hex || !hex.startsWith('#')) return '#ffffff';
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return (yiq >= 128) ? '#111827' : '#ffffff';
+}
+
 function montarHTML({ tipo, empresa, voo, mudancas, dest }) {
   const cor1 = empresa.cor1 || "#1e293b";
   const cor2 = empresa.cor2 || "#38a8ff";
+  const corHeaderEmail = empresa.corHeaderEmail || "#1e293b";
+  const corSegmentosEmail = empresa.corSegmentosEmail || cor2;
+  const textSegColor = getContrastColor(corSegmentosEmail);
+  const cor1Header = corHeaderEmail;
   /* Cor do header: 45% mais escura que a cor primária — destaca a logo */
-  const cor1Header = (empresa.corEmail && empresa.corEmail.trim() !== "") ? empresa.corEmail : cor1;
+  
   const nomeEmp = empresa.nome || "Air Polato";
   const paraPiloto = isPiloto(dest);
   const logoSrc = empresa._logo_src || (empresa.logo_b64 && empresa.logo_mime ? "cid:logo" : null);
@@ -365,7 +379,7 @@ function montarHTML({ tipo, empresa, voo, mudancas, dest }) {
       <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px ${hexToRgba(cor1Header, .15)}">
 
         <!-- HEADER (mais escuro pra destacar a logo) -->
-        <tr><td bgcolor="${cor1Header}" style="background:${cor1Header};padding:26px 32px">
+        <tr><td bgcolor="${corHeaderEmail}" style="background:${corSegmentosEmail}; color:${textSegColor};padding:26px 32px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td style="vertical-align:middle">${marcaHTML}</td>
