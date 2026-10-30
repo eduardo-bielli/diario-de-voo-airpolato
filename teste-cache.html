@@ -3947,6 +3947,7 @@ body.is-booting .app {
           <button class="btn" id="thBtnCredito">+ Crédito (emprestamos)</button>
           <button class="btn btn--secondary" id="thBtnDebito">+ Débito (usamos de terceiros)</button>
           <button class="btn btn--secondary" id="thBtnEmpresa">🏢 Cadastrar empresa</button>
+          <button class="btn btn--secondary" id="thBtnRelatorio">📊 Relatório</button>
           <button class="btn btn--secondary" id="thBtnLink" style="margin-left:auto">🔗 Aeronaves diferentes</button>
         </div>
         <div id="thLista" style="padding:16px 20px">
@@ -4366,6 +4367,7 @@ const Session = (() => {
       const u = Auth.getUser();
       current = { id: u.id, nome: u.nome, email: u.email, perfil: u.perfil,
                   tambem_e_piloto: u.tambem_e_piloto === true,
+                  exibicaoAeroporto: u.exibicaoAeroporto,
                   extras: u.extras || {} };
       return;
     }
@@ -4387,6 +4389,7 @@ const Session = (() => {
       const u = Auth.getUser();
       return { id: u.id, nome: u.nome, email: u.email, perfil: u.perfil,
                tambem_e_piloto: u.tambem_e_piloto === true,
+               exibicaoAeroporto: u.exibicaoAeroporto,
                extras: u.extras || {} };
     }
     return current;
@@ -4806,6 +4809,7 @@ const Auth = (() => {
       tambem_e_piloto: perfil.tambem_e_piloto === true,
       ativo: perfil.ativo,
       extras: perfil.extras || {},
+      exibicaoAeroporto: perfil.exibicaoAeroporto || "icao",
       must_change_password: perfil.must_change_password
     };
     return _user;
@@ -6190,7 +6194,7 @@ window.EmailRoteiro = (() => {
         logo_b64: _logoB64,
         cor1: localStorage.getItem("dv_report_color1") || "#1e293b",
         corHeaderEmail: localStorage.getItem("dv_email_header_color") || "#1e293b",
-        corSegmentosEmail: localStorage.getItem("dv_email_segments_color") || "#1687ff", // TESTE FORÇADO
+        corSegmentosEmail: localStorage.getItem("dv_email_segments_color") || "#1687ff",
         cor2: localStorage.getItem("dv_report_color2") || "#38a8ff"
       };
       const voo = {
@@ -6311,6 +6315,7 @@ const StoreCloud = (() => {
   }
   return { load, save, list, listByKeys, subscribe, ping };
 })();
+window.StoreCloud = StoreCloud;
 
 /* ============================================================
    Store híbrido (localStorage ↔ Supabase)
@@ -7241,6 +7246,7 @@ const Aircraft = (() => {
     const box = document.getElementById("aircraftCards"); if (!box) return;
     const visiveis = list.filter(a => a.ativo !== false);
     if (visiveis.length === 1) { box.classList.add("is-solo"); } else { box.classList.remove("is-solo"); }
+
     box.innerHTML = visiveis.map(cardHTML).join("");
     hydrateIcons(box);
     preencherManutencoes();
@@ -11313,6 +11319,7 @@ const Users = (() => {
           perfil: p.perfil,
           tambem_e_piloto: p.tambem_e_piloto,
           ativo: p.ativo,
+          exibicaoAeroporto: p.exibicaoAeroporto,
           extras: (() => {
             const e = { ...p.extras };
             if (tambem_passageiro === true) e.tambem_passageiro = true; else delete e.tambem_passageiro;
@@ -11322,6 +11329,16 @@ const Users = (() => {
           })()
         }).eq("id", editingId).select("*").single();
         if (error) { alert("Erro ao salvar: " + error.message); return; }
+        if (window.Auth && Auth.getUser() && Auth.getUser().id === editingId) {
+          const u = Auth.getUser();
+          u.exibicaoAeroporto = p.exibicaoAeroporto;
+          u.nome = p.nome;
+          u.email = p.email;
+          u.perfil = p.perfil;
+          u.tambem_e_piloto = p.tambem_e_piloto;
+          u.extras = atualizado.extras;
+          if (typeof Session !== "undefined" && Session.load) Session.load();
+        }
         g("userModal").classList.remove("is-open");
         /* Sincroniza papéis (cria passageiro/solicitante) — usa dados do BANCO */
         try {
@@ -16212,7 +16229,7 @@ const TrocaHoras = (() => {
         modeloMap[mod].credito_min += minRestante;
         modeloMap[mod].itens.push({ id: l.id, tipo: "credito", minutos: minRestante, total: minTotal, consumido: minConsumido });
       } else if (l.tipo === "debito") {
-        const mod = l.modelo || "—";
+        const mod = l.modelo_linkado || l.modelo || "—";
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
         const minPago = consumoDeb[l.id] || 0;
@@ -16269,7 +16286,7 @@ const TrocaHoras = (() => {
   function renderDashboard() {
     const box = document.getElementById("thDashboard");
     if (!box) return;
-    const saldo = calcularSaldo();
+    const saldo = calcularSaldo().filter(e => e.credito_min > 0 || e.debito_min > 0);
     if (!saldo.length) {
       box.innerHTML = '<p class="hint" style="margin:0">Sem lançamentos. Cadastre créditos e débitos para ver o saldo por modelo.</p>';
       return;
@@ -16339,7 +16356,12 @@ const TrocaHoras = (() => {
     window.__thCredEditandoId = l.id;
     const g = (id) => document.getElementById(id);
     if (g("thCredResponsavel")) g("thCredResponsavel").value = l.responsavel || "";
-    if (g("thCredEmpresa")) g("thCredEmpresa").value = l.empresa_emprestada || "";
+    let __empId = l.empresa_emprestada_id || "";
+    if (!__empId && l.empresa_emprestada) {
+      const __match = lerEmpresas().find(e => e.nome === l.empresa_emprestada);
+      if (__match) __empId = __match.id;
+    }
+    popularSelectEmpresaCredito(__empId);
     const el = g("thCredResumo");
     if (el) el.innerHTML = ''
       + '<div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:1.7">'
@@ -16570,12 +16592,12 @@ function renderLista() {
       +   '<div class="settings-section">'
       +     '<h3>Lançamento</h3>'
       +     '<label class="field" style="margin-bottom:10px"><span>Responsável *</span><input id="thCredResponsavel" placeholder="Quem autorizou o empréstimo"></label>'
-      +     '<label class="field"><span>Empresa que pegou emprestado (opcional)</span><input id="thCredEmpresa" placeholder="Ex: Aero Taxi XYZ"></label>'
+      +     '<label class="field"><span>Empresa que pegou emprestado (opcional)</span><select id="thCredEmpresa"></select></label>'
       +   '</div>'
-      +   '<div class="dialog__actions">'
-      +     '<button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="thCreditoModal">Cancelar</button>'
-      +     '<button type="button" class="btn" id="thCredSalvar">Salvar crédito</button>'
-      +   '</div>'
+      + '</div>'
+      + '<div class="dialog__actions">'
+      +   '<button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="thCreditoModal">Fechar</button>'
+      +   '<button type="button" class="btn" id="thCredSalvar">Salvar crédito</button>'
       + '</div>'
       + '</div></div>';
     document.body.insertAdjacentHTML("beforeend", html);
@@ -16583,6 +16605,17 @@ function renderLista() {
     if (btnBuscar) btnBuscar.addEventListener("click", buscarVoosFinalizados);
     const btnSalvar = document.getElementById("thCredSalvar");
     if (btnSalvar) btnSalvar.addEventListener("click", salvarCredito);
+  }
+
+  function popularSelectEmpresaCredito(selectedId) {
+    const sel = document.getElementById("thCredEmpresa");
+    if (!sel) return;
+    const lista = lerEmpresas();
+    let html = '<option value="">— sem empresa (pessoa física) —</option>';
+    html += lista.map(e =>
+      '<option value="' + esc(e.id) + '"' + (e.id === selectedId ? " selected" : "") + ">" + esc(e.nome) + "</option>"
+    ).join("");
+    sel.innerHTML = html;
   }
 
   function abrirCredito() {
@@ -16595,7 +16628,7 @@ function renderLista() {
     if (g("thCredResultados")) g("thCredResultados").innerHTML = "";
     if (g("thCredForm")) g("thCredForm").hidden = true;
     if (g("thCredResponsavel")) g("thCredResponsavel").value = "";
-    if (g("thCredEmpresa")) g("thCredEmpresa").value = "";
+    popularSelectEmpresaCredito();
     const btnSalvar = g("thCredSalvar");
     if (btnSalvar) btnSalvar.textContent = "Salvar crédito";
     const h2 = document.querySelector("#thCreditoModal h2");
@@ -16698,7 +16731,10 @@ function renderLista() {
 
     const responsavel = (document.getElementById("thCredResponsavel").value || "").trim();
     if (!responsavel) { alert("Preencha o responsável."); return; }
-    const empresaEmp = (document.getElementById("thCredEmpresa").value || "").trim();
+    const empresaId = (document.getElementById("thCredEmpresa").value || "").trim();
+    const empresaSel = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
+    const empresaNome = empresaSel?.nome || "";
+    const empresaLogo = empresaSel?.logo || "";
 
     const trs = ev.trechos || [];
     const primeira = trs[0];
@@ -16717,7 +16753,9 @@ function renderLista() {
       passageiros: paxSet.size,
       solicitante_id: ev.solicitante_id || "",
       responsavel: responsavel,
-      empresa_emprestada: empresaEmp || "",
+      empresa_emprestada: empresaNome,
+      empresa_emprestada_id: empresaId || null,
+      empresa_logo_snapshot: empresaLogo,
       ev_id: ev.id,
       observacoes: "",
       criado_em: new Date().toISOString()
@@ -16727,7 +16765,7 @@ function renderLista() {
     const editId = window.__thCredEditandoId;
     if (editId) {
       const i = lista.findIndex(x => x.id === editId);
-      if (i >= 0) lista[i] = { ...lista[i], responsavel, empresa_emprestada: empresaEmp || "" };
+      if (i >= 0) lista[i] = { ...lista[i], responsavel, empresa_emprestada: empresaNome, empresa_emprestada_id: empresaId || null, empresa_logo_snapshot: empresaLogo };
     } else {
       lista.push(lancamento);
     }
@@ -16817,7 +16855,9 @@ function renderLista() {
       return;
     }
     const emp = lerEmpresas().find(e => e.id === empId);
-    const modelos = Array.isArray(emp?.modelos) ? emp.modelos : [];
+    const modelos = (Array.isArray(emp?.modelos) ? emp.modelos : [])
+      .map(m => typeof m === "string" ? { nome: m, vinculado_a: null } : m)
+      .filter(m => m && m.nome);
     if (!modelos.length) {
       sel.innerHTML = '<option value="">— empresa sem modelos cadastrados —</option>';
       sel.disabled = true;
@@ -16829,16 +16869,18 @@ function renderLista() {
     if (hint) hint.textContent = "";
 
     const todosModelos = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list() : [];
-    const outros = todosModelos.filter(m => !modelos.includes(m));
-    const temAtual = modeloAtual && modelos.includes(modeloAtual);
+    const nomesModelos = modelos.map(m => m.nome);
+    const outros = todosModelos.filter(m => !nomesModelos.includes(m));
+    const temAtual = modeloAtual && nomesModelos.includes(modeloAtual);
     const mostrarOutros = !!window.__thDebMostrarOutros;
 
     let html = '<option value="">— selecionar —</option>';
 
-    /* Modelos da empresa */
+    /* Modelos da empresa (com indicação de vínculo) */
     html += modelos.map(m => {
-      const selAttr = (m === modeloAtual) ? ' selected' : '';
-      return '<option value="' + esc(m) + '"' + selAttr + '>' + esc(m) + '</option>';
+      const selAttr = (m.nome === modeloAtual) ? " selected" : "";
+      const label = m.vinculado_a ? (m.nome + " → " + m.vinculado_a) : m.nome;
+      return '<option value="' + esc(m.nome) + '"' + selAttr + ">" + esc(label) + "</option>";
     }).join("");
 
     /* Se "mostrar outros" ativo OU modelo atual está fora */
@@ -17159,14 +17201,26 @@ function renderLista() {
 
     const empresa = lerEmpresas().find(e => e.id === empresaId);
     const empresaNome = empresa?.nome || "—";
+    const empresaLogo = empresa?.logo || "";
+    /* Procura o vínculo do modelo na empresa (aceita formato antigo e novo) */
+    const modeloVinculado = (() => {
+      const ms = Array.isArray(empresa?.modelos) ? empresa.modelos : [];
+      for (const m of ms) {
+        if (typeof m === "string" && m === modelo) return null;
+        if (m && m.nome === modelo) return m.vinculado_a || null;
+      }
+      return null;
+    })();
 
     const lancamento = {
       id: "th-d-" + Date.now(),
       tipo: "debito",
       aeronave_prefixo: prefixo,
       modelo: modelo,
+      modelo_linkado: modeloVinculado,
       empresa_id: empresaId,
       empresa_nome: empresaNome,
+      empresa_logo_snapshot: empresaLogo,
       solicitante_id: solicitanteId,
       trechos: __thDebTrechos.map(t => ({ ...t })),
       observacoes: obs,
@@ -17198,9 +17252,19 @@ function renderLista() {
       + '<label class="field" style="margin-bottom:10px"><span>CNPJ / Documento</span><input id="thEmpresaCnpj" placeholder="00.000.000/0000-00"></label>'
       + '<label class="field" style="margin-bottom:10px"><span>Contato</span><input id="thEmpresaContato" placeholder="Nome / Telefone / Email"></label>'
       + '<label class="field"><span>Observações</span><textarea id="thEmpresaObs" rows="2" placeholder="Opcional"></textarea></label>'
+      + '<div style="margin:14px 0 10px;padding:10px;background:var(--panel);border-radius:8px">'
+      +   '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:6px">Logo da empresa (opcional)</div>'
+      +   '<input type="file" id="thEmpresaLogoFile" accept="image/*" style="font-size:12px">'
+      +   '<div id="thEmpresaLogoPreviewWrap" style="display:none;margin-top:8px;align-items:center;gap:8px">'
+      +     '<img id="thEmpresaLogoPreview" style="max-width:120px;max-height:60px;border-radius:6px;border:1px solid var(--line)">'
+      +     '<button type="button" class="btn btn--secondary" id="thEmpresaLogoRemover" style="font-size:11px;padding:4px 8px">Remover</button>'
+      +   '</div>'
+      +   '<input type="hidden" id="thEmpresaLogoData">'
+      + '</div>'
       + '<div class="settings-section">'
       +   '<h3>Modelos que a empresa opera</h3>'
-      +   '<div id="thEmpresaModelos" style="max-height:180px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px"></div>'
+      +   '<p class="hint" style="margin:-8px 0 10px">Marque os modelos e, na frente de cada um, escolha a qual modelo <strong>nosso</strong> ele deve ser vinculado para debitar horas automaticamente.</p>'
+      +   '<div id="thEmpresaModelos" style="max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px"></div>'
       + '</div>'
       + '<div id="thEmpresaListaWrap" style="margin-top:14px">'
       +   '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:20px 0 10px;padding:8px 12px;background:var(--nav-active-bg);border-left:3px solid var(--accent);border-radius:6px">📋 Empresas cadastradas</div>'
@@ -17214,27 +17278,77 @@ function renderLista() {
     document.body.insertAdjacentHTML("beforeend", html);
     const btn = document.getElementById("thEmpresaSalvar");
     if (btn) btn.addEventListener("click", salvarEmpresa);
+    const logoFile = document.getElementById("thEmpresaLogoFile");
+    if (logoFile) logoFile.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 100 * 1024) { alert("Logo muito grande (máx 100 KB). Reduza a imagem."); e.target.value = ""; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        const hidden = document.getElementById("thEmpresaLogoData");
+        if (hidden) hidden.value = dataUrl;
+        const prev = document.getElementById("thEmpresaLogoPreview");
+        const wrap = document.getElementById("thEmpresaLogoPreviewWrap");
+        if (prev) prev.src = dataUrl;
+        if (wrap) wrap.style.display = "flex";
+      };
+      reader.readAsDataURL(file);
+    });
+    const logoRemover = document.getElementById("thEmpresaLogoRemover");
+    if (logoRemover) logoRemover.addEventListener("click", () => {
+      const hidden = document.getElementById("thEmpresaLogoData");
+      if (hidden) hidden.value = "";
+      const prev = document.getElementById("thEmpresaLogoPreview");
+      const wrap = document.getElementById("thEmpresaLogoPreviewWrap");
+      if (prev) prev.src = "";
+      if (wrap) wrap.style.display = "none";
+      const fileInput = document.getElementById("thEmpresaLogoFile");
+      if (fileInput) fileInput.value = "";
+    });
   }
 
   function popularModelosEmpresa(selecionados) {
     const box = document.getElementById("thEmpresaModelos");
     if (!box) return;
     const modelos = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list() : [];
-    const set = new Set(selecionados || []);
     if (!modelos.length) {
       box.innerHTML = '<p class="hint" style="margin:0;padding:6px">Nenhum modelo cadastrado. Use "📋 Modelos" em Aeronaves.</p>';
       return;
     }
-    box.innerHTML = modelos.map(m => {
-      const checked = set.has(m) ? ' checked' : '';
-      return '<label style="display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:pointer;border-radius:6px;transition:background .1s" onmouseover="this.style.background=\'var(--panel)\'" onmouseout="this.style.background=\'\'">' + '<input type="checkbox" class="thEmpModeloChk" value="' + esc(m) + '"' + checked + '>' + '<span style="font-size:12px">' + esc(m) + '</span>' + '</label>';
+    /* Normaliza entrada: aceita ["string"] ou [{nome, vinculado_a}] */
+    const linkMap = {};
+    (selecionados || []).forEach(m => {
+      if (typeof m === "string") linkMap[m] = "";
+      else if (m && m.nome) linkMap[m.nome] = m.vinculado_a || "";
+    });
+    const sorted = [...modelos].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    box.innerHTML = sorted.map(m => {
+      const checked = linkMap.hasOwnProperty(m) ? " checked" : "";
+      const linked = linkMap[m] || "";
+      const options = '<option value="">— sem vínculo —</option>' +
+        sorted.filter(x => x !== m).map(x =>
+          '<option value="' + esc(x) + '"' + (x === linked ? " selected" : "") + '>' + esc(x) + '</option>'
+        ).join("");
+      return '<div class="thEmpModeloRow" data-modelo="' + esc(m) + '" style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--line)">'
+        + '<label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0">'
+        +   '<input type="checkbox" class="thEmpModeloChk"' + checked + '>'
+        +   '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span>'
+        + '</label>'
+        + '<select class="thEmpModeloLink" title="Vincular a qual modelo nosso" style="font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card);max-width:180px">' + options + '</select>'
+        + '</div>';
     }).join("");
   }
 
   function capturarModelosEmpresa() {
     const box = document.getElementById("thEmpresaModelos");
     if (!box) return [];
-    return Array.from(box.querySelectorAll(".thEmpModeloChk:checked")).map(c => c.value);
+    return Array.from(box.querySelectorAll(".thEmpModeloRow"))
+      .filter(row => row.querySelector(".thEmpModeloChk")?.checked)
+      .map(row => ({
+        nome: row.dataset.modelo,
+        vinculado_a: (row.querySelector(".thEmpModeloLink")?.value || "").trim() || null
+      }));
   }
 
   function abrirEmpresa() {
@@ -17245,6 +17359,10 @@ function renderLista() {
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
+    if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = "";
+    if (g("thEmpresaLogoPreview")) g("thEmpresaLogoPreview").src = "";
+    if (g("thEmpresaLogoPreviewWrap")) g("thEmpresaLogoPreviewWrap").style.display = "none";
+    if (g("thEmpresaLogoFile")) g("thEmpresaLogoFile").value = "";
     if (g("thEmpresaModalTitle")) g("thEmpresaModalTitle").textContent = "Cadastrar empresa";
     popularModelosEmpresa([]);
     renderListaEmpresas();
@@ -17305,6 +17423,15 @@ function renderLista() {
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = e.cnpj || "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = e.contato || "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = e.obs || "";
+    if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = e.logo || "";
+    if (e.logo) {
+      if (g("thEmpresaLogoPreview")) g("thEmpresaLogoPreview").src = e.logo;
+      if (g("thEmpresaLogoPreviewWrap")) g("thEmpresaLogoPreviewWrap").style.display = "flex";
+    } else {
+      if (g("thEmpresaLogoPreview")) g("thEmpresaLogoPreview").src = "";
+      if (g("thEmpresaLogoPreviewWrap")) g("thEmpresaLogoPreviewWrap").style.display = "none";
+    }
+    if (g("thEmpresaLogoFile")) g("thEmpresaLogoFile").value = "";
     popularModelosEmpresa(e.modelos || []);
     if (g("thEmpresaModalTitle")) g("thEmpresaModalTitle").textContent = "Editar empresa";
     if (g("thEmpresaSalvar")) g("thEmpresaSalvar").textContent = "Atualizar empresa";
@@ -17324,16 +17451,17 @@ function renderLista() {
     const contato = (document.getElementById("thEmpresaContato").value || "").trim();
     const obs = (document.getElementById("thEmpresaObs").value || "").trim();
     const idEdit = (document.getElementById("thEmpresaId").value || "").trim();
+    const logo = (document.getElementById("thEmpresaLogoData")?.value || "").trim();
     const modelos = capturarModelosEmpresa();
 
     const lista = lerEmpresas();
     if (idEdit) {
       const i = lista.findIndex(e => e.id === idEdit);
-      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, modelos };
+      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, logo, modelos };
     } else {
       lista.push({
         id: "th-e-" + Date.now(),
-        nome, cnpj, contato, obs, modelos,
+        nome, cnpj, contato, obs, logo, modelos,
         criado_em: new Date().toISOString()
       });
     }
@@ -17529,7 +17657,10 @@ function renderLista() {
   function popularSelectDebitosLink() {
     const sel = document.getElementById("thLinkDebito");
     if (!sel) return;
-    const debs = lerLancamentos().filter(l => l.tipo === "debito" && saldoDebito(l.id) > 0);
+    const debs = lerLancamentos().filter(l =>
+      l.tipo === "debito" && saldoDebito(l.id) > 0 &&
+      (!l.modelo_linkado || l.modelo_linkado === l.modelo)
+    );
     sel.innerHTML = '<option value="">— selecionar débito —</option>'
       + debs.map(l => '<option value="' + esc(l.id) + '">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_prefixo || "—") + ' · deve ' + minutosParaHHMM(saldoDebito(l.id)) + '</option>').join("");
   }
@@ -17749,6 +17880,650 @@ function renderLista() {
     }).filter(Boolean).join("");
   }
 
+  /* ---------- Relatório (CSV / XLS) ---------- */
+  function _thRelYMD(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + dd;
+  }
+  function _thRelYMDToBR(s) {
+    if (!s) return "";
+    const p = String(s).split("-");
+    if (p.length !== 3) return s;
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+  function _thRelSomaMin(trechos) {
+    return (trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao || ""), 0);
+  }
+  function _thRelSomaPax(trechos) {
+    return (trechos || []).reduce((s, t) => s + ((t.passageiros_ids || []).length), 0);
+  }
+  function _thRelSolicitanteNome(id) {
+    if (!id) return "";
+    try {
+      if (typeof Solicitantes !== "undefined" && typeof Solicitantes.getLista === "function") {
+        const l = Solicitantes.getLista();
+        const s = Array.isArray(l) ? l.find(x => x.id === id) : null;
+        if (s && s.nome) return s.nome;
+      }
+    } catch(e) {}
+    try {
+      const l = JSON.parse(localStorage.getItem("dv.solicitantes.v1") || "[]");
+      const s = l.find(x => x.id === id);
+      return s?.nome || "";
+    } catch(e) { return ""; }
+  }
+  function _thRelAgendaLista() {
+    try {
+      if (typeof Agenda !== "undefined" && typeof Agenda.getLista === "function") {
+        const l = Agenda.getLista();
+        if (Array.isArray(l)) return l;
+      }
+    } catch(e) {}
+    try {
+      const l = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]");
+      if (Array.isArray(l)) return l;
+    } catch(e) {}
+    return [];
+  }
+  function _thRelTrechosCredito(l) {
+    const evs = _thRelAgendaLista();
+    const ev = evs.find(x => x.id === l.ev_id);
+    if (ev && Array.isArray(ev.trechos)) return ev.trechos;
+    return [];
+  }
+  function _thRelInfo(icao) {
+  if (!icao) return null;
+  const code = String(icao).toUpperCase().trim();
+  try {
+    const raw = localStorage.getItem("dv.aerodromosOverrides.v1");
+    if (raw) {
+      const ov = JSON.parse(raw);
+      if (ov && ov[code]) {
+        return { nome: ov[code].nome || "", cidade: ov[code].cidade || "", uf: ov[code].uf || "" };
+      }
+    }
+    if (typeof window.AERODROMOS !== "undefined" && window.AERODROMOS) {
+      const arr = Array.isArray(window.AERODROMOS) ? window.AERODROMOS : Object.values(window.AERODROMOS);
+      const a = arr.find(x => x && String(x.icao || x.ICAO || x.code || "").toUpperCase() === code);
+      if (a) return { nome: a.nome || a.name || "", cidade: a.cidade || a.city || "", uf: a.uf || "" };
+    }
+    if (typeof window.Airports !== "undefined" && window.Airports) {
+      if (typeof Airports.get === "function") {
+        const arr = Airports.get();
+        if (Array.isArray(arr)) {
+          const a = arr.find(x => x && String(x.icao || "").toUpperCase() === code);
+          if (a) return { nome: a.nome || a.name || "", cidade: a.cidade || a.city || "", uf: a.uf || "" };
+        }
+      } else if (Array.isArray(Airports)) {
+        const a = Airports.find(x => x && String(x.icao || "").toUpperCase() === code);
+        if (a) return { nome: a.nome || a.name || "", cidade: a.cidade || a.city || "", uf: a.uf || "" };
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+function _thRelCity(icao) {
+  const info = _thRelInfo(icao);
+  return info ? (info.cidade || info.nome || "") : "";
+}
+
+  function _thRelColetar(filtros) {
+    const empresaId = filtros.empresa_id || "";
+    const de = filtros.data_de || "";
+    const ate = filtros.data_ate || "";
+    const empresaSel = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
+    const empresaNome = empresaSel?.nome || "";
+    const creditos = [];
+    const debitos = [];
+    const resumoMap = {};
+    const addResumo = (modelo, tipo, min) => {
+      if (!modelo) return;
+      if (!resumoMap[modelo]) resumoMap[modelo] = { aeronave: modelo, credito_min: 0, debito_min: 0 };
+      if (tipo === "credito") resumoMap[modelo].credito_min += min;
+      else resumoMap[modelo].debito_min += min;
+    };
+
+
+    lerLancamentos().forEach(l => {
+      if (l.tipo === "credito") {
+        if (empresaId && l.empresa_emprestada_id !== empresaId && l.empresa_emprestada !== empresaNome) return;
+        const trechos = _thRelTrechosCredito(l);
+        const trs = trechos.length ? trechos : [{ data: l.data, origem: "-", destino: "-", duracao: l.tempo_voo || "00:00", passageiros_ids: [] }];
+
+
+        trs.forEach(t => {
+          const dataL = t.data || l.data || "";
+          if (de && dataL && dataL < de) return;
+          if (ate && dataL && dataL > ate) return;
+
+
+          creditos.push({
+            data: dataL,
+            origem: (t.origem || "-").toUpperCase(),
+            destino: (t.destino || "-").toUpperCase(),
+            tempo: t.duracao || "00:00",
+            prefixo: l.aeronave_tail || "-",
+            passageiros: (t.passageiros_ids || []).length,
+            solicitante: _thRelSolicitanteNome(l.solicitante_id),
+            empresa: l.empresa_emprestada || "",
+            obs: l.observacoes || ""
+          });
+          addResumo(l.modelo || "-", "credito", tempoParaMinutos(t.duracao || "00:00"));
+        });
+      } else if (l.tipo === "debito") {
+        if (empresaId && l.empresa_id !== empresaId) return;
+        const trs = l.trechos || [];
+
+
+        trs.forEach(t => {
+          const dataL = t.data || "";
+          if (de && dataL && dataL < de) return;
+          if (ate && dataL && dataL > ate) return;
+
+
+          debitos.push({
+            data: dataL,
+            origem: (t.origem || "-").toUpperCase(),
+            destino: (t.destino || "-").toUpperCase(),
+            tempo: t.duracao || "00:00",
+            prefixo: l.aeronave_prefixo || "-",
+            passageiros: (t.passageiros_ids || []).length,
+            solicitante: _thRelSolicitanteNome(l.solicitante_id),
+            empresa: l.empresa_nome || "",
+            obs: l.observacoes || ""
+          });
+          addResumo(l.modelo_linkado || l.modelo || "-", "debito", tempoParaMinutos(t.duracao || "00:00"));
+        });
+      }
+    });
+
+
+    const resumo = Object.values(resumoMap).map(e => {
+      const total = e.credito_min - e.debito_min;
+      const absT = Math.abs(total);
+      const sinal = total > 0 ? "+" : (total < 0 ? "-" : "");
+      return {
+        aeronave: e.aeronave,
+        credito: minutosParaHHMM(e.credito_min),
+        debito: minutosParaHHMM(e.debito_min),
+        saldo: sinal + minutosParaHHMM(absT),
+        _cred: e.credito_min, _deb: e.debito_min, _total: total
+      };
+    }).sort((a, b) => a.aeronave.localeCompare(b.aeronave, "pt-BR"));
+
+
+    return { creditos, debitos, resumo, filtros, empresaSel };
+  }  function _thRelGerarCSV(rel) {
+    const { creditos, debitos, resumo, filtros, empresaSel } = rel;
+    const limpar = (v) => String(v ?? "").replace(/;/g, ",").replace(/[\r\n]+/g, " ");
+    const hoje = new Date();
+    const dtH = hoje.toLocaleDateString("pt-BR") + " " + hoje.toLocaleTimeString("pt-BR").slice(0,5);
+    const linhas = [];
+    linhas.push("RELATÓRIO DE TROCA DE HORAS DE VOO");
+    linhas.push("Empresa: " + (empresaSel?.nome || "Todas"));
+    linhas.push("Período: " + (_thRelYMDToBR(filtros.data_de) || "—") + " a " + (_thRelYMDToBR(filtros.data_ate) || "—"));
+    linhas.push("Gerado em: " + dtH);
+    linhas.push("");
+    linhas.push("CRÉDITOS (horas emprestadas da nossa frota)");
+    linhas.push("Data;Origem;Destino;Tempo;Prefixo;Passageiros;Solicitante;Empresa;Observação");
+    creditos.forEach(c => {
+      linhas.push([_thRelYMDToBR(c.data), limpar(c.origem), limpar(c.destino), c.tempo, c.prefixo, c.passageiros, limpar(c.solicitante), limpar(c.empresa), limpar(c.obs)].join(";"));
+    });
+    linhas.push("");
+    linhas.push("DÉBITOS (horas usadas de terceiros)");
+    linhas.push("Data;Origem;Destino;Tempo;Prefixo;Passageiros;Solicitante;Empresa;Observação");
+    debitos.forEach(d => {
+      linhas.push([_thRelYMDToBR(d.data), limpar(d.origem), limpar(d.destino), d.tempo, d.prefixo, d.passageiros, limpar(d.solicitante), limpar(d.empresa), limpar(d.obs)].join(";"));
+    });
+    linhas.push("");
+    linhas.push("RESUMO POR AERONAVE");
+    linhas.push("Aeronave;Crédito;Débito;Saldo");
+    resumo.forEach(r => linhas.push([limpar(r.aeronave), r.credito, r.debito, r.saldo].join(";")));
+    const totC = resumo.reduce((s, r) => s + r._cred, 0);
+    const totD = resumo.reduce((s, r) => s + r._deb, 0);
+    const totT = totC - totD;
+    const sinalT = totT > 0 ? "+" : (totT < 0 ? "−" : "");
+    linhas.push(["TOTAL", minutosParaHHMM(totC), minutosParaHHMM(totD), sinalT + minutosParaHHMM(Math.abs(totT))].join(";"));
+    return linhas.join("\r\n");
+  }
+  function _thRelGerarXLS(rel) {
+    const { creditos, debitos, resumo, filtros, empresaSel } = rel;
+    const nossoLogo = (() => {
+      try { const st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); if (st.logo) return st.logo; } catch(e) {}
+      return localStorage.getItem("dv_company_logo") || "";
+    })();
+    const empresaLogo = empresaSel?.logo || "";
+    const empNome = empresaSel?.nome || "Todas as empresas";
+    const periodo = (_thRelYMDToBR(filtros.data_de) || "-") + " a " + (_thRelYMDToBR(filtros.data_ate) || "-");
+    const dtH = new Date().toLocaleString("pt-BR");
+    const totC = resumo.reduce((s, r) => s + r._cred, 0);
+    const totD = resumo.reduce((s, r) => s + r._deb, 0);
+    const totT = totC - totD;
+    const sinalT = totT > 0 ? "+" : (totT < 0 ? "-" : "");
+
+
+    const BS = "border:1px solid #CBD5E1;padding:4px;font-size:10px;";
+    const BSC = BS + "text-align:center;";
+    const TH = "border:1px solid #CBD5E1;padding:5px;background:#1e293b;color:#fff;font-size:10px;font-weight:bold;text-align:center;";
+    const SEC = "border:1px solid #1e293b;padding:6px;background:#1e293b;color:#fff;font-size:11px;font-weight:bold;text-align:left;";
+
+
+    const theadCols = ["Data","Origem","Destino","Tempo","Prefixo","Pax","Solicitante","Empresa","Obs."].map(function(h){ return '<th style="' + TH + '">' + esc(h) + '</th>'; }).join('');
+
+
+    const renderRows = function(arr, altName) {
+      return arr.length
+        ? arr.map(function(r, i) {
+            const bg = i % 2 === 0 ? '' : 'background:#f5f7fa;';
+            return '<tr style="' + bg + '">'
+              + '<td style="' + BS + '">' + esc(_thRelYMDToBR(r.data)) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.origem) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.destino) + '</td>'
+              + '<td style="' + BSC + '">' + esc(r.tempo) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.prefixo) + '</td>'
+              + '<td style="' + BSC + '">' + esc(r.passageiros) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.solicitante) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.empresa) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.obs) + '</td>'
+              + '</tr>';
+          }).join('')
+        : '<tr><td colspan="9" style="' + BSC + 'padding:10px;font-style:italic;color:#999">- sem ' + esc(altName) + ' -</td></tr>';
+    };
+
+
+    const creditosHtml = renderRows(creditos, 'creditos');
+    const debitosHtml = renderRows(debitos, 'debitos');
+
+
+    const resumoHtml = resumo.length
+      ? resumo.map(function(r, i) {
+          const bg = i % 2 === 0 ? '' : 'background:#f5f7fa;';
+          const cor = r._total > 0 ? '#080' : (r._total < 0 ? '#c00' : '#555');
+          return '<tr style="' + bg + '">'
+            + '<td style="' + BS + '">' + esc(r.aeronave) + '</td>'
+            + '<td style="' + BSC + '">' + esc(r.credito) + '</td>'
+            + '<td style="' + BSC + '">' + esc(r.debito) + '</td>'
+            + '<td style="' + BSC + 'color:' + cor + ';font-weight:bold;">' + esc(r.saldo) + '</td>'
+            + '</tr>';
+        }).join('')
+      : '<tr><td colspan="4" style="' + BSC + 'padding:10px;font-style:italic;color:#999">- sem lancamentos -</td></tr>';
+
+
+    const logoCell = (nossoLogo || empresaLogo)
+      ? '<tr><td colspan="9" style="border:none;padding:8px 0;">'
+        + (nossoLogo ? '<img src="' + nossoLogo + '" style="max-height:40px;max-width:150px;margin-right:20px;">' : '')
+        + (empresaLogo ? '<img src="' + empresaLogo + '" style="max-height:40px;max-width:150px;">' : '')
+        + '</td></tr>'
+      : '';
+
+
+    const locSet = new Set();
+    [...creditos, ...debitos].forEach(r => {
+      if (r.origem && r.origem !== "-") locSet.add(r.origem.trim().toUpperCase());
+      if (r.destino && r.destino !== "-") locSet.add(r.destino.trim().toUpperCase());
+    });
+    const locs = Array.from(locSet).sort();
+    let footerHtml = '';
+    if (locs.length) {
+          footerHtml = '<br><div style="font-size:9px;color:#64748B;padding:10px 0;">'
+      + '<b>Legenda de Localidades:</b><br>' + locs.map(icao => {
+        const info = _thRelInfo(icao);
+        const parts = [];
+        if (info) {
+          if (info.nome) parts.push(info.nome);
+          if (info.cidade) parts.push(info.cidade);
+        }
+        let locStr = parts.join(" - ");
+        if (info && info.uf) locStr += " · " + info.uf;
+        return `<b>${esc(icao)}</b> - ${esc(locStr || "-")}`;
+      }).join(' &nbsp;|&nbsp; ')
+      + '</div>';
+    }
+
+
+    const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8">'
+      + '<style>table{border-collapse:collapse;font-family:Arial,sans-serif;}</style>'
+      + '</head><body>'
+      + '<table>'
+      + logoCell
+      + '<tr><td colspan="9" style="border:none;font-size:16px;font-weight:bold;color:#1e293b;padding:4px 0;">' + esc(localStorage.getItem("dv_company_name") || window.APP_CONFIG?.APP_NAME || "Air Polato") + '</td></tr>'
+      + '<tr><td colspan="9" style="border:none;font-size:12px;color:#38a8ff;font-weight:bold;padding:2px 0;">Relatorio de Troca de Horas de Voo</td></tr>'
+      + '<tr><td colspan="9" style="border:none;font-size:10px;color:#64748B;padding:2px 0;">Empresa: ' + esc(empNome) + ' &middot; Periodo: ' + esc(periodo) + '</td></tr>'
+      + '<tr><td colspan="9" style="border:none;font-size:9px;color:#94A3B8;padding:2px 0;">Emitido em ' + esc(dtH) + '</td></tr>'
+      + '<tr><td colspan="9" style="border:none;padding:6px 0;">&nbsp;</td></tr>'
+      + '</table>'
+      + '<table><thead>'
+      + '<tr><th colspan="9" style="' + SEC + '">CREDITOS (horas emprestadas da nossa frota)</th></tr>'
+      + '<tr>' + theadCols + '</tr>'
+      + '</thead><tbody>' + creditosHtml + '</tbody></table>'
+      + '<br>'
+      + '<table><thead>'
+      + '<tr><th colspan="9" style="' + SEC + '">DEBITOS (horas usadas de terceiros)</th></tr>'
+      + '<tr>' + theadCols + '</tr>'
+      + '</thead><tbody>' + debitosHtml + '</tbody></table>'
+      + '<br>'
+      + '<table><thead>'
+      + '<tr><th colspan="4" style="' + SEC + '">RESUMO POR AERONAVE</th></tr>'
+      + '<tr>'
+      + '<th style="' + TH + '">Aeronave</th>'
+      + '<th style="' + TH + '">Credito</th>'
+      + '<th style="' + TH + '">Debito</th>'
+      + '<th style="' + TH + '">Saldo</th>'
+      + '</tr></thead><tbody>' + resumoHtml
+      + '<tr style="background:#eef2f7;font-weight:bold;">'
+      + '<td style="' + BS + 'font-weight:bold;">TOTAL</td>'
+      + '<td style="' + BSC + 'font-weight:bold;">' + minutosParaHHMM(totC) + '</td>'
+      + '<td style="' + BSC + 'font-weight:bold;">' + minutosParaHHMM(totD) + '</td>'
+      + '<td style="' + BSC + 'font-weight:bold;">' + sinalT + minutosParaHHMM(Math.abs(totT)) + '</td>'
+      + '</tr>'
+      + '</tbody></table>'
+      + footerHtml
+      + '</body></html>';
+    return html;
+  }  function _thRelBaixar(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  async function _thRelGerarPDF(rel) {
+    if (typeof window.jspdf === "undefined") { alert("Biblioteca jsPDF nao carregada."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+
+    const _cores = () => ({
+      cor1: localStorage.getItem("dv_report_color1") || "#1e293b",
+      cor2: localStorage.getItem("dv_report_color2") || "#38a8ff"
+    });
+    const _hex2rgb = (hex) => {
+      hex = String(hex || "").replace("#", "");
+      const r = parseInt(hex.slice(0,2), 16); const g = parseInt(hex.slice(2,4), 16); const b = parseInt(hex.slice(4,6), 16);
+      return [isNaN(r)?0:r, isNaN(g)?0:g, isNaN(b)?0:b];
+    };
+    const _logoDataURL = () => {
+      try { const st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); if (st.logo) return st.logo; } catch(e) {}
+      return localStorage.getItem("dv_company_logo") || "";
+    };
+    const _logoParaCanvas = (src) => new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const c = document.createElement("canvas");
+            c.width = img.width; c.height = img.height;
+            c.getContext("2d").drawImage(img, 0, 0);
+            resolve({ data: c.toDataURL("image/png"), w: c.width, h: c.height });
+          } catch(e) { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = src;
+      } catch(e) { resolve(null); }
+    });
+
+
+    const { cor1, cor2 } = _cores();
+    const cor1Rgb = _hex2rgb(cor1);
+    const cor2Rgb = _hex2rgb(cor2);
+    const { creditos, debitos, resumo, filtros, empresaSel } = rel;
+
+
+    const MARGIN = 8;
+    const LOGO_X = MARGIN;
+    const LOGO_Y = 5;
+    const LOGO_H = 14;
+    const LOGO_MAX_W = 100;
+    const LOGO_ROW_H = 20;
+    const TOP_MARGIN_TABLE = 5;
+    const GAP_LOGO = 3;
+    const X_SPACE = 8;
+
+
+    const nossoLogo = _logoDataURL();
+    const empresaLogo = empresaSel?.logo || "";
+    const empNome = empresaSel?.nome || "Todas as empresas";
+    const mostrarSegundo = !!empresaSel;
+
+
+    const drawLogoAt = async (src, targetX) => {
+      if (!src || !src.startsWith("data:image")) return null;
+      try {
+        const box = await _logoParaCanvas(src);
+        if (!box) return null;
+        const ratio = box.w / box.h;
+        let h = LOGO_H;
+        let w = h * ratio;
+        if (w > LOGO_MAX_W) { w = LOGO_MAX_W; h = w / ratio; }
+        const lx = targetX;
+        const ly = LOGO_Y + (LOGO_ROW_H - h) / 2;
+        doc.addImage(box.data, "PNG", lx, ly, w, h, undefined, "SLOW");
+        return { w: w, h: h };
+      } catch(e) { return null; }
+    };
+
+
+    const drawX = (targetX) => {
+      const xCenter = targetX + X_SPACE / 2;
+      const yCenter = LOGO_Y + LOGO_ROW_H / 2;
+      doc.setFontSize(18);
+      doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+      doc.setFont("helvetica", "bold");
+      doc.text("X", xCenter, yCenter + 3, { align: "center" });
+    };
+
+
+    const drawTextLogo = (text, targetX, targetW) => {
+      const xCenter = targetX + targetW / 2;
+      const yCenter = LOGO_Y + LOGO_ROW_H / 2;
+      doc.setFontSize(10);
+      doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+      doc.setFont("helvetica", "bold");
+      const lines = doc.splitTextToSize(text, targetW);
+      const totalH = lines.length * 4;
+      const startY = yCenter - totalH / 2 + 3;
+      lines.forEach((line, i) => doc.text(line, xCenter, startY + i * 4, { align: "center" }));
+    };
+
+
+    let xCursor = LOGO_X;
+    const dimNosso = await drawLogoAt(nossoLogo, xCursor);
+    if (dimNosso) xCursor += dimNosso.w + GAP_LOGO;
+
+
+    if (mostrarSegundo) {
+      drawX(xCursor);
+      xCursor += X_SPACE + GAP_LOGO;
+      const dimEmp = await drawLogoAt(empresaLogo, xCursor);
+      if (dimEmp) xCursor += dimEmp.w + GAP_LOGO;
+      else { drawTextLogo(empNome, xCursor, 40); xCursor += 40 + GAP_LOGO; }
+    }
+
+
+    const textX = xCursor + 6;
+    const centerY = LOGO_Y + LOGO_ROW_H / 2;
+    doc.setFontSize(14);
+    doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+    doc.setFont("helvetica", "bold");
+    doc.text("Relatorio de Troca de Horas de Voo", textX, centerY - 8);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.setFont("helvetica", "normal");
+    const periodo = (_thRelYMDToBR(filtros.data_de) || "-") + " a " + (_thRelYMDToBR(filtros.data_ate) || "-");
+    doc.text("Empresa: " + empNome + "  |  Periodo: " + periodo, textX, centerY + 1);
+    doc.text("Emitido em " + new Date().toLocaleString("pt-BR"), textX, centerY + 9);
+
+
+    let yCursor = LOGO_Y + LOGO_ROW_H + 4;
+
+
+    const baseStyles = { fontSize: 8, cellPadding: { top: 1, bottom: 1, left: 2, right: 2 }, valign: "middle", lineWidth: 0.1, lineColor: [220, 220, 220] };
+    const headStyles = { fillColor: cor1Rgb, textColor: [255,255,255], fontStyle: "bold", halign: "center", cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 } };
+    const footStyles = { fillColor: cor2Rgb, textColor: [255,255,255], fontStyle: "bold", halign: "right", cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 } };
+    const altStyles = { fillColor: [245, 248, 252] };
+    const marg = { left: MARGIN, right: MARGIN, top: TOP_MARGIN_TABLE, bottom: 12 };
+
+
+    const secao = (txt, y) => {
+      doc.setFontSize(10);
+      doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+      doc.setFont("helvetica", "bold");
+      doc.text(txt, MARGIN, y);
+      return y + 4;
+    };
+
+
+    const headCols = [["Data","Origem","Destino","Tempo","Prefixo","Pax","Solicitante","Empresa","Obs."]];
+
+
+    yCursor = secao("CREDITOS (horas emprestadas da nossa frota)", yCursor);
+    const bodyC = creditos.map(c => [_thRelYMDToBR(c.data), c.origem, c.destino, c.tempo, c.prefixo, String(c.passageiros || 0), c.solicitante, c.empresa, c.obs]);
+    doc.autoTable({ startY: yCursor, head: headCols, body: bodyC.length ? bodyC : [["-","-","-","-","-","-","-","-","sem creditos"]], styles: baseStyles, headStyles, alternateRowStyles: altStyles, margin: marg });
+    yCursor = doc.lastAutoTable.finalY + 6;
+
+
+    if (yCursor > 175) { doc.addPage(); yCursor = MARGIN + 5; }
+    yCursor = secao("DEBITOS (horas usadas de terceiros)", yCursor);
+    const bodyD = debitos.map(d => [_thRelYMDToBR(d.data), d.origem, d.destino, d.tempo, d.prefixo, String(d.passageiros || 0), d.solicitante, d.empresa, d.obs]);
+    doc.autoTable({ startY: yCursor, head: headCols, body: bodyD.length ? bodyD : [["-","-","-","-","-","-","-","-","sem debitos"]], styles: baseStyles, headStyles, alternateRowStyles: altStyles, margin: marg });
+    yCursor = doc.lastAutoTable.finalY + 6;
+
+
+    if (yCursor > 175) { doc.addPage(); yCursor = MARGIN + 5; }
+    yCursor = secao("RESUMO POR AERONAVE", yCursor);
+    const totC = resumo.reduce((s, r) => s + r._cred, 0);
+    const totD = resumo.reduce((s, r) => s + r._deb, 0);
+    const totT = totC - totD;
+    const sinalT = totT > 0 ? "+" : (totT < 0 ? "-" : "");
+    const bodyR = resumo.map(r => [r.aeronave, r.credito, r.debito, r.saldo]);
+    doc.autoTable({
+      startY: yCursor,
+      head: [["Aeronave","Credito","Debito","Saldo"]],
+      body: bodyR.length ? bodyR : [["-","-","-","sem lancamentos"]],
+      foot: [["TOTAL", minutosParaHHMM(totC), minutosParaHHMM(totD), sinalT + minutosParaHHMM(Math.abs(totT))]],
+      showFoot: "lastPage",
+      styles: Object.assign({}, baseStyles, { fontSize: 9 }),
+      headStyles: headStyles,
+      footStyles: footStyles,
+      alternateRowStyles: altStyles,
+      margin: marg
+    });
+
+
+    const locSet = new Set();
+    [...creditos, ...debitos].forEach(r => {
+      if (r.origem && r.origem !== "-") locSet.add(r.origem.trim().toUpperCase());
+      if (r.destino && r.destino !== "-") locSet.add(r.destino.trim().toUpperCase());
+    });
+    const locs = Array.from(locSet).sort();
+
+
+    if (locs.length) {
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(150);
+        let yPos = doc.internal.pageSize.height - 6;
+        let xPos = MARGIN;
+
+
+              locs.forEach(icao => {
+        const info = _thRelInfo(icao);
+        const locParts = [];
+        if (info) {
+          if (info.nome) locParts.push(info.nome);
+          if (info.cidade) locParts.push(info.cidade);
+        }
+        let locStr = locParts.join(" - ");
+        if (info && info.uf) locStr += " · " + info.uf;
+        const textLoc = locStr ? " - " + locStr : "";
+        
+        doc.setFont("helvetica", "bold");
+        const wIcao = doc.getTextWidth(icao);
+        doc.setFont("helvetica", "normal");
+        const wLoc = doc.getTextWidth(textLoc);
+        const totalW = wIcao + wLoc + 6;
+
+        if (xPos + totalW > doc.internal.pageSize.width - MARGIN) {
+          xPos = MARGIN;
+          yPos += 3.5;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text(icao, xPos, yPos);
+        if (textLoc) {
+          doc.setFont("helvetica", "normal");
+          doc.text(textLoc, xPos + wIcao, yPos);
+        }
+        xPos += totalW;
+      });
+      }
+    }
+
+
+    doc.save("relatorio-troca-horas-" + new Date().toISOString().slice(0,10) + ".pdf");
+  }
+  function _thRelGerar(formato) {
+    const g = (id) => document.getElementById(id);
+    const empresaId = g("thRelEmpresa")?.value || "";
+    const dataDe = g("thRelDataDe")?.value || "";
+    const dataAte = g("thRelDataAte")?.value || "";
+    const rel = _thRelColetar({ empresa_id: empresaId, data_de: dataDe, data_ate: dataAte });
+    const ts = new Date().toISOString().slice(0,10);
+    if (formato === "pdf") {
+      _thRelGerarPDF(rel);
+    } else {
+      const html = _thRelGerarXLS(rel);
+      _thRelBaixar(html, "relatorio-troca-horas-" + ts + ".xls", "application/vnd.ms-excel;charset=utf-8");
+    }
+  }
+  function injectModalRelatorio() {
+    if (document.getElementById("thRelModal")) return;
+    const html = '<div class="modal" id="thRelModal"><div class="dialog dialog--wide">'
+      + '<h2>📊 Relatório de Troca de Horas</h2>'
+      + '<p class="hint" style="margin-top:-14px;margin-bottom:18px">Filtre por empresa e período, depois baixe em CSV ou XLS.</p>'
+      + '<div class="settings-section">'
+      +   '<h3>Filtros</h3>'
+      +   '<div class="formgrid">'
+      +     '<label class="field"><span>Empresa</span><select id="thRelEmpresa"></select></label>'
+      +     '<label class="field"><span>Data de</span><input type="date" id="thRelDataDe"></label>'
+      +     '<label class="field"><span>Data até</span><input type="date" id="thRelDataAte"></label>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="dialog__actions">'
+      +   '<button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="thRelModal">Fechar</button>'
+      +   '<button type="button" class="btn btn--secondary" id="thRelGerarPdf">📄 Baixar PDF</button>'
+      +   '<button type="button" class="btn" id="thRelGerarXls">📊 Baixar XLS</button>'
+      + '</div>'
+      + '</div></div>';
+    document.body.insertAdjacentHTML("beforeend", html);
+    const btnPdf = document.getElementById("thRelGerarPdf");
+    if (btnPdf) btnPdf.addEventListener("click", () => _thRelGerar("pdf"));
+    const btnXls = document.getElementById("thRelGerarXls");
+    if (btnXls) btnXls.addEventListener("click", () => _thRelGerar("xls"));
+  }
+  function abrirRelatorio() {
+    injectModalRelatorio();
+    const g = (id) => document.getElementById(id);
+    const sel = g("thRelEmpresa");
+    if (sel) {
+      const lista = lerEmpresas();
+      sel.innerHTML = '<option value="">Todas as empresas</option>'
+        + lista.map(e => '<option value="' + esc(e.id) + '">' + esc(e.nome) + '</option>').join("");
+    }
+    const hoje = new Date();
+    const de = new Date(); de.setDate(de.getDate() - 30);
+    if (g("thRelDataDe")) g("thRelDataDe").value = _thRelYMD(de);
+    if (g("thRelDataAte")) g("thRelDataAte").value = _thRelYMD(hoje);
+    const m = g("thRelModal");
+    if (m) m.classList.add("is-open");
+  }
+
   /* ---------- Init ---------- */
   function initListeners() {
     const bc = document.getElementById("thBtnCredito");
@@ -17759,9 +18534,11 @@ function renderLista() {
     if (be && !be.dataset.bound) { be.dataset.bound = "1"; be.addEventListener("click", abrirEmpresa); }
     const bl = document.getElementById("thBtnLink");
     if (bl && !bl.dataset.bound) { bl.dataset.bound = "1"; bl.addEventListener("click", abrirLink); }
+    const br = document.getElementById("thBtnRelatorio");
+    if (br && !br.dataset.bound) { br.dataset.bound = "1"; br.addEventListener("click", abrirRelatorio); }
   }
 
-  return { render, initListeners, lerLancamentos, salvarLancamentos, lerEmpresas, salvarEmpresas, lerLinks, salvarLinks, calcularSaldo, tempoParaMinutos, minutosParaHHMM, modeloDaAeronave, repopularModeloDebito, toggleOutrosModelosDebito, onModeloDebitoChange };
+  return { render, initListeners, abrirRelatorio, lerLancamentos, salvarLancamentos, lerEmpresas, salvarEmpresas, lerLinks, salvarLinks, calcularSaldo, tempoParaMinutos, minutosParaHHMM, modeloDaAeronave, repopularModeloDebito, toggleOutrosModelosDebito, onModeloDebitoChange };
 })();
 
 
@@ -19110,7 +19887,7 @@ Router.init();
             if (local) local.style.display = "none";
           } else {
             if (cloud) cloud.style.display = "none";
-            if (local) local.style.display = "none";
+            if (local) local.style.display = "";
           }
         }
         if (p === "passageiros") Passengers.renderList();
@@ -22435,8 +23212,6 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 </style>
-
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const loadColor = (inputId, labelId, storageKey, defaultColor) => {
