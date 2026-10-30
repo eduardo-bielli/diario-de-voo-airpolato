@@ -4154,6 +4154,12 @@ body.is-booting .app {
     <span style="color:var(--red);font-weight:700;font-size:13px">🚨 Permitir apagar dados sensíveis (voos revisados e aeronaves)</span>
   </div>
 </label>
+<label class="field" id="usTbEditarExecutadosWrap" style="grid-column:1/-1; margin-top:8px">
+  <div style="display:flex;align-items:center;gap:8px; padding:10px; border:1px dashed var(--accent); border-radius:8px; background:rgba(56,168,255,.05)">
+    <input type="checkbox" id="usTbEditarExecutados" style="margin:0;width:auto">
+    <span style="color:var(--accent);font-weight:700;font-size:13px">✏️ Permitir editar voos executados (solicitante, observações, etc)</span>
+  </div>
+</label>
 
 <label class="field" id="usTbPassageiroWrap" style="grid-column:1/-1">
   <span>Função extra</span>
@@ -11240,6 +11246,9 @@ const Users = (() => {
       const wrapApagar = g("usTbApagarSensiveisWrap");
       if (wrapApagar) wrapApagar.style.display = (u?.perfil === "admin") ? "" : "none";
     }
+    if (g("usTbEditarExecutados")) {
+      g("usTbEditarExecutados").checked = (u?.extras?.pode_editar_executados === true);
+    }
 
     if (g("usTbPassageiro")) {
       g("usTbPassageiro").checked =
@@ -11260,6 +11269,7 @@ const Users = (() => {
       const wrapApagar = g("usTbApagarSensiveisWrap");
       if (wrapApagar) wrapApagar.style.display = (g("usPerfil").value === "admin") ? "" : "none";
       if (g("usPerfil").value !== "admin" && g("usTbApagarSensiveis")) g("usTbApagarSensiveis").checked = false;
+      if (g("usPerfil").value !== "admin" && g("usPerfil").value !== "piloto" && g("usTbEditarExecutados")) g("usTbEditarExecutados").checked = false;
     };
     g("userModal").classList.add("is-open");
   }
@@ -11281,6 +11291,7 @@ const Users = (() => {
     const tambem_passageiro = (g("usTbPassageiro")?.checked === true);
     const tambem_solicitante = (g("usTbSolicitante")?.checked === true);
     const pode_apagar_dados = (g("usTbApagarSensiveis")?.checked === true);
+    const pode_editar_executados = (g("usTbEditarExecutados")?.checked === true);
     const p = { id: editingId||("u-"+Date.now()), nome: g("usNome").value.trim(), email: g("usEmail").value.trim(),
       perfil: perfil, tambem_e_piloto: tambem_e_piloto,
       tambem_passageiro: tambem_passageiro,
@@ -11325,6 +11336,7 @@ const Users = (() => {
             if (tambem_passageiro === true) e.tambem_passageiro = true; else delete e.tambem_passageiro;
             if (tambem_solicitante === true) e.tambem_solicitante = true; else delete e.tambem_solicitante;
             if (pode_apagar_dados === true) e.pode_apagar_dados = true; else delete e.pode_apagar_dados;
+            if (pode_editar_executados === true) e.pode_editar_executados = true; else delete e.pode_editar_executados;
             return e;
           })()
         }).eq("id", editingId).select("*").single();
@@ -13305,6 +13317,10 @@ const Executados = (() => {
         }
         html += '</div>';
     }
+    var podeEditarExe = Session.get().extras?.pode_editar_executados === true;
+    if (podeEditarExe) {
+        html += '<button class="event__btn" data-action="edit-event" data-id="' + esc(ev.id) + '" title="Editar voo (solicitante, observacoes, etc)" style="width:30px; height:30px; font-size:14px; flex:none; cursor:pointer;">✏️</button>';
+    }
     if (podeDeletar) {
         html += '<button class="event__btn event__btn--danger" data-exe-del="1" data-exe-ev="' + esc(ev.id) + '" title="Excluir voo executado" style="width:30px; height:30px; font-size:14px; flex:none;">X</button>';
     }
@@ -13329,7 +13345,7 @@ const Executados = (() => {
     html += '<div data-exe-detail class="exe-detail">';
     html += '<div style="font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:800; margin-bottom:8px;">Resumo do voo</div>';
     html += '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-bottom:14px; padding:10px 14px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:12px;">';
-    html +=   '<div><div style="color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:700;">Tipo</div><b>' + esc(ev.tipo||"Voo regular") + '</b></div>';
+    html +=   '<div><div style="color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:700;">Tipo</div><b>' + esc((ev.tipo === "Translado" ? "Troca de HR" : ev.tipo) || "Voo regular") + '</b></div>';
     
     var solNome = "—";
     if (ev.solicitante_id) {
@@ -16474,6 +16490,16 @@ function renderLista() {
                   +   '</div>'
                   + '</div>'
                   + '<div style="font-size:13px;font-weight:700">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_tail || "—") + '</div>'
+                  + (() => {
+                    try {
+                      const agenda = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]");
+                      const ev = agenda.find(x => String(x.id) === String(l.ev_id));
+                      const trs = ev?.trechos || [];
+                      if (!trs.length) return "";
+                      const rota = trs[0].origem + trs.map(t => " → " + t.destino).join("");
+                      return '<div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--text)">Rota:</b> ' + esc(rota) + '</div>';
+                    } catch(e) { return ""; }
+                  })()
                   + '<div style="font-size:12px;color:var(--muted);margin-top:2px">Total: ' + esc(l.tempo_voo || "00:00") + ' · Resp: ' + esc(l.responsavel || "—") + (l.empresa_emprestada ? ' · ' + esc(l.empresa_emprestada) : '') + '</div>'
                   + infoConsumo
                   + '</div>';
@@ -16496,6 +16522,12 @@ function renderLista() {
                   +   '</div>'
                   + '</div>'
                   + '<div style="font-size:13px;font-weight:700">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_prefixo || "—") + '</div>'
+                  + (() => {
+                    const trs = l.trechos || [];
+                    if (!trs.length) return "";
+                    const rota = trs[0].origem + trs.map(t => " → " + t.destino).join("");
+                    return '<div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--text)">Rota:</b> ' + esc(rota) + '</div>';
+                  })()
                   + '<div style="font-size:12px;color:var(--muted);margin-top:2px">Total: ' + minutosParaHHMM(totalMin) + ' · Empresa: ' + esc(l.empresa_nome || "—") + '</div>'
                   + infoConsumo
                   + '</div>';
@@ -16678,7 +16710,7 @@ function renderLista() {
           const cor = (typeof Aircraft !== "undefined" && Aircraft.get) ? (Aircraft.get().find(a => a.tail === ev.aeronave_tail)?.color || "#38a8ff") : "#38a8ff";
           return '<button type="button" data-ev-id="' + esc(ev.id) + '" style="width:100%;text-align:left;display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;font-family:inherit;color:var(--text)">'
             + '<span style="font-family:ui-monospace,monospace;font-size:11px;font-weight:800;color:#fff;background:' + cor + ';padding:3px 7px;border-radius:4px">' + esc(ev.aeronave_tail || "—") + '</span>'
-            + '<span style="flex:1;min-width:0"><span style="font-size:12px;font-weight:700;display:block">' + esc(primeira.origem || "—") + ' → ' + esc(primeira.destino || "—") + '</span>'
+            + '<span style="flex:1;min-width:0"><span style="font-size:12px;font-weight:700;display:block">' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</span>'
             + '<span style="font-size:11px;color:var(--muted)">' + esc(primeira.data || "") + ' · ' + tempo + ' · ' + trs.length + ' trecho' + (trs.length > 1 ? 's' : '') + '</span></span>'
             + '</button>';
         }).join("")
@@ -16718,7 +16750,7 @@ function renderLista() {
       +   '<div><span style="color:var(--muted)">Passageiros:</span> <b>' + paxSet.size + '</b></div>'
       +   '<div><span style="color:var(--muted)">Solicitante:</span> <b>' + esc(solNome) + '</b></div>'
       + '</div>'
-      + '<div style="margin-top:8px"><span style="color:var(--muted)">Rota:</span> <b>' + esc(primeira.origem || "—") + ' → ' + esc(trs[trs.length-1].destino || "—") + '</b></div>'
+      + '<div style="margin-top:8px"><span style="color:var(--muted)">Rota:</span> <b>' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</b></div>'
       + '</div>';
 
     const form = document.getElementById("thCredForm");
@@ -18365,7 +18397,43 @@ function _thRelCity(icao) {
     const headStyles = { fillColor: cor1Rgb, textColor: [255,255,255], fontStyle: "bold", halign: "center", cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 } };
     const footStyles = { fillColor: cor2Rgb, textColor: [255,255,255], fontStyle: "bold", halign: "right", cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 } };
     const altStyles = { fillColor: [245, 248, 252] };
-    const marg = { left: MARGIN, right: MARGIN, top: TOP_MARGIN_TABLE, bottom: 12 };
+    /* Calcula locs ANTES do autoTable pra reservar espaco do rodape */
+    const locSet = new Set();
+    [...creditos, ...debitos].forEach(r => {
+      if (r.origem && r.origem !== "-") locSet.add(r.origem.trim().toUpperCase());
+      if (r.destino && r.destino !== "-") locSet.add(r.destino.trim().toUpperCase());
+    });
+    const locs = Array.from(locSet).sort();
+    const locItems = locs.map(icao => {
+      const info = _thRelInfo(icao);
+      const parts = [];
+      if (info) {
+        if (info.nome) parts.push(info.nome);
+        if (info.cidade) parts.push(info.cidade);
+      }
+      let locStr = parts.join(" - ");
+      if (info && info.uf) locStr += " \u00b7 " + info.uf;
+      return { icao: icao, textLoc: locStr ? " - " + locStr : "" };
+    });
+    const RODAPE_FONT_SIZE = 6.5;
+    const RODAPE_LINE_H = 3.5;
+    const RODAPE_BASE_Y = doc.internal.pageSize.height - 8;
+    const RODAPE_LARGURA = doc.internal.pageSize.width - MARGIN * 2;
+    let simLines = 1;
+    let simX = 0;
+    doc.setFontSize(RODAPE_FONT_SIZE);
+    for (const item of locItems) {
+      doc.setFont("helvetica", "bold");
+      const wIcao = doc.getTextWidth(item.icao);
+      doc.setFont("helvetica", "normal");
+      const wLoc = doc.getTextWidth(item.textLoc);
+      const totalW = wIcao + wLoc + 4;
+      if (simX + totalW > RODAPE_LARGURA) { simLines++; simX = 0; }
+      simX += totalW;
+    }
+    const RODAPE_ALTURA = simLines * RODAPE_LINE_H;
+    const margBottom = Math.max(20, 8 + RODAPE_ALTURA + 5);
+    const marg = { left: MARGIN, right: MARGIN, top: TOP_MARGIN_TABLE, bottom: margBottom };
 
 
     const secao = (txt, y) => {
@@ -18414,58 +18482,44 @@ function _thRelCity(icao) {
     });
 
 
-    const locSet = new Set();
-    [...creditos, ...debitos].forEach(r => {
-      if (r.origem && r.origem !== "-") locSet.add(r.origem.trim().toUpperCase());
-      if (r.destino && r.destino !== "-") locSet.add(r.destino.trim().toUpperCase());
-    });
-    const locs = Array.from(locSet).sort();
-
-
     if (locs.length) {
       const totalPages = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(7);
-        doc.setTextColor(150);
-        let yPos = doc.internal.pageSize.height - 6;
-        let xPos = MARGIN;
+      const pageW = doc.internal.pageSize.width;
+      doc.setPage(totalPages);
+      const topY = RODAPE_BASE_Y - (simLines - 1) * RODAPE_LINE_H;
+      let xPos = MARGIN;
+      let yPos = topY;
+      let linhaAtual = 0;
+      doc.setFontSize(RODAPE_FONT_SIZE);
+      doc.setTextColor(150);
 
-
-              locs.forEach(icao => {
-        const info = _thRelInfo(icao);
-        const locParts = [];
-        if (info) {
-          if (info.nome) locParts.push(info.nome);
-          if (info.cidade) locParts.push(info.cidade);
-        }
-        let locStr = locParts.join(" - ");
-        if (info && info.uf) locStr += " · " + info.uf;
-        const textLoc = locStr ? " - " + locStr : "";
-        
+      for (let k = 0; k < locItems.length; k++) {
+        const item = locItems[k];
         doc.setFont("helvetica", "bold");
-        const wIcao = doc.getTextWidth(icao);
+        const wIcao = doc.getTextWidth(item.icao);
         doc.setFont("helvetica", "normal");
-        const wLoc = doc.getTextWidth(textLoc);
-        const totalW = wIcao + wLoc + 6;
+        const wLoc = doc.getTextWidth(item.textLoc);
+        const totalW = wIcao + wLoc + 4;
 
-        if (xPos + totalW > doc.internal.pageSize.width - MARGIN) {
+        if (xPos + totalW > pageW - MARGIN) {
           xPos = MARGIN;
-          yPos += 3.5;
+          linhaAtual++;
+          yPos = topY + linhaAtual * RODAPE_LINE_H;
         }
 
         doc.setFont("helvetica", "bold");
-        doc.text(icao, xPos, yPos);
-        if (textLoc) {
+        doc.text(item.icao, xPos, yPos);
+        if (item.textLoc) {
           doc.setFont("helvetica", "normal");
-          doc.text(textLoc, xPos + wIcao, yPos);
+          doc.text(item.textLoc, xPos + wIcao, yPos);
         }
         xPos += totalW;
-      });
       }
+
+      doc.setDrawColor(220);
+      doc.setLineWidth(0.1);
+      doc.line(MARGIN, topY - 3, pageW - MARGIN, topY - 3);
     }
-
-
     doc.save("relatorio-troca-horas-" + new Date().toISOString().slice(0,10) + ".pdf");
   }
   function _thRelGerar(formato) {
@@ -18517,7 +18571,7 @@ function _thRelCity(icao) {
         + lista.map(e => '<option value="' + esc(e.id) + '">' + esc(e.nome) + '</option>').join("");
     }
     const hoje = new Date();
-    const de = new Date(); de.setDate(de.getDate() - 30);
+    const de = new Date(hoje.getFullYear(), 0, 1);
     if (g("thRelDataDe")) g("thRelDataDe").value = _thRelYMD(de);
     if (g("thRelDataAte")) g("thRelDataAte").value = _thRelYMD(hoje);
     const m = g("thRelModal");
