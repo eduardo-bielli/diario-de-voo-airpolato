@@ -230,10 +230,13 @@ body.sidebar-is-open{overflow:hidden}
   #revisaoModal .revisao-tempo-calc:has(#rvTempoTotal) > span, #revisaoModal .revisao-tempo-calc:has(#rvCombGastoValor) > span { color: var(--muted) !important; font-weight: 500 !important; }
   #revisaoModal .revisao-tempo-calc:has(#rvTempoTotal) > strong, #revisaoModal .revisao-tempo-calc:has(#rvCombGastoValor) > strong { color: var(--text) !important; font-family: ui-monospace, monospace !important; font-size: 13px !important; font-weight: 800 !important; }
   #revisaoModal #rvCombGastoDetalhe { display: none !important; }
-  #revisaoModal #rvTanqueAntes { display: block !important; margin: 0 0 4px !important; font-weight: 700 !important; font-size: 13px !important; line-height: 1.5 !important; }
-  #revisaoModal #rvTanqueAntes > span { display: inline !important; font-size: 13px !important; }
-  #revisaoModal #rvTanqueAntesTotal { display: block !important; margin: 0 !important; padding-top: 6px !important; border-top: 1px dashed var(--line) !important; font-size: 13px !important; line-height: 1.5 !important; color: var(--text) !important; font-weight: 600 !important; }
-  #revisaoModal .revisao-tempo-calc:has(#rvTanqueAntes) { display: block !important; flex-direction: column !important; justify-content: flex-start !important; align-items: stretch !important; padding: 12px !important; background: var(--bg) !important; border-left: none !important; border-radius: 10px !important; margin-bottom: 14px !important; }
+  #revisaoModal #rvTanqueAntes, #revisaoModal #rvTanqueDecol { font-weight: 400 !important; }
+  #revisaoModal #rvTanqueAntes b, #revisaoModal #rvTanqueDecol b { font-weight: 800 !important; }
+  #revisaoModal #rvTanqueAntesTotal, #revisaoModal #rvTanqueDecolTotal { font-weight: 400 !important; }
+  #revisaoModal #rvTanqueCard { display: flex !important; }
+  #revisaoModal #rvTanqueDecol { display: block !important; margin: 0 0 4px !important; font-weight: 700 !important; font-size: 13px !important; line-height: 1.5 !important; }
+  #revisaoModal #rvTanqueDecol > span { display: inline !important; font-size: 13px !important; }
+  #revisaoModal #rvTanqueDecolTotal { display: block !important; margin: 0 !important; padding-top: 6px !important; border-top: 1px dashed var(--line) !important; font-size: 13px !important; line-height: 1.5 !important; color: var(--text) !important; font-weight: 600 !important; }
   #revisaoModal #rvCombGasto { font-size: 18px !important; font-weight: 700 !important; }
   #revisaoModal #rvPreviewBox { background: #fff !important; border: 1px solid rgba(0,0,0,.06) !important; border-left: 4px solid var(--accent) !important; border-radius: 14px !important; padding: 16px !important; margin: 10px 0 !important; box-shadow: 0 1px 2px rgba(0,0,0,.04) !important; }
   /* #7: forçar grid de 2 colunas no card custos */
@@ -665,7 +668,7 @@ body.is-offline [data-escrita]::after{content:attr(title);position:absolute}
 .event__expand{display:none}
 .event.is-expanded .event__expand{display:block;margin-top:6px;padding-top:0;border-top:0}
 .event.is-expanded{padding-top:12px !important}
-.event__expand-meta{display:flex;flex-direction:column;gap:4px;padding:8px 12px;margin-bottom:8px;background:rgba(22,135,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:12px;line-height:1.3}
+.event__expand-meta{display:flex;flex-direction:column;gap:4px;padding:8px 12px;margin-bottom:8px;background:rgba(22,135,255,.08);border-radius:6px;font-size:12px;line-height:1.3}
 .event__expand-meta > div{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;justify-content:flex-start}
 .event__expand-meta .event__tag{margin:0;color:#fff !important}
 .event__expand-meta .event__tag:not([class*="--"]){background:#167fe8;color:#fff !important}
@@ -9440,7 +9443,7 @@ const Agenda = (() => {
       /* Cria badge */
       const badge = document.createElement("div");
       badge.className = "trecho__fuso";
-      badge.style.cssText = "margin-top:6px;padding:6px 10px;background:rgba(56,168,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:11px;color:var(--text)";
+      badge.style.cssText = "margin-top:6px;padding:6px 10px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)";
       badge.innerHTML = '🌐 Diferença de fuso: <b>' + dStr + '</b> (local no destino ' + direcao + ' ' + Math.abs(delta) + 'h)';
       /* Insere antes da div .trecho__pax (ou no final) */
       const paxDiv = trechoEl.querySelector('.trecho__pax');
@@ -10283,12 +10286,17 @@ const Agenda = (() => {
     const abasteceu = g("rvAbasteceu")?.value === "true";
     const _wrapAbast = g("rvCombDetalhes");
     if (_wrapAbast) {
-        // Usa o atributo hidden para esconder/mostrar (o CSS cuida do display)
+        // Esconde/mostra o painel E força display via inline pra garantir
         _wrapAbast.hidden = !abasteceu;
-        // Remove qualquer estilo inline que possa ter ficado preso
-        _wrapAbast.style.display = "";
+        _wrapAbast.style.display = abasteceu ? "" : "none";
     }
+    // Bloqueia/desbloqueia os inputs (redundância de segurança)
+    ["rvCombLitros", "rvCombValor", "rvCombLitrosUnidade"].forEach(id => {
+      const el = g(id);
+      if (el) el.disabled = !abasteceu;
+    });
     if (!abasteceu) {
+      // Limpa os valores
       ["rvCombLitros", "rvCombValor"].forEach(id => { const el = g(id); if (el) el.value = ""; });
       const tot = g("rvCombTotal"); if (tot) tot.value = "";
     }
@@ -10337,18 +10345,35 @@ const Agenda = (() => {
     /* ==== 5. Preenche campos readonly ==== */
     const elAntes = g("rvTanqueAntes");
     if (elAntes) {
-      elAntes.parentNode.style.display = "flex"; elAntes.parentNode.style.justifyContent = "space-between"; elAntes.parentNode.style.alignItems = "center"; elAntes.parentNode.style.width = "100%";
       const isLB = (aero.tanque_unidade === "LB");
-      const vL = Math.round(tanqueLitros); const vLB = Math.round(tanqueLitros * LB_POR_LITRO);
-      const sP = "font-size:15px; font-weight:800; color:var(--text); margin-left:6px;";
-      const sS = "font-size:13px; color:var(--muted); margin-left:6px;";
-      const tL = isLB ? "<span style='"+sS+"'>"+vL+" L</span>" : "<span style='"+sP+"'>"+vL+" L</span>";
-      const tLB = isLB ? "<span style='"+sP+"'>"+vLB+" LB</span>" : "<span style='"+sS+"'>"+vLB+" LB</span>";
-      const ord = isLB ? (tLB + " <span style='font-size:13px'>-</span> " + tL) : (tL + " <span style='font-size:13px'>-</span> " + tLB);
-      elAntes.innerHTML = ord + " <span style='"+sS+"'>| " + fmtBR(tanquePreco) + "/L</span>";
+      const vL = Math.round(tanqueLitros);
+      const vLB = Math.round(tanqueLitros * LB_POR_LITRO);
+      const tL = isLB ? vL + " L" : "<b>" + vL + " L</b>";
+      const tLB = isLB ? "<b>" + vLB + " LB</b>" : vLB + " LB";
+      const ord = isLB ? (tLB + " - " + tL) : (tL + " - " + tLB);
+      elAntes.innerHTML = ord + " | " + fmtBR(tanquePreco) + "/L";
     }
     const elAntesTot = g("rvTanqueAntesTotal");
-    if (elAntesTot) elAntesTot.innerHTML = '<span style="font-size:14px; font-weight:normal; color:var(--text); white-space:nowrap;">Total: ' + fmtBR(tanqueLitros * tanquePreco) + '</span>';
+    if (elAntesTot) elAntesTot.textContent = 'Total: ' + fmtBR(tanqueLitros * tanquePreco);
+    /* ==== 5b. Tanque após abastecimento (decolagem) ==== */
+    const elDecolWrap = g("rvTanqueDecolWrap");
+    const elDecol = g("rvTanqueDecol");
+    const elDecolTot = g("rvTanqueDecolTotal");
+    if (elDecolWrap && elDecol && elDecolTot) {
+      if (abasteceu && abastLitros > 0) {
+        elDecolWrap.style.display = "block";
+        const isLB2 = (aero.tanque_unidade === "LB");
+        const dL = Math.round(totalLitros);
+        const dLB = Math.round(totalLitros * LB_POR_LITRO);
+        const tL2 = isLB2 ? dL + " L" : "<b>" + dL + " L</b>";
+        const tLB2 = isLB2 ? "<b>" + dLB + " LB</b>" : dLB + " LB";
+        const ord2 = isLB2 ? (tLB2 + " - " + tL2) : (tL2 + " - " + tLB2);
+        elDecol.innerHTML = ord2 + " | " + fmtBR(precoMedio) + "/L";
+        elDecolTot.textContent = 'Total: ' + fmtBR(totalValor);
+      } else {
+        elDecolWrap.style.display = "none";
+      }
+    }
 
     /* Total do abastecimento */
     const elAbastTot = g("rvCombTotal");
@@ -17299,7 +17324,7 @@ function renderLista() {
       +   '<div id="thEmpresaModelos" style="max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px"></div>'
       + '</div>'
       + '<div id="thEmpresaListaWrap" style="margin-top:14px">'
-      +   '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:20px 0 10px;padding:8px 12px;background:var(--nav-active-bg);border-left:3px solid var(--accent);border-radius:6px">📋 Empresas cadastradas</div>'
+      +   '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:20px 0 10px;padding:8px 12px;background:var(--nav-active-bg);border-radius:6px">📋 Empresas cadastradas</div>'
       +   '<div id="thEmpresaLista"></div>'
       + '</div>'
       + '<div class="dialog__actions">'
@@ -17413,7 +17438,7 @@ function renderLista() {
     const idEditando = (document.getElementById("thEmpresaId")?.value || "");
     box.innerHTML = lista.map(e => {
       const ativa = e.id === idEditando;
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);border-radius:6px;' + (ativa ? 'background:var(--nav-active-bg);border-left:3px solid var(--accent);padding-left:8px' : '') + '">'
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);border-radius:6px;' + (ativa ? 'background:var(--nav-active-bg);padding-left:8px' : '') + '">'
         + '<button type="button" data-th-emp-edit="' + esc(e.id) + '" style="flex:1;min-width:0;text-align:left;border:0;background:transparent;cursor:pointer;padding:0;font-family:inherit;color:inherit">'
         +   '<div style="font-size:13px;font-weight:700;color:var(--text)">' + esc(e.nome) + (ativa ? ' <span style="font-size:10px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.05em">· editando</span>' : '') + '</div>'
         +   (e.cnpj ? '<div style="font-size:11px;color:var(--muted)">' + esc(e.cnpj) + '</div>' : '')
@@ -17544,7 +17569,7 @@ function renderLista() {
       +     '<div id="thLinkConvYLabel" style="font-size:10px;color:var(--muted);margin-top:3px"></div>'
       +   '</div>'
       + '</div>'
-      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:11px;color:var(--text)"></div>'
+      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)"></div>'
       + '</div>'      + '<h3>3. Conversão entre modelos</h3>'
       + '<div id="thLinkConvSection" style="display:none">'
       + '<p class="hint" style="margin:-4px 0 10px;font-size:11px">Defina quanto vale 1h de cada modelo (ex: 2h de King Air = 4h de Pilatus)</p>'
@@ -17561,7 +17586,7 @@ function renderLista() {
       +     '<div id="thLinkConvYLabel" style="font-size:10px;color:var(--muted);margin-top:3px"></div>'
       +   '</div>'
       + '</div>'
-      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:11px;color:var(--text)"></div>'
+      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)"></div>'
       + '</div>'
       + '<h3 style="margin-top:14px">4. Horas a linkar</h3>'
       +   '<label class="field"><span>Horas do crédito a consumir</span>'
@@ -17876,7 +17901,7 @@ function renderLista() {
         dataLink = d.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric" }) + " " + d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
       } catch(e) { dataLink = lk.criado_em || ""; }
 
-      return '<div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;margin-bottom:8px">'
+      return '<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)">'
         +   '<span style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em">🔗 Voo Linkado</span>'
         +   '<div style="display:flex;gap:8px;align-items:center">'
@@ -18873,7 +18898,7 @@ const Backup = (() => {
     /* Alerta */
     if (alerta) {
       if (!isSupabase) {
-        alerta.innerHTML = '<div style="padding:10px 14px;background:rgba(56,168,255,.10);border-left:3px solid var(--accent);border-radius:6px;font-size:12px;color:var(--text)">'
+        alerta.innerHTML = '<div style="padding:10px 14px;background:rgba(56,168,255,.10);border-radius:6px;font-size:12px;color:var(--text)">'
           + '💡 Você está no <b>modo local</b>. Depois de migrar pro Supabase, esta página mostrará o <b>uso real</b> (banco, egress, MAU).'
           + '</div>';
       } else {
@@ -20364,8 +20389,21 @@ Router.init();
   /* "Abasteceu": só esconde/mostra detalhes. Desabilitar campos e recalcular
      são tratados em abrirRevisao() (atualizarEstadoAbast + calcularValorCombGasto). */
   document.getElementById("rvAbasteceu").addEventListener("change", (e) => {
-    const det = document.getElementById("rvCombDetalhes");
-    if (det) det.hidden = e.target.value !== "true";
+    /* Chama atualizarEstadoAbast() que oculta/mostra + bloqueia/desbloqueia */
+    if (typeof atualizarEstadoAbast === "function") {
+      atualizarEstadoAbast();
+    } else {
+      /* Fallback (caso a funcao nao esteja no escopo global) */
+      const det = document.getElementById("rvCombDetalhes");
+      if (det) {
+        det.hidden = e.target.value !== "true";
+        det.style.display = e.target.value === "true" ? "" : "none";
+      }
+    }
+    /* Recalcula o total */
+    if (typeof Agenda !== "undefined" && Agenda.calcularValorCombGasto) {
+      Agenda.calcularValorCombGasto();
+    }
   });
   /* NOTA: os listeners de rvCombGasto/rvCombLitros/rvCombValor/unidades
      são registrados em abrirRevisao() (com dataset.boundPreview/boundUnidade),
@@ -20472,10 +20510,31 @@ Router.init();
 
       <div class="revisao-sec mobile-card">
         <h4>Combustível</h4>
-        <div class="revisao-tempo-calc" style="margin-bottom:14px;background:var(--bg);border-left-color:var(--line)">
-          <span>Tanque antes do voo:</span>
-          <strong id="rvTanqueAntes">0 L · R$ 0,00/L</strong>
-          <span id="rvTanqueAntesTotal" style="font-size:11px;color:var(--muted);margin-left:auto"></span>
+        <div id="rvTanqueCard" style="margin-bottom:14px;background:var(--bg);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:8px;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr>
+              <td style="text-align:left;padding:0;vertical-align:middle;">
+                <span style="font-weight:400;margin-right:6px;">Tanque antes:</span>
+                <span id="rvTanqueAntes">0 L · R$ 0,00/L</span>
+              </td>
+              <td style="text-align:right;padding:0;white-space:nowrap;vertical-align:middle;">
+                <span id="rvTanqueAntesTotal">Total: R$ 0,00</span>
+              </td>
+            </tr>
+          </table>
+          <div id="rvTanqueDecolWrap" style="display:none;border-top:1px dashed var(--line);padding-top:8px;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <tr>
+                <td style="text-align:left;padding:0;vertical-align:middle;">
+                  <span style="font-weight:400;margin-right:6px;">Tanque após:</span>
+                  <span id="rvTanqueDecol">0 L · R$ 0,00/L</span>
+                </td>
+                <td style="text-align:right;padding:0;white-space:nowrap;vertical-align:middle;">
+                  <span id="rvTanqueDecolTotal">Total: R$ 0,00</span>
+                </td>
+              </tr>
+            </table>
+          </div>
         </div>
 
         <label class="field" style="margin-bottom:14px"><span>Abasteceu antes do voo?</span>
@@ -20733,7 +20792,7 @@ Router.init();
   <button type="button" class="btn btn--secondary" id="ccOutrosAdd" style="margin-top:8px">+ Adicionar linha</button>
 </div>
 
-<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important;border-left:3px solid var(--accent)">
+<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Custo total por hora de voo</span>
     <strong id="ccTotal" style="font-size:22px;color:var(--accent);font-weight:800">R$ 0,00</strong>
@@ -20801,7 +20860,7 @@ Router.init();
   <button type="button" class="btn btn--secondary" id="ccOutrosAdd" style="margin-top:8px">+ Adicionar linha</button>
 </div>
 
-<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important;border-left:3px solid var(--accent)">
+<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Custo total por hora de voo</span>
     <strong id="ccTotal" style="font-size:22px;color:var(--accent);font-weight:800">R$ 0,00</strong>
@@ -21159,7 +21218,7 @@ Router.init();
   <h2>📧 Enviar roteiro do voo</h2>
   <p class="hint" style="margin-top:-14px;margin-bottom:18px" id="sendEmailSub">—</p>
 
-  <div id="sendEmailPreview" style="background:var(--bg);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.6;border-left:3px solid var(--accent);margin-bottom:16px"></div>
+  <div id="sendEmailPreview" style="background:var(--bg);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.6;margin-bottom:16px"></div>
 
   <div class="settings-section">
     <h3>Destinatários</h3>
