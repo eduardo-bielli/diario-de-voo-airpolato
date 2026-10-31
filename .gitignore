@@ -61,3 +61,8 @@ scripts/dev/
 
 # Config local por empresa (cada fork tem o seu)
 config.js
+
+# Backups dos scripts
+*.bak
+*.bak-*
+deploy/teste-cache.html
