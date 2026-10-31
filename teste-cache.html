@@ -8833,7 +8833,13 @@ const Agenda = (() => {
       const proximosVoos = [];
       events.forEach(ev => {
         if (ev.tipo === "Bloquear aeronave") return; // bloqueio não é voo
-        const trechosFut = (ev.trechos||[]).filter(t => t.data && parseYmd(t.data) >= today);
+        const _agora = new Date();
+        const trechosFut = (ev.trechos||[]).filter(t => {
+          if (!t.data) return false;
+          const _h = (t.hora && /^\d{1,2}:\d{2}/.test(t.hora)) ? t.hora : "00:00";
+          const _dt = new Date(t.data + "T" + _h + ":00");
+          return _dt > _agora;
+        });
         if (trechosFut.length) {
           const proximo = trechosFut.sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora))[0];
           proximosVoos.push({ ev, trecho: proximo });
