@@ -7013,7 +7013,9 @@ const Db = (() => {
       dataIni: ev.dataIni||null, horaIni: ev.horaIni||null,
       dataFim: ev.dataFim||null, horaFim: ev.horaFim||null,
       roteiro_enviado_em: ev.roteiro_enviado_em||null,
-      roteiro_enviado_para: ev.roteiro_enviado_para||null };
+      roteiro_enviado_para: ev.roteiro_enviado_para||null,
+      _tanque_aplicado: ev._tanque_aplicado === true,
+      _tanque_aplicado_em: ev._tanque_aplicado_em||null };
     p.id = ev.id || ("ev-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8));
 
     /* Sempre atualiza o cache local ANTES de tentar a nuvem.
@@ -10311,10 +10313,32 @@ const Agenda = (() => {
     const aero = Aircraft.get().find(a => a.tail === ev.aeronave_tail);
     if (!aero) { el.textContent = "R$ 0,00"; return; }
 
-    /* ==== 1. Tanque antes do voo ==== */
-    const tanqueQtd = Number(aero.tanque_qtd) || 0;
-    const tanquePreco = Number(aero.tanque_preco) || 0;
+    /* ==== 1. Tanque antes do voo (com cascata) ====
+       Regra:
+       - Trecho 0: SEMPRE usa cadastro atual da aeronave (permite corrigir a base)
+       - Trecho N>0: cascata do trecho anterior (se revisado); senão, cadastro
+    */
     const tanqueUnidade = aero.tanque_unidade || "L";
+    let tanqueQtd, tanquePreco;
+    if (revisandoIdx === 0) {
+      /* Primeiro trecho: usa Tanque Confirmado (snapshot do piloto ou input atual) */
+      const confSalvo = ev.trechos[0]?.revisao?.combustivel?.tanque_confirmado_qtd;
+      const inpConf = g("rvTanqueConfirmado");
+      const confDigitado = inpConf && inpConf.value ? parseFloat(inpConf.value) : NaN;
+      const confFinal = (!isNaN(confDigitado) && confDigitado > 0) ? confDigitado : (Number(confSalvo) || Number(aero.tanque_qtd) || 0);
+      tanqueQtd = confFinal;
+      tanquePreco = Number(aero.tanque_preco) || 0;
+    } else {
+      const trPrev = ev.trechos[revisandoIdx - 1];
+      const cPrev = trPrev?.revisao?.combustivel;
+      if (cPrev && cPrev.tanque_depois_qtd !== undefined) {
+        tanqueQtd = Number(cPrev.tanque_depois_qtd) || 0;
+        tanquePreco = Number(cPrev.tanque_depois_preco) || Number(aero.tanque_preco) || 0;
+      } else {
+        tanqueQtd = Number(aero.tanque_qtd) || 0;
+        tanquePreco = Number(aero.tanque_preco) || 0;
+      }
+    }
     /* Sempre trabalha em litros */
     const tanqueLitros = tanqueUnidade === "LB" ? (tanqueQtd / LB_POR_KG) / DENSIDADE_JETA1 : tanqueQtd;
 
@@ -10330,9 +10354,12 @@ const Agenda = (() => {
     }
 
     /* ==== 3. Preço médio APÓS abastecimento ==== */
-    const totalLitros = tanqueLitros + abastLitros;
-    const totalValor = (tanqueLitros * tanquePreco) + abastTotal;
-    const precoMedio = totalLitros > 0 ? (totalValor / totalLitros) : tanquePreco;
+    const _totalLitrosCalc = tanqueLitros + abastLitros;
+    const _totalValorCalc = (tanqueLitros * tanquePreco) + abastTotal;
+    const precoMedio = _totalLitrosCalc > 0 ? (_totalValorCalc / _totalLitrosCalc) : tanquePreco;
+    /* Trecho 0: tanque_confirmado ja inclui abastecimento. N>0: soma abastecimento do trecho */
+    const totalLitros = (revisandoIdx === 0) ? tanqueLitros : _totalLitrosCalc;
+    const totalValor = totalLitros * precoMedio;
 
     /* ==== 4. Combustível gasto ==== */
     const qtdGasto = parseFloat(g("rvCombGasto")?.value) || 0;
@@ -10355,6 +10382,15 @@ const Agenda = (() => {
     }
     const elAntesTot = g("rvTanqueAntesTotal");
     if (elAntesTot) elAntesTot.textContent = 'Total: ' + fmtBR(tanqueLitros * tanquePreco);
+    /* ==== 5a. Sugerir valor pro Confirmar Tanque (trecho 0) ==== */
+    if (revisandoIdx === 0) {
+      const inpConf = g("rvTanqueConfirmado");
+      if (inpConf && (!inpConf.value || parseFloat(inpConf.value) === 0)) {
+        const qtdSug = tanqueUnidade === "LB" ? totalLitros * LB_POR_KG * DENSIDADE_JETA1 : totalLitros;
+        inpConf.value = Math.round(qtdSug);
+      }
+    }
+
     /* ==== 5b. Tanque após abastecimento (decolagem) ==== */
     const elDecolWrap = g("rvTanqueDecolWrap");
     const elDecol = g("rvTanqueDecol");
@@ -10576,6 +10612,21 @@ const Agenda = (() => {
       }
     }
 
+    /* Configura o bloco de Confirmar Tanque (apenas no trecho 0) */
+    const wrapConf = g("rvConfirmarTanqueWrap");
+    const inpConf = g("rvTanqueConfirmado");
+    const unidConf = g("rvTanqueConfirmadoUnid");
+    if (wrapConf && inpConf && unidConf) {
+      if (idx === 0) {
+        wrapConf.style.display = "block";
+        unidConf.textContent = aeroRev0?.tanque_unidade || "L";
+        const confSalvo = rv.combustivel?.tanque_confirmado_qtd;
+        inpConf.value = (confSalvo !== undefined && confSalvo !== null) ? confSalvo : "";
+      } else {
+        wrapConf.style.display = "none";
+      }
+    }
+
     const abastSel = g("rvAbasteceu");
     if (abastSel && !abastSel.dataset.boundEstado) {
       abastSel.dataset.boundEstado = "1";
@@ -10752,6 +10803,18 @@ const Agenda = (() => {
 
     const abasteceu = g("rvAbasteceu").value === "true";
 
+    /* Valida Tanque Confirmado no trecho 0 (obrigatorio) */
+    let tanqueConfirmadoQtd = null;
+    if (revisandoIdx === 0) {
+      const inpConf = g("rvTanqueConfirmado");
+      tanqueConfirmadoQtd = parseFloat(inpConf?.value);
+      if (isNaN(tanqueConfirmadoQtd) || tanqueConfirmadoQtd <= 0) {
+        alert("\u26A0 Preencha o Tanque Confirmado na Decolagem (obrigatorio).");
+        if (inpConf) inpConf.focus();
+        return;
+      }
+    }
+
     /* ==== Combustível gasto (em litros) ==== */
     const gastoRaw = parseFloat(g("rvCombGasto").value) || 0;
     const gastoUnidade = g("rvCombGastoUnidade").value || "L";
@@ -10768,17 +10831,38 @@ const Agenda = (() => {
     if (aeroIdx < 0) { alert("Aeronave não encontrada."); return; }
     const aero = Aircraft.get()[aeroIdx];
 
-    /* ==== Tanque ANTES do voo ====
-       Se este trecho já tinha revisão, usa o "antes" guardado nela.
-       Senão, usa o estado atual do cadastro. */
+    /* ==== Tanque ANTES do voo (cascata) ====
+       - Trecho 0: SEMPRE cadastro atual
+       - Trecho N>0: cascata do anterior (se revisado); senão, cadastro
+    */
     const revisaoAntiga = ev.trechos[revisandoIdx]?.revisao?.combustivel;
-    let tanqueAntesLitros, tanqueAntesPreco;
-    
-    // CORREÇÃO: Usa SEMPRE o cadastro atual da aeronave para bater com a tela
-    const tanqueQtd = Number(aero.tanque_qtd) || 0;
     const tanqueUnid = aero.tanque_unidade || "L";
-    tanqueAntesLitros = tanqueUnid === "LB" ? (tanqueQtd / LB_POR_KG) / DENSIDADE_JETA1 : tanqueQtd;
-    tanqueAntesPreco = Number(aero.tanque_preco) || 0;
+    let tanqueAntesLitros, tanqueAntesPreco;
+    if (revisandoIdx === 0) {
+      /* Primeiro trecho: usa Tanque Confirmado (validado antes) */
+      const confFinal = tanqueConfirmadoQtd;
+      console.log("[DEBUG save trecho 0]", {
+        tanqueConfirmadoQtd: tanqueConfirmadoQtd,
+        inpConfValue: g("rvTanqueConfirmado")?.value,
+        confFinal: confFinal,
+        tanqueUnid: tanqueUnid,
+        tanqueAntesLitros: confFinal === null || confFinal === undefined ? "NULL/UNDEF" : (tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal)
+      });
+      tanqueAntesLitros = tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal;
+      tanqueAntesPreco = Number(aero.tanque_preco) || 0;
+    } else {
+      const trPrevS = ev.trechos[revisandoIdx - 1];
+      const cPrevS = trPrevS?.revisao?.combustivel;
+      if (cPrevS && cPrevS.tanque_depois_qtd !== undefined) {
+        const _qtdLB = Number(cPrevS.tanque_depois_qtd) || 0;
+        tanqueAntesLitros = tanqueUnid === "LB" ? (_qtdLB / LB_POR_KG) / DENSIDADE_JETA1 : _qtdLB;
+        tanqueAntesPreco = Number(cPrevS.tanque_depois_preco) || Number(aero.tanque_preco) || 0;
+      } else {
+        const tq = Number(aero.tanque_qtd) || 0;
+        tanqueAntesLitros = tanqueUnid === "LB" ? (tq / LB_POR_KG) / DENSIDADE_JETA1 : tq;
+        tanqueAntesPreco = Number(aero.tanque_preco) || 0;
+      }
+    }
 
     // Limpa o histórico antigo deste trecho para não descontar o combustível duas vezes
     if (revisaoAntiga) {
@@ -10795,9 +10879,12 @@ const Agenda = (() => {
 
     /* ==== Cálculos ==== */
     const valorAbast = abastLitros * valorLitroAbast;
-    const totalLitros = tanqueAntesLitros + abastLitros;
-    const totalValor = (tanqueAntesLitros * tanqueAntesPreco) + valorAbast;
-    const precoMedio = totalLitros > 0 ? (totalValor / totalLitros) : tanqueAntesPreco;
+    const _totalLitrosCalc = tanqueAntesLitros + abastLitros;
+    const _totalValorCalc = (tanqueAntesLitros * tanqueAntesPreco) + valorAbast;
+    const precoMedio = _totalLitrosCalc > 0 ? (_totalValorCalc / _totalLitrosCalc) : tanqueAntesPreco;
+    /* Trecho 0: confirmado ja inclui abastecimento. N>0: soma abastecimento do trecho */
+    const totalLitros = (revisandoIdx === 0) ? tanqueAntesLitros : _totalLitrosCalc;
+    const totalValor = totalLitros * precoMedio;
     const tanqueDepoisLitros = Math.max(0, totalLitros - gastoLitros); // Evita tanque negativo
     const valorGasto = gastoLitros * precoMedio;
 
@@ -10809,9 +10896,8 @@ const Agenda = (() => {
     const unidAero = aero.tanque_unidade || "L";
     const convSaida = (litros) => unidAero === "LB" ? litros * LB_POR_KG * DENSIDADE_JETA1 : litros;
 
-    /* ==== Atualiza aeronave ==== */
-    aero.tanque_qtd = +convSaida(tanqueDepoisLitros).toFixed(1);
-    aero.tanque_preco = +precoMedio.toFixed(4);
+    /* ==== Atualiza aeronave: feita pelo R5 (só quando _todosConcluidos) ==== */
+    /* Removido: aero.tanque_qtd = +convSaida(tanqueDepoisLitros).toFixed(1); */
 
 
     /* Histórico */
@@ -10851,13 +10937,16 @@ const Agenda = (() => {
         valor_litro: valorLitroAbast,
         total_abastecimento: +valorAbast.toFixed(2),
         /* Extras pra auditoria */
-        tanque_antes_qtd: +tanqueAntesLitros.toFixed(2),
+        tanque_antes_qtd: +convSaida(tanqueAntesLitros).toFixed(2),
         tanque_antes_preco: +tanqueAntesPreco.toFixed(4),
-        tanque_depois_qtd: +tanqueDepoisLitros.toFixed(2),
+        tanque_depois_qtd: +convSaida(tanqueDepoisLitros).toFixed(2),
         tanque_depois_preco: +precoMedio.toFixed(4),
         valor_gasto_total: +valorGasto.toFixed(2),
         unidade_gasto: g("rvCombGastoUnidade")?.value || "L",
-        unidade_abast: g("rvCombLitrosUnidade")?.value || "L"
+        unidade_abast: g("rvCombLitrosUnidade")?.value || "L",
+        tanque_confirmado_qtd: tanqueConfirmadoQtd !== null ? +tanqueConfirmadoQtd : undefined,
+        tanque_confirmado_litros: tanqueConfirmadoQtd !== null ? (tanqueUnid === "LB" ? (tanqueConfirmadoQtd / LB_POR_KG) / DENSIDADE_JETA1 : tanqueConfirmadoQtd) : undefined,
+        tanque_confirmado_unidade: tanqueConfirmadoQtd !== null ? tanqueUnid : undefined
       },
       observacoes: g("rvObs").value.trim() || "",
       despesas: (function() {
@@ -10883,6 +10972,69 @@ const Agenda = (() => {
     };
 
     const trechosNovos = ev.trechos.map((t, i) => i === revisandoIdx ? { ...t, revisao } : t);
+
+    /* Snapshot: esse voo já foi "aplicado" no tanque da aeronave antes?
+       Se sim, edições posteriores NÃO recascateiam nem atualizam a aeronave. */
+    const eraAplicado = ev._tanque_aplicado === true;
+
+    /* ==== CASCATA: recalcula trechos seguintes já revisados ====
+       Quando o usuário edita um trecho, os seguintes (já revisados)
+       precisam ter tanque_antes_qtd e tanque_depois_qtd atualizados
+       em cadeia, senão ficam com valores inconsistentes do snapshot.
+    */
+    for (let _i = revisandoIdx + 1; _i < trechosNovos.length; _i++) {
+      if (eraAplicado) break;   /* já aplicado: não recascateia */
+      const _tr = trechosNovos[_i];
+      const _comb = _tr.revisao?.combustivel;
+      if (_tr.revisao?.status !== "concluido" || !_comb) continue;
+      const _trPrev = trechosNovos[_i - 1];
+      const _cPrev = _trPrev?.revisao?.combustivel;
+      if (!_cPrev || _cPrev.tanque_depois_qtd === undefined) continue;
+
+      const _qtdLB = Number(_cPrev.tanque_depois_qtd) || 0;
+      const _unid = aero.tanque_unidade || "L";
+      const _novoAntesL = _unid === "LB" ? (_qtdLB / LB_POR_KG) / DENSIDADE_JETA1 : _qtdLB;
+      const _novoAntesP = Number(_cPrev.tanque_depois_preco) || Number(_comb.tanque_antes_preco) || 0;
+      const _abastL = _comb.abasteceu ? (Number(_comb.litros_abastecidos) || 0) : 0;
+      const _gastoL = Number(_comb.gasto_litros) || 0;
+      const _totalL = _novoAntesL + _abastL;
+      const _valAbast = _abastL * (Number(_comb.valor_litro) || 0);
+      const _totalV = (_novoAntesL * _novoAntesP) + _valAbast;
+      const _precoM = _totalL > 0 ? (_totalV / _totalL) : _novoAntesP;
+      const _novoDepoisL = Math.max(0, _totalL - _gastoL);
+      const _valGasto = _gastoL * _precoM;
+
+      _tr.revisao = {
+        ..._tr.revisao,
+        combustivel: {
+          ..._comb,
+          tanque_antes_qtd: +(_unid === "LB" ? _novoAntesL * LB_POR_KG * DENSIDADE_JETA1 : _novoAntesL).toFixed(2),
+          tanque_antes_preco: +_novoAntesP.toFixed(4),
+          tanque_depois_qtd: +(_unid === "LB" ? _novoDepoisL * LB_POR_KG * DENSIDADE_JETA1 : _novoDepoisL).toFixed(2),
+          tanque_depois_preco: +_precoM.toFixed(4),
+          valor_gasto_total: +_valGasto.toFixed(2)
+        }
+      };
+    }
+
+    /* ==== Atualiza tanque da aeronave SOMENTE SE:
+       1) Não foi aplicado ainda (evita rodar 2x)
+       2) TODOS os trechos estão concluídos (voos completos apenas)
+    ==== */
+    const _todosConcluidos = trechosNovos.every(t => t.revisao && t.revisao.status === "concluido");
+    let _lastRevIdx = -1;
+    for (let _j = trechosNovos.length - 1; _j >= 0; _j--) {
+      if (trechosNovos[_j].revisao?.status === "concluido") { _lastRevIdx = _j; break; }
+    }
+    if (!eraAplicado && _todosConcluidos && _lastRevIdx >= 0) {
+      const _lc = trechosNovos[_lastRevIdx].revisao.combustivel;
+      if (_lc && _lc.tanque_depois_qtd !== undefined) {
+        aero.tanque_qtd = +_lc.tanque_depois_qtd.toFixed(1);
+        aero.tanque_preco = +_lc.tanque_depois_preco.toFixed(4);
+        ev._tanque_aplicado = true;
+        ev._tanque_aplicado_em = new Date().toISOString();
+      }
+    }
 
     /* === PATCH 7: gerenciar continuação automática quando pouso fora do planejado ===
        Casos:
@@ -10969,7 +11121,9 @@ const Agenda = (() => {
       criado_por: ev.criado_por,
       criado_em: ev.criado_em,
       atualizado_por: Session.get().id || "local-admin",
-      atualizado_em: new Date().toISOString()
+      atualizado_em: new Date().toISOString(),
+      _tanque_aplicado: ev._tanque_aplicado === true,
+      _tanque_aplicado_em: ev._tanque_aplicado_em || null
     };
 
     const btn = g("rvSaveBtn");
@@ -20510,6 +20664,24 @@ Router.init();
 
       <div class="revisao-sec mobile-card">
         <h4>Combustível</h4>
+        <label class="field" style="margin-bottom:14px"><span>Abasteceu antes do voo?</span>
+          <select id="rvAbasteceu" class="mobile-input-compact"><option value="false">Não</option><option value="true">Sim</option></select>
+        </label>
+
+        <div class="revisao-combusto-inline" id="rvCombDetalhes" hidden style="margin-bottom:14px">
+          <label class="field"><span>Quantidade abastecida</span>
+            <div class="mobile-input-group">
+              <input id="rvCombLitros" type="number" min="0" step="0.1" placeholder="0" class="mobile-input-left mobile-input-compact">
+              <select id="rvCombLitrosUnidade" class="mobile-select-right mobile-input-compact">
+                <option value="L">L</option>
+                <option value="LB">Lb</option>
+              </select>
+            </div>
+          </label>
+          <label class="field"><span>Valor pago (R$/L)</span><input id="rvCombValor" type="number" min="0" step="0.01" placeholder="0,00" class="mobile-input-compact"></label>
+          <label class="field"><span>Total do abastecimento</span><input id="rvCombTotal" type="text" readonly style="background:var(--nav-active-bg)" class="mobile-input-compact"></label>
+        </div>
+
         <div id="rvTanqueCard" style="margin-bottom:14px;background:var(--bg);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:8px;">
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr>
@@ -20535,24 +20707,13 @@ Router.init();
               </tr>
             </table>
           </div>
-        </div>
-
-        <label class="field" style="margin-bottom:14px"><span>Abasteceu antes do voo?</span>
-          <select id="rvAbasteceu" class="mobile-input-compact"><option value="false">Não</option><option value="true">Sim</option></select>
-        </label>
-
-        <div class="revisao-combusto-inline" id="rvCombDetalhes" hidden style="margin-bottom:14px">
-          <label class="field"><span>Quantidade abastecida</span>
-            <div class="mobile-input-group">
-              <input id="rvCombLitros" type="number" min="0" step="0.1" placeholder="0" class="mobile-input-left mobile-input-compact">
-              <select id="rvCombLitrosUnidade" class="mobile-select-right mobile-input-compact">
-                <option value="L">L</option>
-                <option value="LB">Lb</option>
-              </select>
-            </div>
-          </label>
-          <label class="field"><span>Valor pago (R$/L)</span><input id="rvCombValor" type="number" min="0" step="0.01" placeholder="0,00" class="mobile-input-compact"></label>
-          <label class="field"><span>Total do abastecimento</span><input id="rvCombTotal" type="text" readonly style="background:var(--nav-active-bg)" class="mobile-input-compact"></label>
+          <div id="rvConfirmarTanqueWrap" style="display:none;border-top:1px dashed var(--line);padding-top:10px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">
+              Tanque confirmado na decolagem: *
+              <input type="number" id="rvTanqueConfirmado" step="1" style="width:100px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;" placeholder="0">
+              <span id="rvTanqueConfirmadoUnid" style="font-size:13px;color:var(--muted);font-weight:600;">LB</span>
+            </label>
+          </div>
         </div>
 
         <label class="field"><span>Combustível gasto neste trecho</span>
