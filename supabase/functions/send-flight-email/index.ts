@@ -384,8 +384,8 @@ function montarHTML({ tipo, empresa, voo, mudancas, dest }) {
             <tr>
               <td style="vertical-align:middle">${marcaHTML}</td>
               <td style="text-align:right;vertical-align:middle">
-                <div style="color:rgba(255,255,255,.65);font-size:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:800">Roteiro do voo</div>
-                <div style="color:#fff;font-size:14px;font-weight:700;margin-top:5px">${escHtml(tipoVoo)}</div>
+                <div style="color:${hexToRgba(textSegColor, .65)};font-size:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:800">Roteiro do voo</div>
+                <div style="color:${textSegColor};font-size:14px;font-weight:700;margin-top:5px">${escHtml(tipoVoo)}</div>
               </td>
             </tr>
           </table>
