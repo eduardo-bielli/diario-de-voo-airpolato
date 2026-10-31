@@ -587,6 +587,7 @@ body.is-offline [data-escrita]::after{content:attr(title);position:absolute}
 .perm-item.is-disabled{opacity:.5;cursor:not-allowed}
 .dialog--wide{width:min(880px,100%)}
 .trecho{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg);margin-bottom:10px;position:relative}
+.trecho--conflito { border: 2px solid var(--red) !important; background: rgba(255, 90, 95, 0.05) !important; }
 .trecho__head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .trecho__num{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--nav-title-color);font-weight:800}
 .trecho__remove{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:all .15s}
@@ -925,7 +926,7 @@ body.is-offline [data-escrita]::after{content:attr(title);position:absolute}
 .cpa-aero__tail{font-family:ui-monospace,monospace;font-size:12px;font-weight:800;color:#fff;padding:3px 10px;border-radius:5px}
 .cpa-aero__model{font-size:12px;color:var(--muted)}
 .cpa-aero__total{margin-left:auto;font-size:14px;font-weight:800;color:var(--text)}
-.cpa-aero__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;min-width:0}
+.cpa-aero__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
 .cpa-item{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden}
 .cpa-item__label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
 .cpa-item__value{font-size:13px;font-weight:800;color:var(--text);margin-top:4px;font-family:ui-monospace,monospace}
@@ -5681,6 +5682,17 @@ const Solicitantes = (() => {
   }
 
   async function submitForm() {
+    // ═══ VALIDAÇÃO DE CONFLITO INTERNO ═══
+    const _confInt = conflitoTrechosInterno();
+    if (_confInt) {
+      const elAviso = document.getElementById("evAvisoConflito");
+      if (elAviso) elAviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      alert("⛔ EXISTEM TRECHOS SOBREPOSTOS!\n\nO trecho " + (_confInt.a.idx + 1) + " e o trecho " + (_confInt.b.idx + 1) + " têm horários que se chocam.\n\nAjuste os horários antes de salvar.");
+      return;
+    }
+    // ═══════════════════════════════════════
+
+
     const g = (id) => document.getElementById(id);
     const nome = g("solNome").value.trim();
     const email = g("solEmail").value.trim();
@@ -8488,9 +8500,32 @@ const Agenda = (() => {
   }
   window.mostrarToast = mostrarToast;
 
+  /* Verifica se 2+ trechos do mesmo voo se sobrepõem em horário */
+  function conflitoTrechosInterno() {
+    const ranges = [];
+    formTrechos.forEach((t, i) => {
+      if (!t.data) return;
+      const r = trechoMinutosRangeLocal(t);
+      if (r) ranges.push({ idx: i, tr: t, ini: r.ini, fim: r.fim });
+    });
+    for (let a = 0; a < ranges.length; a++) {
+      for (let b = a + 1; b < ranges.length; b++) {
+        const rA = ranges[a], rB = ranges[b];
+        if (rA.ini < rB.fim && rA.fim > rB.ini) {
+          return { a: rA, b: rB };
+        }
+      }
+    }
+    return null;
+  }
+
   function atualizarAvisoConflito() {
     const el = document.getElementById("evAvisoConflito");
     if (!el) return false;
+    
+    // Limpa highlights anteriores
+    document.querySelectorAll('.trecho--conflito').forEach(e => e.classList.remove('trecho--conflito'));
+
     const tail = document.getElementById("evAeronave")?.value;
     const temDatas = formTrechos.some(t => t.data);
     if (!tail || !temDatas) {
@@ -8498,6 +8533,23 @@ const Agenda = (() => {
       const t = document.getElementById("toastConflito");
       if (t) t.classList.remove("is-open");
       return false;
+    }
+
+    /* ===== 0) Conflito INTERNO: trechos do mesmo voo se sobrepõem ===== */
+    const conflitoInt = conflitoTrechosInterno();
+    if (conflitoInt) {
+      el.className = "aviso-conflito aviso-conflito--block is-open";
+      el.innerHTML = '<strong>\u26d4 Trechos sobrepostos</strong>'
+        + 'O trecho <b>' + (conflitoInt.a.idx + 1) + '</b> e o trecho <b>' + (conflitoInt.b.idx + 1) + '</b> se sobrepõem em horário.'
+        + ' Ajuste os horários antes de salvar.';
+      
+      // Destaca visualmente os trechos com erro
+      const boxA = document.querySelector('.trecho[data-idx="' + conflitoInt.a.idx + '"]');
+      const boxB = document.querySelector('.trecho[data-idx="' + conflitoInt.b.idx + '"]');
+      if (boxA) boxA.classList.add('trecho--conflito');
+      if (boxB) boxB.classList.add('trecho--conflito');
+      
+      return true;
     }
 
     /* ===== 1) Verifica P1/P2 indisponiveis (folga/treinamento) ===== */
@@ -9622,28 +9674,48 @@ const Agenda = (() => {
       });
     });
 
-    /* Inputs de hora do trecho */
+    /* Inputs de hora do trecho — focus preenche sugestão + sync */
     box.querySelectorAll('input[data-trecho-field="hora"]').forEach(inp => {
       if (inp.disabled) return;
+      const i = +inp.dataset.idx;
+      inp.addEventListener("focus", () => {
+        const t = formTrechos[i];
+        if (!t) return;
+        if (!inp.value && t._horaSugerida) {
+          inp.value = t._horaSugerida;
+          t.hora = t._horaSugerida;
+        }
+      });
+      inp.addEventListener("input", () => {
+        formTrechos[i].hora = inp.value;
+      });
       inp.addEventListener("blur", () => {
-        const i = +inp.dataset.idx;
         formTrechos[i].hora = inp.value;
         recalcularDuracoes();
       });
     });
 
-    /* Inputs de data dos trechos */
+    /* Inputs de data dos trechos — atualiza em tempo real + preenche sugestão no focus */
     box.querySelectorAll('input[data-trecho-field="data"]').forEach(inp => {
       if (inp.disabled) return;
-      inp.addEventListener("change", () => {
-        const i = +inp.dataset.idx;
+      const i = +inp.dataset.idx;
+      const syncData = () => {
         formTrechos[i].data = inp.value;
-        atualizarAvisoConflito();
-      });
-      inp.addEventListener("blur", () => {
-        const i = +inp.dataset.idx;
-        formTrechos[i].data = inp.value;
-        atualizarAvisoConflito();
+        try { atualizarAvisoConflito(); } catch(e) {}
+      };
+      inp.addEventListener("input", syncData);
+      inp.addEventListener("change", syncData);
+      inp.addEventListener("blur", syncData);
+
+      /* No focus: se vazio e tem data sugerida, preenche antes do calendário abrir */
+      inp.addEventListener("focus", () => {
+        const t = formTrechos[i];
+        if (!t) return;
+        if (!inp.value && t._dataSugerida) {
+          inp.value = t._dataSugerida;
+          t.data = t._dataSugerida;
+          try { atualizarAvisoConflito(); } catch(e) {}
+        }
       });
     });
 
@@ -9730,7 +9802,7 @@ const Agenda = (() => {
         if (!t.status) t.status = {};
       });
     } else {
-      formTrechos = [{ data: ymd(selectedDate), hora: "08:00", duracao: "00:00", origem: "", destino: "", passageiros_ids: [], status: {} }];
+      formTrechos = [{ data: ymd(selectedDate), hora: "", duracao: "00:00", origem: "", destino: "", passageiros_ids: [], status: {} }];
     }
     g("eventModalTitle").textContent = ev ? "Editar voo" : "Novo voo";
     g("evDeleteBtn").hidden = !ev || !Session.temPermissao("excluir_voo");
@@ -9970,10 +10042,40 @@ const Agenda = (() => {
   }
 
   function addTrecho() {
-    const last = formTrechos[formTrechos.length - 1];
+    const lastIdx = formTrechos.length - 1;
+    const last = formTrechos[lastIdx];
+    /* Pega a data do trecho anterior (formTrechos ou input) */
+    let lastData = last?.data || "";
+    if (!lastData) {
+      const inpLast = document.querySelector('input[data-trecho-field="data"][data-idx="' + lastIdx + '"]');
+      if (inpLast && inpLast.value) {
+        lastData = inpLast.value;
+        if (last) last.data = lastData;
+      }
+    }
+    if (!lastData && formTrechos[0]?.data) lastData = formTrechos[0].data;
+    /* Pega a hora do trecho anterior */
+    let lastHora = last?.hora || "";
+    if (!lastHora) {
+      const inpLastH = document.querySelector('input[data-trecho-field="hora"][data-idx="' + lastIdx + '"]');
+      if (inpLastH && inpLastH.value) lastHora = inpLastH.value;
+    }
+    /* Calcula hora sugerida = hora + duração */
+    let horaSug = "";
+    if (lastHora && last?.duracao && /^\d{1,2}:\d{2}$/.test(last.duracao)) {
+      const [h1, m1] = lastHora.split(":").map(Number);
+      const [h2, m2] = last.duracao.split(":").map(Number);
+      const totalMin = (h1||0)*60 + (m1||0) + (h2||0)*60 + (m2||0);
+      const hh = Math.floor((totalMin / 60) % 24);
+      const mm = totalMin % 60;
+      horaSug = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    }
+    /* Cria trecho com data E hora VAZIAS + sugestões internas */
     formTrechos.push({
       data: "",
-      hora: last?.hora || "08:00",
+      _dataSugerida: lastData || "",
+      hora: "",
+      _horaSugerida: horaSug,
       duracao: "00:00",
       origem: last?.destino || "",
       destino: "",
@@ -9984,11 +10086,37 @@ const Agenda = (() => {
 
   function addRetorno() {
     const first = formTrechos[0];
-    const last = formTrechos[formTrechos.length - 1];
+    const lastIdx = formTrechos.length - 1;
+    const last = formTrechos[lastIdx];
     if (!first || !last) return;
+    /* Data sugerida = do último trecho (ou input se formTrechos vazio) */
+    let lastData = last.data || "";
+    if (!lastData) {
+      const inpLast = document.querySelector('input[data-trecho-field="data"][data-idx="' + lastIdx + '"]');
+      if (inpLast && inpLast.value) {
+        lastData = inpLast.value;
+        last.data = lastData;
+      }
+    }
+    let lastHora = last.hora || "";
+    if (!lastHora) {
+      const inpLastH = document.querySelector('input[data-trecho-field="hora"][data-idx="' + lastIdx + '"]');
+      if (inpLastH && inpLastH.value) lastHora = inpLastH.value;
+    }
+    let horaSugR = "";
+    if (lastHora && last.duracao && /^\d{1,2}:\d{2}$/.test(last.duracao)) {
+      const [h1, m1] = lastHora.split(":").map(Number);
+      const [h2, m2] = last.duracao.split(":").map(Number);
+      const totalMin = (h1||0)*60 + (m1||0) + (h2||0)*60 + (m2||0);
+      const hh = Math.floor((totalMin / 60) % 24);
+      const mm = totalMin % 60;
+      horaSugR = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    }
     formTrechos.push({
       data: "",
-      hora: last.hora || "08:00",
+      _dataSugerida: lastData || "",
+      hora: "",
+      _horaSugerida: horaSugR,
       duracao: "00:00",
       origem: last.destino || "",
       destino: first.origem || "",
@@ -10354,6 +10482,46 @@ const Agenda = (() => {
     }
   }
 
+  /* Helper: parse de valor BR (aceita vírgula, ponto de milhar, etc) */
+  function _parseBR(v) {
+    if (v === null || v === undefined) return 0;
+    let s = String(v).trim();
+    if (!s) return 0;
+    // Remove "R$", espaços, etc — mantém apenas dígitos, vírgula, ponto e sinal
+    s = s.replace(/[^\d,.\-]/g, "");
+    if (!s) return 0;
+    // Se tem vírgula → ponto é milhar, vírgula é decimal
+    if (s.indexOf(",") !== -1) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (s.indexOf(".") !== -1) {
+      // Sem vírgula: se tem 1 ponto com 1-2 dígitos depois → decimal (5.5 / 5.50)
+      const partes = s.split(".");
+      if (partes.length === 2 && partes[1].length <= 2) {
+        // decimal, mantém
+      } else {
+        // milhar, remove pontos
+        s = s.replace(/\./g, "");
+      }
+    }
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  /* Helper: formata número como moeda BR (ex: 5 → "5,00", 10.4 → "10,40", 1500 → "1.500,00") */
+  function _fmtNumBR(v) {
+    const n = Number(v) || 0;
+    return n.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  /* Formata quantidade (inteiro sem decimais, ou 1 decimal se tiver) */
+  function _fmtQtdBR(v) {
+    const n = Number(v) || 0;
+    if (n === Math.floor(n)) {
+      return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    return n.toFixed(1).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
   function calcularValorCombGasto() {
     const g = (id) => document.getElementById(id);
     const el = g("rvCombGastoValor");
@@ -10371,12 +10539,8 @@ const Agenda = (() => {
     const tanqueUnidade = aero.tanque_unidade || "L";
     let tanqueQtd, tanquePreco;
     if (revisandoIdx === 0) {
-      /* Primeiro trecho: usa Tanque Confirmado (snapshot do piloto ou input atual) */
-      const confSalvo = ev.trechos[0]?.revisao?.combustivel?.tanque_confirmado_qtd;
-      const inpConf = g("rvTanqueConfirmado");
-      const confDigitado = inpConf && inpConf.value ? parseFloat(inpConf.value) : NaN;
-      const confFinal = (!isNaN(confDigitado) && confDigitado > 0) ? confDigitado : (Number(confSalvo) || Number(aero.tanque_qtd) || 0);
-      tanqueQtd = confFinal;
+      /* Primeiro trecho: SEMPRE cadastro da aeronave (não lê o confirmado — evita loop) */
+      tanqueQtd = Number(aero.tanque_qtd) || 0;
       tanquePreco = Number(aero.tanque_preco) || 0;
     } else {
       const trPrev = ev.trechos[revisandoIdx - 1];
@@ -10396,10 +10560,10 @@ const Agenda = (() => {
     const abasteceu = g("rvAbasteceu")?.value === "true";
     let abastLitros = 0, abastPreco = 0, abastTotal = 0;
     if (abasteceu) {
-      const qtdAbast = parseFloat(g("rvCombLitros")?.value) || 0;
+      const qtdAbast = _parseBR(g("rvCombLitros")?.value);
       const unidAbast = g("rvCombLitrosUnidade")?.value || "L";
       abastLitros = unidAbast === "LB" ? (qtdAbast / LB_POR_KG) / DENSIDADE_JETA1 : qtdAbast;
-      abastPreco = parseFloat(g("rvCombValor")?.value) || 0;
+      abastPreco = _parseBR(g("rvCombValor")?.value);
       abastTotal = abastLitros * abastPreco;
     }
 
@@ -10412,7 +10576,7 @@ const Agenda = (() => {
     const totalValor = totalLitros * precoMedio;
 
     /* ==== 4. Combustível gasto ==== */
-    const qtdGasto = parseFloat(g("rvCombGasto")?.value) || 0;
+    const qtdGasto = _parseBR(g("rvCombGasto")?.value);
     const unidGasto = g("rvCombGastoUnidade")?.value || "L";
     const gastoLitros = unidGasto === "LB" ? (qtdGasto / LB_POR_KG) / DENSIDADE_JETA1 : qtdGasto;
     const valorGasto = gastoLitros * precoMedio;
@@ -10435,8 +10599,10 @@ const Agenda = (() => {
     /* ==== 5a. Sugerir valor pro Confirmar Tanque (trecho 0) ==== */
     if (revisandoIdx === 0) {
       const inpConf = g("rvTanqueConfirmado");
-      if (inpConf && (!inpConf.value || parseFloat(inpConf.value) === 0)) {
-        const qtdSug = tanqueUnidade === "LB" ? totalLitros * LB_POR_KG * DENSIDADE_JETA1 : totalLitros;
+      // Só auto-sugere se o usuário NÃO editou manualmente
+      if (inpConf && !window.__thConfirmadoEditado) {
+        // Sugestão = tanque antes + abastecimento (sempre soma)
+        const qtdSug = tanqueUnidade === "LB" ? _totalLitrosCalc * LB_POR_KG * DENSIDADE_JETA1 : _totalLitrosCalc;
         inpConf.value = Math.round(qtdSug);
       }
     }
@@ -10449,13 +10615,14 @@ const Agenda = (() => {
       if (abasteceu && abastLitros > 0) {
         elDecolWrap.style.display = "block";
         const isLB2 = (aero.tanque_unidade === "LB");
-        const dL = Math.round(totalLitros);
-        const dLB = Math.round(totalLitros * LB_POR_LITRO);
+        // Display sempre mostra antes + abastecimento
+        const dL = Math.round(_totalLitrosCalc);
+        const dLB = Math.round(_totalLitrosCalc * LB_POR_LITRO);
         const tL2 = isLB2 ? dL + " L" : "<b>" + dL + " L</b>";
         const tLB2 = isLB2 ? "<b>" + dLB + " LB</b>" : dLB + " LB";
         const ord2 = isLB2 ? (tLB2 + " - " + tL2) : (tL2 + " - " + tLB2);
         elDecol.innerHTML = ord2 + " | " + fmtBR(precoMedio) + "/L";
-        elDecolTot.textContent = 'Total: ' + fmtBR(totalValor);
+        elDecolTot.textContent = 'Total: ' + fmtBR(_totalValorCalc);
       } else {
         elDecolWrap.style.display = "none";
       }
@@ -10603,17 +10770,17 @@ const Agenda = (() => {
     }
 
     g("rvAbasteceu").value = String(rv.combustivel?.abasteceu ?? false);
-    g("rvCombValor").value = rv.combustivel?.valor_litro ?? "";
+    g("rvCombValor").value = rv.combustivel?.valor_litro ? _fmtNumBR(rv.combustivel.valor_litro) : "";
 
     const aeroRev0 = Aircraft.get().find(a => a.tail === ev.aeronave_tail);
     const unidGastoSalva = aeroRev0?.tanque_unidade || aeroRev0?.unidade_combustivel || rv.combustivel?.unidade_gasto || "L";
     const unidAbastSalva = rv.combustivel?.unidade_abast || "L";
 
     const litrosGasto = Number(rv.combustivel?.gasto_litros) || 0;
-    g("rvCombGasto").value = litrosGasto > 0 ? +litrosParaUnidade(litrosGasto, unidGastoSalva).toFixed(1) : "";
+    g("rvCombGasto").value = litrosGasto > 0 ? _fmtQtdBR(+litrosParaUnidade(litrosGasto, unidGastoSalva).toFixed(1)) : "";
 
     const litrosAbast = Number(rv.combustivel?.litros_abastecidos) || 0;
-    g("rvCombLitros").value = litrosAbast > 0 ? +litrosParaUnidade(litrosAbast, unidAbastSalva).toFixed(1) : "";
+    g("rvCombLitros").value = litrosAbast > 0 ? _fmtQtdBR(+litrosParaUnidade(litrosAbast, unidAbastSalva).toFixed(1)) : "";
 
     g("rvObs").value = rv.observacoes || "";
 
@@ -10672,6 +10839,20 @@ const Agenda = (() => {
         unidConf.textContent = aeroRev0?.tanque_unidade || "L";
         const confSalvo = rv.combustivel?.tanque_confirmado_qtd;
         inpConf.value = (confSalvo !== undefined && confSalvo !== null) ? confSalvo : "";
+        // Se já tem valor salvo, marca como "editado" (respeita o histórico)
+        window.__thConfirmadoEditado = (confSalvo !== undefined && confSalvo !== null && confSalvo !== "");
+        // Listener: quando o usuário digita, marca como editado; quando apaga, volta a auto-sugerir
+        if (!inpConf.dataset.boundConfirmado) {
+          inpConf.dataset.boundConfirmado = "1";
+          inpConf.addEventListener("input", () => {
+            const v = parseFloat(inpConf.value);
+            window.__thConfirmadoEditado = (!isNaN(v) && v > 0);
+            if (!window.__thConfirmadoEditado) {
+              // Se apagou, re-sugere na hora
+              calcularValorCombGasto();
+            }
+          });
+        }
       } else {
         wrapConf.style.display = "none";
       }
@@ -10691,6 +10872,19 @@ const Agenda = (() => {
       if (el && !el.dataset.boundPreview) {
         el.dataset.boundPreview = "1";
         el.addEventListener("input", calcularValorCombGasto);
+        // Formatação ao sair do campo (só para Valor R$/L)
+        if (id === "rvCombValor") {
+          el.addEventListener("blur", () => {
+            const v = _parseBR(el.value);
+            if (v > 0) el.value = _fmtNumBR(v);
+          });
+        }
+        if (id === "rvCombLitros" || id === "rvCombGasto") {
+          el.addEventListener("blur", () => {
+            const v = _parseBR(el.value);
+            if (v > 0) el.value = _fmtQtdBR(v);
+          });
+        }
       }
     });
 
@@ -10702,10 +10896,10 @@ const Agenda = (() => {
         const de = sel.dataset.unidadeAnterior || "L";
         const para = sel.value;
         if (de === para) return;
-        const atual = parseFloat(inp.value) || 0;
+        const atual = _parseBR(inp.value) || 0;
         if (atual > 0) {
           const litros = unidadeParaLitros(atual, de);
-          inp.value = +litrosParaUnidade(litros, para).toFixed(1);
+          inp.value = _fmtQtdBR(+litrosParaUnidade(litros, para).toFixed(1));
         }
         sel.dataset.unidadeAnterior = para;
         calcularValorCombGasto();
@@ -10866,15 +11060,15 @@ const Agenda = (() => {
     }
 
     /* ==== Combustível gasto (em litros) ==== */
-    const gastoRaw = parseFloat(g("rvCombGasto").value) || 0;
+    const gastoRaw = _parseBR(g("rvCombGasto").value);
     const gastoUnidade = g("rvCombGastoUnidade").value || "L";
     const gastoLitros = gastoUnidade === "LB" ? (gastoRaw / LB_POR_KG) / DENSIDADE_JETA1 : gastoRaw;
 
     /* ==== Abastecimento ==== */
-    const abastRaw = abasteceu ? (parseFloat(g("rvCombLitros").value) || 0) : 0;
+    const abastRaw = abasteceu ? _parseBR(g("rvCombLitros").value) : 0;
     const abastUnidade = g("rvCombLitrosUnidade")?.value || "L";
     const abastLitros = abastUnidade === "LB" ? (abastRaw / LB_POR_KG) / DENSIDADE_JETA1 : abastRaw;
-    const valorLitroAbast = abasteceu ? (parseFloat(g("rvCombValor").value) || 0) : 0;
+    const valorLitroAbast = abasteceu ? _parseBR(g("rvCombValor").value) : 0;
 
     /* ==== Busca aeronave ==== */
     const aeroIdx = Aircraft.get().findIndex(a => a.tail === ev.aeronave_tail);
@@ -13326,7 +13520,12 @@ const Executados = (() => {
       .sort((a,b) => {
         const da = (a.trechos||[]).map(t => t.data).filter(Boolean).sort().pop() || "";
         const db = (b.trechos||[]).map(t => t.data).filter(Boolean).sort().pop() || "";
-        return db.localeCompare(da);
+        // Desempate por data primeiro (mais recente em cima)
+        if (da !== db) return db.localeCompare(da);
+        // Mesma data: desempata por HORA do primeiro trecho (mais novo em cima)
+        const ha = (a.trechos?.[0]?.hora) || "";
+        const hb = (b.trechos?.[0]?.hora) || "";
+        return hb.localeCompare(ha);
       });
   }
 
@@ -13605,7 +13804,10 @@ const Executados = (() => {
     var cardBorder = isMobile ? "border:1px solid #e2e8f0; border-left:4px solid " + corAero + ";" : "border-left:3px solid var(--green);";
     var shadow = isMobile ? "box-shadow: 0 2px 6px rgba(0,0,0,0.04);" : "";
 
-    var rotaStr = (primeiro.origem || "?") + " → " + (ultimo.revisao?.local_pouso_real || ultimo.destino || "?");
+    var _trsSorted = (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora));
+    var rotaStr = _trsSorted.length
+      ? (_trsSorted[0].origem || "?") + _trsSorted.map(t => " → " + (t.revisao?.local_pouso_real || t.destino || "?")).join("")
+      : ((primeiro.origem || "?") + " → " + (ultimo.revisao?.local_pouso_real || ultimo.destino || "?"));
     var paxCount = paxIds.length;
 
     var html = '<div class="event event--clickable" data-exe-toggle style="cursor:pointer; background:' + cardBg + '; ' + (cardColor ? 'color:'+cardColor+';' : '') + ' ' + cardBorder + ' ' + shadow + ' margin-bottom:8px; padding:14px 16px; border-radius:10px; box-sizing:border-box;">';
@@ -16402,7 +16604,6 @@ async function renderResumoOperacional() {
     + '<ul class="legend">'
     +   '<li><i style="background:#2388ff"></i>Manutenção ' + pMan.toFixed(1) + '%</li>'
     +   (outros > 0 ? '<li><i style="background:#e5b83d"></i>Outros ' + pOut.toFixed(1) + '%</li>' : '')
-    +   (translado > 0 ? '<li><i style="background:#9aa9b8"></i>Troca de Hr ' + pTr.toFixed(1) + '%</li>' : '')
     + '</ul>';
 }
 
@@ -16549,7 +16750,6 @@ async function renderCustosPorAeronave() {
         +   item("Corretiva", d.cat.corretiva, cores.corretiva)
         +   item("Preventiva", d.cat.preventiva, cores.preventiva)
         +   item("Outros", d.cat.outros, cores.outros)
-        +   item("Troca de Hr", d.cat.translado, cores.translado)
         + '</div>'
         + '</div>';
     }).join("");
@@ -16564,8 +16764,7 @@ async function renderCustosPorAeronave() {
       const cats = [
         { key: "corretiva",  label: "Corretiva",  cor: cores.corretiva  },
         { key: "preventiva", label: "Preventiva", cor: cores.preventiva },
-        { key: "outros",     label: "Outros",     cor: cores.outros     },
-        { key: "translado",  label: "Troca de Hr",  cor: cores.translado  }
+        { key: "outros",     label: "Outros",     cor: cores.outros     }
       ];
       cats.forEach(c => {
         const v = cat[c.key + "C"] || 0;   /* usa versão computada */
@@ -16597,8 +16796,7 @@ async function renderCustosPorAeronave() {
       const cats = [
         { label: "Corretiva",  v: cat.corretivaC,  cor: cores.corretiva  },
         { label: "Preventiva", v: cat.preventivaC, cor: cores.preventiva },
-        { label: "Outros",     v: cat.outrosC,     cor: cores.outros     },
-        { label: "Troca de Hr",  v: cat.transladoC,  cor: cores.translado  }
+        { label: "Outros",     v: cat.outrosC,     cor: cores.outros     }
       ];
       cats.forEach(c => {
         if (c.v <= 0) return;
@@ -16636,7 +16834,6 @@ async function renderCustosPorAeronave() {
       +   '<th>Corretiva</th>'
       +   '<th>Preventiva</th>'
       +   '<th>Outros</th>'
-      +   '<th>Troca de Hr</th>'
       +   '<th>Total</th>'
       + '</tr></thead><tbody>'
       + comDados.map(d => {
@@ -16646,7 +16843,6 @@ async function renderCustosPorAeronave() {
             + '<td>'+fmt(d.cat.corretiva)+'</td>'
             + '<td>'+fmt(d.cat.preventiva)+'</td>'
             + '<td>'+fmt(d.cat.outros)+'</td>'
-            + '<td>'+fmt(d.cat.translado)+'</td>'
             + '<td class="cpa-table__total" title="Total computado">'+fmt(d.cat.totalComputado)+'</td>'
             + '</tr>';
         }).join("")
@@ -16655,7 +16851,6 @@ async function renderCustosPorAeronave() {
       +   '<td>'+fmt(tCorr)+'</td>'
       +   '<td>'+fmt(tPrev)+'</td>'
       +   '<td>'+fmt(tOut)+'</td>'
-      +   '<td>'+fmt(tTr)+'</td>'
       +   '<td class="cpa-table__total">'+fmt(totalGeral)+'</td>'
       + '</tr></tfoot></table>';
   }
@@ -16886,7 +17081,14 @@ const TrocaHoras = (() => {
     window.__thCredSelecionado = null;
     window.__thCredEditandoId = l.id;
     const g = (id) => document.getElementById(id);
-    if (g("thCredResponsavel")) g("thCredResponsavel").value = l.responsavel || "";
+    let __respId = l.responsavel_id || "";
+    if (!__respId && l.responsavel) {
+      const __solMatch = (typeof Solicitantes !== "undefined" && Solicitantes.get)
+        ? Solicitantes.get().find(s => s.nome === l.responsavel)
+        : null;
+      if (__solMatch) __respId = __solMatch.id;
+    }
+    popularSelectResponsavelCredito(__respId);
     let __empId = l.empresa_emprestada_id || "";
     if (!__empId && l.empresa_emprestada) {
       const __match = lerEmpresas().find(e => e.nome === l.empresa_emprestada);
@@ -17138,8 +17340,8 @@ function renderLista() {
       +   '</div>'
       +   '<div class="settings-section">'
       +     '<h3>Lançamento</h3>'
-      +     '<label class="field" style="margin-bottom:10px"><span>Responsável *</span><input id="thCredResponsavel" placeholder="Quem autorizou o empréstimo"></label>'
-      +     '<label class="field"><span>Empresa que pegou emprestado (opcional)</span><select id="thCredEmpresa"></select></label>'
+      +     '<label class="field" style="margin-bottom:10px"><span>Responsável (solicitante) *</span><select id="thCredResponsavel"><option value="">— selecionar —</option></select></label>'
+      +     '<label class="field"><span>Empresa que pegou emprestado *</span><select id="thCredEmpresa"></select></label>'
       +   '</div>'
       + '</div>'
       + '<div class="dialog__actions">'
@@ -17165,6 +17367,19 @@ function renderLista() {
     sel.innerHTML = html;
   }
 
+  function popularSelectResponsavelCredito(selectedId) {
+    const sel = document.getElementById("thCredResponsavel");
+    if (!sel) return;
+    const lista = (typeof Solicitantes !== "undefined" && Solicitantes.get)
+      ? Solicitantes.get().filter(s => s.ativo !== false)
+      : [];
+    let html = '<option value="">— selecionar —</option>';
+    html += lista.map(s =>
+      '<option value="' + esc(s.id) + '"' + (s.id === selectedId ? " selected" : "") + ">" + esc(s.nome) + "</option>"
+    ).join("");
+    sel.innerHTML = html;
+  }
+
   function abrirCredito() {
     injectModalCredito();
     window.__thCredSelecionado = null;
@@ -17174,7 +17389,7 @@ function renderLista() {
     if (g("thCredPrefixo")) g("thCredPrefixo").value = "";
     if (g("thCredResultados")) g("thCredResultados").innerHTML = "";
     if (g("thCredForm")) g("thCredForm").hidden = true;
-    if (g("thCredResponsavel")) g("thCredResponsavel").value = "";
+    popularSelectResponsavelCredito();
     popularSelectEmpresaCredito();
     const btnSalvar = g("thCredSalvar");
     if (btnSalvar) btnSalvar.textContent = "Salvar crédito";
@@ -17265,7 +17480,7 @@ function renderLista() {
       +   '<div><span style="color:var(--muted)">Passageiros:</span> <b>' + paxSet.size + '</b></div>'
       +   '<div><span style="color:var(--muted)">Solicitante:</span> <b>' + esc(solNome) + '</b></div>'
       + '</div>'
-      + '<div style="margin-top:8px"><span style="color:var(--muted)">Rota:</span> <b>' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</b></div>'
+      + '<div style="margin-top:8px"><span style="color:var(--muted)">Rota:</span> <b style="display:inline-block;word-break:break-word;max-width:100%;line-height:1.4">' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</b></div>'
       + '</div>';
 
     const form = document.getElementById("thCredForm");
@@ -17276,9 +17491,14 @@ function renderLista() {
     const ev = window.__thCredSelecionado;
     if (!ev) { alert("Selecione um voo primeiro."); return; }
 
-    const responsavel = (document.getElementById("thCredResponsavel").value || "").trim();
-    if (!responsavel) { alert("Preencha o responsável."); return; }
+    const responsavelId = (document.getElementById("thCredResponsavel").value || "").trim();
+    if (!responsavelId) { alert("Selecione o responsável (solicitante)."); return; }
+    const responsavelObj = (typeof Solicitantes !== "undefined" && Solicitantes.get)
+      ? Solicitantes.get().find(s => s.id === responsavelId)
+      : null;
+    const responsavel = responsavelObj?.nome || responsavelId;
     const empresaId = (document.getElementById("thCredEmpresa").value || "").trim();
+    if (!empresaId) { alert("Selecione a empresa que pegou emprestado (obrigatório)."); return; }
     const empresaSel = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
     const empresaNome = empresaSel?.nome || "";
     const empresaLogo = empresaSel?.logo || "";
@@ -17300,6 +17520,7 @@ function renderLista() {
       passageiros: paxSet.size,
       solicitante_id: ev.solicitante_id || "",
       responsavel: responsavel,
+      responsavel_id: responsavelId,
       empresa_emprestada: empresaNome,
       empresa_emprestada_id: empresaId || null,
       empresa_logo_snapshot: empresaLogo,
@@ -17312,7 +17533,7 @@ function renderLista() {
     const editId = window.__thCredEditandoId;
     if (editId) {
       const i = lista.findIndex(x => x.id === editId);
-      if (i >= 0) lista[i] = { ...lista[i], responsavel, empresa_emprestada: empresaNome, empresa_emprestada_id: empresaId || null, empresa_logo_snapshot: empresaLogo };
+      if (i >= 0) lista[i] = { ...lista[i], responsavel, responsavel_id: responsavelId, empresa_emprestada: empresaNome, empresa_emprestada_id: empresaId || null, empresa_logo_snapshot: empresaLogo };
     } else {
       lista.push(lancamento);
     }
@@ -21007,14 +21228,14 @@ Router.init();
         <div class="revisao-combusto-inline" id="rvCombDetalhes" hidden style="margin-bottom:14px">
           <label class="field"><span>Quantidade abastecida</span>
             <div class="mobile-input-group">
-              <input id="rvCombLitros" type="number" min="0" step="0.1" placeholder="0" class="mobile-input-left mobile-input-compact">
+              <input id="rvCombLitros" type="text" inputmode="decimal" placeholder="0" class="mobile-input-left mobile-input-compact">
               <select id="rvCombLitrosUnidade" class="mobile-select-right mobile-input-compact">
                 <option value="L">L</option>
                 <option value="LB">Lb</option>
               </select>
             </div>
           </label>
-          <label class="field"><span>Valor pago (R$/L)</span><input id="rvCombValor" type="number" min="0" step="0.01" placeholder="0,00" class="mobile-input-compact"></label>
+          <label class="field"><span>Valor pago (R$/L)</span><input id="rvCombValor" type="text" inputmode="decimal" placeholder="0,00" class="mobile-input-compact"></label>
           <label class="field"><span>Total do abastecimento</span><input id="rvCombTotal" type="text" readonly style="background:var(--nav-active-bg)" class="mobile-input-compact"></label>
         </div>
 
@@ -21054,7 +21275,7 @@ Router.init();
 
         <label class="field"><span>Combustível gasto neste trecho</span>
           <div class="mobile-input-group">
-            <input id="rvCombGasto" type="number" min="0" step="0.1" placeholder="0" class="mobile-input-left mobile-input-compact">
+            <input id="rvCombGasto" type="text" inputmode="decimal" placeholder="0" class="mobile-input-left mobile-input-compact">
             <select id="rvCombGastoUnidade" class="mobile-select-right mobile-input-compact">
               <option value="L">L</option>
               <option value="LB">Lb</option>
@@ -21069,11 +21290,11 @@ Router.init();
         </div>
       </div>
 
-      <div class="revisao-sec" id="rvDespesasSec" style="">
-  <h4>Outras Despesas</h4>
-  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;">
-    <input type="checkbox" id="rvDespesasToggle" style="width:20px;height:20px;accent-color:var(--accent);">
-    <span style="font-size:13px;color:var(--text);font-weight:600;">Adicionar outras despesas</span>
+      <div class="revisao-sec mobile-card" id="rvDespesasSec" style="margin-bottom:0; border-bottom:0; padding: 12px 16px !important;">
+  <h4 style="margin-bottom: 8px !important;">Outras Despesas</h4>
+  <label class="mobile-obs-label">
+    <input type="checkbox" id="rvDespesasToggle" class="mobile-obs-check">
+    <span style="font-size:13px; color:var(--text); font-weight:600; white-space: normal;">Adicionar outras despesas</span>
   </label>
   <div id="rvDespesasWrap" style="display:none;">
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
