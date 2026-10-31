@@ -230,10 +230,13 @@ body.sidebar-is-open{overflow:hidden}
   #revisaoModal .revisao-tempo-calc:has(#rvTempoTotal) > span, #revisaoModal .revisao-tempo-calc:has(#rvCombGastoValor) > span { color: var(--muted) !important; font-weight: 500 !important; }
   #revisaoModal .revisao-tempo-calc:has(#rvTempoTotal) > strong, #revisaoModal .revisao-tempo-calc:has(#rvCombGastoValor) > strong { color: var(--text) !important; font-family: ui-monospace, monospace !important; font-size: 13px !important; font-weight: 800 !important; }
   #revisaoModal #rvCombGastoDetalhe { display: none !important; }
-  #revisaoModal #rvTanqueAntes { display: block !important; margin: 0 0 4px !important; font-weight: 700 !important; font-size: 13px !important; line-height: 1.5 !important; }
-  #revisaoModal #rvTanqueAntes > span { display: inline !important; font-size: 13px !important; }
-  #revisaoModal #rvTanqueAntesTotal { display: block !important; margin: 0 !important; padding-top: 6px !important; border-top: 1px dashed var(--line) !important; font-size: 13px !important; line-height: 1.5 !important; color: var(--text) !important; font-weight: 600 !important; }
-  #revisaoModal .revisao-tempo-calc:has(#rvTanqueAntes) { display: block !important; flex-direction: column !important; justify-content: flex-start !important; align-items: stretch !important; padding: 12px !important; background: var(--bg) !important; border-left: none !important; border-radius: 10px !important; margin-bottom: 14px !important; }
+  #revisaoModal #rvTanqueAntes, #revisaoModal #rvTanqueDecol { font-weight: 400 !important; }
+  #revisaoModal #rvTanqueAntes b, #revisaoModal #rvTanqueDecol b { font-weight: 800 !important; }
+  #revisaoModal #rvTanqueAntesTotal, #revisaoModal #rvTanqueDecolTotal { font-weight: 400 !important; }
+  #revisaoModal #rvTanqueCard { display: flex !important; }
+  #revisaoModal #rvTanqueDecol { display: block !important; margin: 0 0 4px !important; font-weight: 700 !important; font-size: 13px !important; line-height: 1.5 !important; }
+  #revisaoModal #rvTanqueDecol > span { display: inline !important; font-size: 13px !important; }
+  #revisaoModal #rvTanqueDecolTotal { display: block !important; margin: 0 !important; padding-top: 6px !important; border-top: 1px dashed var(--line) !important; font-size: 13px !important; line-height: 1.5 !important; color: var(--text) !important; font-weight: 600 !important; }
   #revisaoModal #rvCombGasto { font-size: 18px !important; font-weight: 700 !important; }
   #revisaoModal #rvPreviewBox { background: #fff !important; border: 1px solid rgba(0,0,0,.06) !important; border-left: 4px solid var(--accent) !important; border-radius: 14px !important; padding: 16px !important; margin: 10px 0 !important; box-shadow: 0 1px 2px rgba(0,0,0,.04) !important; }
   /* #7: forçar grid de 2 colunas no card custos */
@@ -305,6 +308,9 @@ body.sidebar-is-open{overflow:hidden}
 .tag{font-size:9px;font-weight:800;padding:5px 9px;border-radius:6px;height:max-content}
 .tag--blue{background:#167fe8;color:#fff}
 .tag--yellow{background:var(--yellow);color:#18202b}
+.tag--red{background:#ff5a5f;color:#fff}
+.tag--gray{background:#9aa9b8;color:#fff}
+.tag--yellow-dark{background:#b8860b;color:#fff}
 .list{max-height:52vh;overflow-y:auto}
 #executadosList{max-height:none !important;overflow:visible !important}
 .list__row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
@@ -365,6 +371,9 @@ body.sidebar-is-open{overflow:hidden}
 .aircraft-card dd{color:var(--text);font-weight:700;margin:4px 0 0;font-size:13px}
 .aircraft-card__costs dd{font-size:11px}
 .mission,.alert{padding:11px 14px;border-bottom:1px solid var(--line)}
+.alert-list{height:360px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--line) transparent;box-sizing:border-box}
+.alert-list::-webkit-scrollbar{width:6px}
+.alert-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 .mission:last-child,.alert:last-child{border-bottom:0}
 .mission{display:grid;grid-template-columns:48px 1fr 65px;gap:10px;align-items:center}
 .mission__day{background:var(--nav-active-bg);border-radius:6px;text-align:center;padding:6px 2px;font-size:14px;font-weight:800}
@@ -578,6 +587,7 @@ body.is-offline [data-escrita]::after{content:attr(title);position:absolute}
 .perm-item.is-disabled{opacity:.5;cursor:not-allowed}
 .dialog--wide{width:min(880px,100%)}
 .trecho{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg);margin-bottom:10px;position:relative}
+.trecho--conflito { border: 2px solid var(--red) !important; background: rgba(255, 90, 95, 0.05) !important; }
 .trecho__head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .trecho__num{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--nav-title-color);font-weight:800}
 .trecho__remove{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:all .15s}
@@ -665,7 +675,7 @@ body.is-offline [data-escrita]::after{content:attr(title);position:absolute}
 .event__expand{display:none}
 .event.is-expanded .event__expand{display:block;margin-top:6px;padding-top:0;border-top:0}
 .event.is-expanded{padding-top:12px !important}
-.event__expand-meta{display:flex;flex-direction:column;gap:4px;padding:8px 12px;margin-bottom:8px;background:rgba(22,135,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:12px;line-height:1.3}
+.event__expand-meta{display:flex;flex-direction:column;gap:4px;padding:8px 12px;margin-bottom:8px;background:rgba(22,135,255,.08);border-radius:6px;font-size:12px;line-height:1.3}
 .event__expand-meta > div{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;justify-content:flex-start}
 .event__expand-meta .event__tag{margin:0;color:#fff !important}
 .event__expand-meta .event__tag:not([class*="--"]){background:#167fe8;color:#fff !important}
@@ -916,7 +926,7 @@ body.is-offline [data-escrita]::after{content:attr(title);position:absolute}
 .cpa-aero__tail{font-family:ui-monospace,monospace;font-size:12px;font-weight:800;color:#fff;padding:3px 10px;border-radius:5px}
 .cpa-aero__model{font-size:12px;color:var(--muted)}
 .cpa-aero__total{margin-left:auto;font-size:14px;font-weight:800;color:var(--text)}
-.cpa-aero__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;min-width:0}
+.cpa-aero__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
 .cpa-item{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden}
 .cpa-item__label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
 .cpa-item__value{font-size:13px;font-weight:800;color:var(--text);margin-top:4px;font-family:ui-monospace,monospace}
@@ -3947,6 +3957,7 @@ body.is-booting .app {
           <button class="btn" id="thBtnCredito">+ Crédito (emprestamos)</button>
           <button class="btn btn--secondary" id="thBtnDebito">+ Débito (usamos de terceiros)</button>
           <button class="btn btn--secondary" id="thBtnEmpresa">🏢 Cadastrar empresa</button>
+          <button class="btn btn--secondary" id="thBtnRelatorio">📊 Relatório</button>
           <button class="btn btn--secondary" id="thBtnLink" style="margin-left:auto">🔗 Aeronaves diferentes</button>
         </div>
         <div id="thLista" style="padding:16px 20px">
@@ -4151,6 +4162,12 @@ body.is-booting .app {
   <div style="display:flex;align-items:center;gap:8px; padding:10px; border:1px dashed var(--red); border-radius:8px; background:rgba(255,90,95,.05)">
     <input type="checkbox" id="usTbApagarSensiveis" style="margin:0;width:auto">
     <span style="color:var(--red);font-weight:700;font-size:13px">🚨 Permitir apagar dados sensíveis (voos revisados e aeronaves)</span>
+  </div>
+</label>
+<label class="field" id="usTbEditarExecutadosWrap" style="grid-column:1/-1; margin-top:8px">
+  <div style="display:flex;align-items:center;gap:8px; padding:10px; border:1px dashed var(--accent); border-radius:8px; background:rgba(56,168,255,.05)">
+    <input type="checkbox" id="usTbEditarExecutados" style="margin:0;width:auto">
+    <span style="color:var(--accent);font-weight:700;font-size:13px">✏️ Permitir editar voos executados (solicitante, observações, etc)</span>
   </div>
 </label>
 
@@ -4366,6 +4383,7 @@ const Session = (() => {
       const u = Auth.getUser();
       current = { id: u.id, nome: u.nome, email: u.email, perfil: u.perfil,
                   tambem_e_piloto: u.tambem_e_piloto === true,
+                  exibicaoAeroporto: u.exibicaoAeroporto,
                   extras: u.extras || {} };
       return;
     }
@@ -4387,6 +4405,7 @@ const Session = (() => {
       const u = Auth.getUser();
       return { id: u.id, nome: u.nome, email: u.email, perfil: u.perfil,
                tambem_e_piloto: u.tambem_e_piloto === true,
+               exibicaoAeroporto: u.exibicaoAeroporto,
                extras: u.extras || {} };
     }
     return current;
@@ -4806,6 +4825,7 @@ const Auth = (() => {
       tambem_e_piloto: perfil.tambem_e_piloto === true,
       ativo: perfil.ativo,
       extras: perfil.extras || {},
+      exibicaoAeroporto: perfil.exibicaoAeroporto || "icao",
       must_change_password: perfil.must_change_password
     };
     return _user;
@@ -5662,6 +5682,17 @@ const Solicitantes = (() => {
   }
 
   async function submitForm() {
+    // ═══ VALIDAÇÃO DE CONFLITO INTERNO ═══
+    const _confInt = conflitoTrechosInterno();
+    if (_confInt) {
+      const elAviso = document.getElementById("evAvisoConflito");
+      if (elAviso) elAviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      alert("⛔ EXISTEM TRECHOS SOBREPOSTOS!\n\nO trecho " + (_confInt.a.idx + 1) + " e o trecho " + (_confInt.b.idx + 1) + " têm horários que se chocam.\n\nAjuste os horários antes de salvar.");
+      return;
+    }
+    // ═══════════════════════════════════════
+
+
     const g = (id) => document.getElementById(id);
     const nome = g("solNome").value.trim();
     const email = g("solEmail").value.trim();
@@ -6190,7 +6221,7 @@ window.EmailRoteiro = (() => {
         logo_b64: _logoB64,
         cor1: localStorage.getItem("dv_report_color1") || "#1e293b",
         corHeaderEmail: localStorage.getItem("dv_email_header_color") || "#1e293b",
-        corSegmentosEmail: localStorage.getItem("dv_email_segments_color") || "#1687ff", // TESTE FORÇADO
+        corSegmentosEmail: localStorage.getItem("dv_email_segments_color") || "#1687ff",
         cor2: localStorage.getItem("dv_report_color2") || "#38a8ff"
       };
       const voo = {
@@ -6311,6 +6342,7 @@ const StoreCloud = (() => {
   }
   return { load, save, list, listByKeys, subscribe, ping };
 })();
+window.StoreCloud = StoreCloud;
 
 /* ============================================================
    Store híbrido (localStorage ↔ Supabase)
@@ -6999,7 +7031,9 @@ const Db = (() => {
       dataIni: ev.dataIni||null, horaIni: ev.horaIni||null,
       dataFim: ev.dataFim||null, horaFim: ev.horaFim||null,
       roteiro_enviado_em: ev.roteiro_enviado_em||null,
-      roteiro_enviado_para: ev.roteiro_enviado_para||null };
+      roteiro_enviado_para: ev.roteiro_enviado_para||null,
+      _tanque_aplicado: ev._tanque_aplicado === true,
+      _tanque_aplicado_em: ev._tanque_aplicado_em||null };
     p.id = ev.id || ("ev-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8));
 
     /* Sempre atualiza o cache local ANTES de tentar a nuvem.
@@ -7241,6 +7275,7 @@ const Aircraft = (() => {
     const box = document.getElementById("aircraftCards"); if (!box) return;
     const visiveis = list.filter(a => a.ativo !== false);
     if (visiveis.length === 1) { box.classList.add("is-solo"); } else { box.classList.remove("is-solo"); }
+
     box.innerHTML = visiveis.map(cardHTML).join("");
     hydrateIcons(box);
     preencherManutencoes();
@@ -7253,15 +7288,10 @@ const Aircraft = (() => {
     let posCls = "";
     let posTitle = "";
     if (pos) {
-      /* Formata ICAO (Cidade - Nome do aeroporto) */
+      /* Formata usando a preferência do usuário (ICAO ou Nome) */
       const fmtLocal = (icao) => {
         if (!icao) return "";
-        const a = (typeof Aero !== "undefined" && Aero.byIcao) ? Aero.byIcao(icao) : null;
-        if (!a) return icao;
-        const partes = [];
-        if (a.cidade) partes.push(a.cidade);
-        if (a.nome) partes.push(a.nome);
-        return icao + (partes.length ? " (" + partes.join(" - ") + ")" : "");
+        return (typeof window._fmtLocalRota === "function") ? window._fmtLocalRota(icao) : icao;
       };
       /* Em voo: origem → destino com nomes */
       if (pos.status === "em-voo" && pos.local && pos.destino) {
@@ -7333,8 +7363,53 @@ const Aircraft = (() => {
             + '<div><dt>Horas totais</dt><dd>'+esc(totalTxt)+'</dd></div></dl>';
         })()
       + '<dl class="aircraft-card__info" style="grid-template-columns:1fr;margin-top:8px"><div><dt>Posição atual</dt><dd style="'+posCls+'" title="'+posTitle+'">'+esc(posStr)+'</dd></div></dl>'
-      + '<dl class="aircraft-card__costs" style="grid-template-columns:1fr 1fr"><div><dt>Manutenção do ciclo</dt><dd id="'+manutId+'">Carregando...</dd></div>'
-      + '<div><dt>Preço médio comb.</dt><dd>'+esc(precoCombTxt)+'</dd></div></dl>'
+      + (function() {
+          var _custos = a.custos_por_ano || {};
+          var _anos = Object.keys(_custos).sort().reverse();
+          var _anoAtual = String(new Date().getFullYear());
+          var _anoCic = _anos.includes(_anoAtual) ? _anoAtual : _anos[0];
+          var _al = _anoCic && _custos[_anoCic] ? _custos[_anoCic].alertas : null;
+          
+          var _cvaTxt = "—", _cvaCls = "color:var(--muted)";
+          var _horasTxt = "—", _horasCls = "color:var(--muted)";
+          
+          if (_al) {
+            if (_al.cva && _al.cva.data) {
+              var _hoje = new Date(); _hoje.setHours(0,0,0,0);
+              var _dcva = new Date(_al.cva.data + "T00:00:00");
+              var _dias = Math.floor((_dcva - _hoje) / 86400000);
+              if (_dias < 0) { _cvaTxt = "Vencido há " + Math.abs(_dias) + "d"; _cvaCls = "color:var(--red);font-weight:800"; }
+              else if (_dias <= (_al.cva.aviso_dias || 30)) { _cvaTxt = _dias + " dias"; _cvaCls = "color:var(--yellow);font-weight:800"; }
+              else { _cvaTxt = _dias + " dias"; _cvaCls = "color:var(--text)"; }
+            }
+            if (_al.horas && _al.horas.limite && _al.horas.marco_zero) {
+              var _hv = 0;
+              (Agenda.getEventos() || []).forEach(function(ev2) {
+                if (ev2.aeronave_tail !== a.tail) return;
+                (ev2.trechos || []).forEach(function(tr2) {
+                  if (!tr2.revisao || tr2.revisao.status !== "concluido") return;
+                  if (!tr2.data || tr2.data < _al.horas.marco_zero) return;
+                  var _dur = tr2.revisao.tempo_voo || tr2.duracao;
+                  if (_dur && /^\d{1,2}:\d{2}/.test(_dur)) {
+                    var _p = _dur.split(":");
+                    _hv += (parseInt(_p[0],10)||0) + (parseInt(_p[1],10)||0)/60;
+                  }
+                });
+              });
+              var _rest = _al.horas.limite - _hv;
+              if (_rest <= 0) { _horasTxt = Math.round(_rest) + "h"; _horasCls = "color:var(--red);font-weight:800"; }
+              else if (_rest <= (_al.horas.aviso_horas || 20)) { _horasTxt = Math.round(_rest) + "h"; _horasCls = "color:var(--yellow);font-weight:800"; }
+              else { _horasTxt = Math.round(_rest) + "h / " + _al.horas.limite + "h"; _horasCls = "color:var(--text)"; }
+            }
+          }
+          
+          return '<dl class="aircraft-card__costs" style="grid-template-columns:1fr 1fr;margin-top:8px">'
+            + '<div><dt>Manutenção do ciclo</dt><dd id="'+manutId+'">Carregando...</dd></div>'
+            + '<div><dt>Preço médio comb.</dt><dd>'+esc(precoCombTxt)+'</dd></div>'
+            + '<div style="margin-top:10px"><dt>Vencimento CVA</dt><dd style="'+_cvaCls+'">'+esc(_cvaTxt)+'</dd></div>'
+            + '<div style="margin-top:10px"><dt>Horas disponíveis</dt><dd style="'+_horasCls+'">'+esc(_horasTxt)+'</dd></div>'
+            + '</dl>';
+        })()
       + '</div></article>';
   }
   function renderList() {
@@ -8425,9 +8500,32 @@ const Agenda = (() => {
   }
   window.mostrarToast = mostrarToast;
 
+  /* Verifica se 2+ trechos do mesmo voo se sobrepõem em horário */
+  function conflitoTrechosInterno() {
+    const ranges = [];
+    formTrechos.forEach((t, i) => {
+      if (!t.data) return;
+      const r = trechoMinutosRangeLocal(t);
+      if (r) ranges.push({ idx: i, tr: t, ini: r.ini, fim: r.fim });
+    });
+    for (let a = 0; a < ranges.length; a++) {
+      for (let b = a + 1; b < ranges.length; b++) {
+        const rA = ranges[a], rB = ranges[b];
+        if (rA.ini < rB.fim && rA.fim > rB.ini) {
+          return { a: rA, b: rB };
+        }
+      }
+    }
+    return null;
+  }
+
   function atualizarAvisoConflito() {
     const el = document.getElementById("evAvisoConflito");
     if (!el) return false;
+    
+    // Limpa highlights anteriores
+    document.querySelectorAll('.trecho--conflito').forEach(e => e.classList.remove('trecho--conflito'));
+
     const tail = document.getElementById("evAeronave")?.value;
     const temDatas = formTrechos.some(t => t.data);
     if (!tail || !temDatas) {
@@ -8435,6 +8533,23 @@ const Agenda = (() => {
       const t = document.getElementById("toastConflito");
       if (t) t.classList.remove("is-open");
       return false;
+    }
+
+    /* ===== 0) Conflito INTERNO: trechos do mesmo voo se sobrepõem ===== */
+    const conflitoInt = conflitoTrechosInterno();
+    if (conflitoInt) {
+      el.className = "aviso-conflito aviso-conflito--block is-open";
+      el.innerHTML = '<strong>\u26d4 Trechos sobrepostos</strong>'
+        + 'O trecho <b>' + (conflitoInt.a.idx + 1) + '</b> e o trecho <b>' + (conflitoInt.b.idx + 1) + '</b> se sobrepõem em horário.'
+        + ' Ajuste os horários antes de salvar.';
+      
+      // Destaca visualmente os trechos com erro
+      const boxA = document.querySelector('.trecho[data-idx="' + conflitoInt.a.idx + '"]');
+      const boxB = document.querySelector('.trecho[data-idx="' + conflitoInt.b.idx + '"]');
+      if (boxA) boxA.classList.add('trecho--conflito');
+      if (boxB) boxB.classList.add('trecho--conflito');
+      
+      return true;
     }
 
     /* ===== 1) Verifica P1/P2 indisponiveis (folga/treinamento) ===== */
@@ -8717,6 +8832,7 @@ const Agenda = (() => {
     if (list) {
       const proximosVoos = [];
       events.forEach(ev => {
+        if (ev.tipo === "Bloquear aeronave") return; // bloqueio não é voo
         const trechosFut = (ev.trechos||[]).filter(t => t.data && parseYmd(t.data) >= today);
         if (trechosFut.length) {
           const proximo = trechosFut.sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora))[0];
@@ -8731,12 +8847,15 @@ const Agenda = (() => {
         const dd = String(d.getDate()).padStart(2,"0");
         const mm = MONTHS[d.getMonth()].slice(0,3).toUpperCase();
         const hh = hhmm(trecho.hora);
-        const tc = ev.tipo === "Voo Extra" ? "tag tag--yellow" : "tag tag--blue";
+        const tc = ev.tipo === "Voo Extra" ? "tag tag--yellow-dark" :
+                   ev.tipo === "Manutenção" ? "tag tag--red" :
+                   (ev.tipo === "Translado" || ev.tipo === "Troca de Hr") ? "tag tag--gray" :
+                   "tag tag--blue";
         const lb = ev.tipo === "Voo Extra" ? "Extra" : ev.tipo === "Manutenção" ? "Manut." : (ev.tipo === "Translado" || ev.tipo === "Troca de Hr") ? "Troca Hr" : "Voo";
         const paxCount = Array.isArray(ev.passageiros_ids) ? ev.passageiros_ids.length : (Array.isArray(ev.passageiros) ? ev.passageiros.length : 0);
         return '<li class="mission"><div class="mission__day">'+dd+'<small>'+mm+'</small></div>'
           + '<div class="mission__info"><strong>'+hh+' · '+esc(trecho.origem)+' → '+esc(trecho.destino)+'</strong>'
-          + '<small>'+esc(ev.aeronave_tail||"—")+' · '+paxCount+' PAX · '+(ev.trechos||[]).length+' trecho'+((ev.trechos||[]).length>1?'s':'')+'</small></div>'
+          + '<small>'+(function(){var _c=(typeof window.corDaAeronave==="function")?window.corDaAeronave(ev.aeronave_tail):"#3b82f6";return '<span style="display:inline-block;background:'+_c+' !important;color:#fff !important;-webkit-text-fill-color:#fff !important;padding:2px 6px;border-radius:4px;font-family:ui-monospace,monospace;font-weight:800;font-size:10px;letter-spacing:0.3px;margin-right:4px;box-shadow:inset 0 0 0 999px '+_c+' !important;vertical-align:middle;">'+esc(ev.aeronave_tail||"—")+'</span>';})()+' · '+paxCount+' PAX · '+(ev.trechos||[]).length+' trecho'+((ev.trechos||[]).length>1?'s':'')+'</small></div>'
           + '<span class="'+tc+'">'+lb+'</span></li>';
       }).join("");
     }
@@ -9428,7 +9547,7 @@ const Agenda = (() => {
       /* Cria badge */
       const badge = document.createElement("div");
       badge.className = "trecho__fuso";
-      badge.style.cssText = "margin-top:6px;padding:6px 10px;background:rgba(56,168,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:11px;color:var(--text)";
+      badge.style.cssText = "margin-top:6px;padding:6px 10px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)";
       badge.innerHTML = '🌐 Diferença de fuso: <b>' + dStr + '</b> (local no destino ' + direcao + ' ' + Math.abs(delta) + 'h)';
       /* Insere antes da div .trecho__pax (ou no final) */
       const paxDiv = trechoEl.querySelector('.trecho__pax');
@@ -9555,28 +9674,48 @@ const Agenda = (() => {
       });
     });
 
-    /* Inputs de hora do trecho */
+    /* Inputs de hora do trecho — focus preenche sugestão + sync */
     box.querySelectorAll('input[data-trecho-field="hora"]').forEach(inp => {
       if (inp.disabled) return;
+      const i = +inp.dataset.idx;
+      inp.addEventListener("focus", () => {
+        const t = formTrechos[i];
+        if (!t) return;
+        if (!inp.value && t._horaSugerida) {
+          inp.value = t._horaSugerida;
+          t.hora = t._horaSugerida;
+        }
+      });
+      inp.addEventListener("input", () => {
+        formTrechos[i].hora = inp.value;
+      });
       inp.addEventListener("blur", () => {
-        const i = +inp.dataset.idx;
         formTrechos[i].hora = inp.value;
         recalcularDuracoes();
       });
     });
 
-    /* Inputs de data dos trechos */
+    /* Inputs de data dos trechos — atualiza em tempo real + preenche sugestão no focus */
     box.querySelectorAll('input[data-trecho-field="data"]').forEach(inp => {
       if (inp.disabled) return;
-      inp.addEventListener("change", () => {
-        const i = +inp.dataset.idx;
+      const i = +inp.dataset.idx;
+      const syncData = () => {
         formTrechos[i].data = inp.value;
-        atualizarAvisoConflito();
-      });
-      inp.addEventListener("blur", () => {
-        const i = +inp.dataset.idx;
-        formTrechos[i].data = inp.value;
-        atualizarAvisoConflito();
+        try { atualizarAvisoConflito(); } catch(e) {}
+      };
+      inp.addEventListener("input", syncData);
+      inp.addEventListener("change", syncData);
+      inp.addEventListener("blur", syncData);
+
+      /* No focus: se vazio e tem data sugerida, preenche antes do calendário abrir */
+      inp.addEventListener("focus", () => {
+        const t = formTrechos[i];
+        if (!t) return;
+        if (!inp.value && t._dataSugerida) {
+          inp.value = t._dataSugerida;
+          t.data = t._dataSugerida;
+          try { atualizarAvisoConflito(); } catch(e) {}
+        }
       });
     });
 
@@ -9663,7 +9802,7 @@ const Agenda = (() => {
         if (!t.status) t.status = {};
       });
     } else {
-      formTrechos = [{ data: ymd(selectedDate), hora: "08:00", duracao: "00:00", origem: "", destino: "", passageiros_ids: [], status: {} }];
+      formTrechos = [{ data: ymd(selectedDate), hora: "", duracao: "00:00", origem: "", destino: "", passageiros_ids: [], status: {} }];
     }
     g("eventModalTitle").textContent = ev ? "Editar voo" : "Novo voo";
     g("evDeleteBtn").hidden = !ev || !Session.temPermissao("excluir_voo");
@@ -9903,10 +10042,40 @@ const Agenda = (() => {
   }
 
   function addTrecho() {
-    const last = formTrechos[formTrechos.length - 1];
+    const lastIdx = formTrechos.length - 1;
+    const last = formTrechos[lastIdx];
+    /* Pega a data do trecho anterior (formTrechos ou input) */
+    let lastData = last?.data || "";
+    if (!lastData) {
+      const inpLast = document.querySelector('input[data-trecho-field="data"][data-idx="' + lastIdx + '"]');
+      if (inpLast && inpLast.value) {
+        lastData = inpLast.value;
+        if (last) last.data = lastData;
+      }
+    }
+    if (!lastData && formTrechos[0]?.data) lastData = formTrechos[0].data;
+    /* Pega a hora do trecho anterior */
+    let lastHora = last?.hora || "";
+    if (!lastHora) {
+      const inpLastH = document.querySelector('input[data-trecho-field="hora"][data-idx="' + lastIdx + '"]');
+      if (inpLastH && inpLastH.value) lastHora = inpLastH.value;
+    }
+    /* Calcula hora sugerida = hora + duração */
+    let horaSug = "";
+    if (lastHora && last?.duracao && /^\d{1,2}:\d{2}$/.test(last.duracao)) {
+      const [h1, m1] = lastHora.split(":").map(Number);
+      const [h2, m2] = last.duracao.split(":").map(Number);
+      const totalMin = (h1||0)*60 + (m1||0) + (h2||0)*60 + (m2||0);
+      const hh = Math.floor((totalMin / 60) % 24);
+      const mm = totalMin % 60;
+      horaSug = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    }
+    /* Cria trecho com data E hora VAZIAS + sugestões internas */
     formTrechos.push({
       data: "",
-      hora: last?.hora || "08:00",
+      _dataSugerida: lastData || "",
+      hora: "",
+      _horaSugerida: horaSug,
       duracao: "00:00",
       origem: last?.destino || "",
       destino: "",
@@ -9917,11 +10086,37 @@ const Agenda = (() => {
 
   function addRetorno() {
     const first = formTrechos[0];
-    const last = formTrechos[formTrechos.length - 1];
+    const lastIdx = formTrechos.length - 1;
+    const last = formTrechos[lastIdx];
     if (!first || !last) return;
+    /* Data sugerida = do último trecho (ou input se formTrechos vazio) */
+    let lastData = last.data || "";
+    if (!lastData) {
+      const inpLast = document.querySelector('input[data-trecho-field="data"][data-idx="' + lastIdx + '"]');
+      if (inpLast && inpLast.value) {
+        lastData = inpLast.value;
+        last.data = lastData;
+      }
+    }
+    let lastHora = last.hora || "";
+    if (!lastHora) {
+      const inpLastH = document.querySelector('input[data-trecho-field="hora"][data-idx="' + lastIdx + '"]');
+      if (inpLastH && inpLastH.value) lastHora = inpLastH.value;
+    }
+    let horaSugR = "";
+    if (lastHora && last.duracao && /^\d{1,2}:\d{2}$/.test(last.duracao)) {
+      const [h1, m1] = lastHora.split(":").map(Number);
+      const [h2, m2] = last.duracao.split(":").map(Number);
+      const totalMin = (h1||0)*60 + (m1||0) + (h2||0)*60 + (m2||0);
+      const hh = Math.floor((totalMin / 60) % 24);
+      const mm = totalMin % 60;
+      horaSugR = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    }
     formTrechos.push({
       data: "",
-      hora: last.hora || "08:00",
+      _dataSugerida: lastData || "",
+      hora: "",
+      _horaSugerida: horaSugR,
       duracao: "00:00",
       origem: last.destino || "",
       destino: first.origem || "",
@@ -10271,15 +10466,60 @@ const Agenda = (() => {
     const abasteceu = g("rvAbasteceu")?.value === "true";
     const _wrapAbast = g("rvCombDetalhes");
     if (_wrapAbast) {
-        // Usa o atributo hidden para esconder/mostrar (o CSS cuida do display)
+        // Esconde/mostra o painel E força display via inline pra garantir
         _wrapAbast.hidden = !abasteceu;
-        // Remove qualquer estilo inline que possa ter ficado preso
-        _wrapAbast.style.display = "";
+        _wrapAbast.style.display = abasteceu ? "" : "none";
     }
+    // Bloqueia/desbloqueia os inputs (redundância de segurança)
+    ["rvCombLitros", "rvCombValor", "rvCombLitrosUnidade"].forEach(id => {
+      const el = g(id);
+      if (el) el.disabled = !abasteceu;
+    });
     if (!abasteceu) {
+      // Limpa os valores
       ["rvCombLitros", "rvCombValor"].forEach(id => { const el = g(id); if (el) el.value = ""; });
       const tot = g("rvCombTotal"); if (tot) tot.value = "";
     }
+  }
+
+  /* Helper: parse de valor BR (aceita vírgula, ponto de milhar, etc) */
+  function _parseBR(v) {
+    if (v === null || v === undefined) return 0;
+    let s = String(v).trim();
+    if (!s) return 0;
+    // Remove "R$", espaços, etc — mantém apenas dígitos, vírgula, ponto e sinal
+    s = s.replace(/[^\d,.\-]/g, "");
+    if (!s) return 0;
+    // Se tem vírgula → ponto é milhar, vírgula é decimal
+    if (s.indexOf(",") !== -1) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (s.indexOf(".") !== -1) {
+      // Sem vírgula: se tem 1 ponto com 1-2 dígitos depois → decimal (5.5 / 5.50)
+      const partes = s.split(".");
+      if (partes.length === 2 && partes[1].length <= 2) {
+        // decimal, mantém
+      } else {
+        // milhar, remove pontos
+        s = s.replace(/\./g, "");
+      }
+    }
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  /* Helper: formata número como moeda BR (ex: 5 → "5,00", 10.4 → "10,40", 1500 → "1.500,00") */
+  function _fmtNumBR(v) {
+    const n = Number(v) || 0;
+    return n.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  /* Formata quantidade (inteiro sem decimais, ou 1 decimal se tiver) */
+  function _fmtQtdBR(v) {
+    const n = Number(v) || 0;
+    if (n === Math.floor(n)) {
+      return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    return n.toFixed(1).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   }
 
   function calcularValorCombGasto() {
@@ -10291,10 +10531,28 @@ const Agenda = (() => {
     const aero = Aircraft.get().find(a => a.tail === ev.aeronave_tail);
     if (!aero) { el.textContent = "R$ 0,00"; return; }
 
-    /* ==== 1. Tanque antes do voo ==== */
-    const tanqueQtd = Number(aero.tanque_qtd) || 0;
-    const tanquePreco = Number(aero.tanque_preco) || 0;
+    /* ==== 1. Tanque antes do voo (com cascata) ====
+       Regra:
+       - Trecho 0: SEMPRE usa cadastro atual da aeronave (permite corrigir a base)
+       - Trecho N>0: cascata do trecho anterior (se revisado); senão, cadastro
+    */
     const tanqueUnidade = aero.tanque_unidade || "L";
+    let tanqueQtd, tanquePreco;
+    if (revisandoIdx === 0) {
+      /* Primeiro trecho: SEMPRE cadastro da aeronave (não lê o confirmado — evita loop) */
+      tanqueQtd = Number(aero.tanque_qtd) || 0;
+      tanquePreco = Number(aero.tanque_preco) || 0;
+    } else {
+      const trPrev = ev.trechos[revisandoIdx - 1];
+      const cPrev = trPrev?.revisao?.combustivel;
+      if (cPrev && cPrev.tanque_depois_qtd !== undefined) {
+        tanqueQtd = Number(cPrev.tanque_depois_qtd) || 0;
+        tanquePreco = Number(cPrev.tanque_depois_preco) || Number(aero.tanque_preco) || 0;
+      } else {
+        tanqueQtd = Number(aero.tanque_qtd) || 0;
+        tanquePreco = Number(aero.tanque_preco) || 0;
+      }
+    }
     /* Sempre trabalha em litros */
     const tanqueLitros = tanqueUnidade === "LB" ? (tanqueQtd / LB_POR_KG) / DENSIDADE_JETA1 : tanqueQtd;
 
@@ -10302,20 +10560,23 @@ const Agenda = (() => {
     const abasteceu = g("rvAbasteceu")?.value === "true";
     let abastLitros = 0, abastPreco = 0, abastTotal = 0;
     if (abasteceu) {
-      const qtdAbast = parseFloat(g("rvCombLitros")?.value) || 0;
+      const qtdAbast = _parseBR(g("rvCombLitros")?.value);
       const unidAbast = g("rvCombLitrosUnidade")?.value || "L";
       abastLitros = unidAbast === "LB" ? (qtdAbast / LB_POR_KG) / DENSIDADE_JETA1 : qtdAbast;
-      abastPreco = parseFloat(g("rvCombValor")?.value) || 0;
+      abastPreco = _parseBR(g("rvCombValor")?.value);
       abastTotal = abastLitros * abastPreco;
     }
 
     /* ==== 3. Preço médio APÓS abastecimento ==== */
-    const totalLitros = tanqueLitros + abastLitros;
-    const totalValor = (tanqueLitros * tanquePreco) + abastTotal;
-    const precoMedio = totalLitros > 0 ? (totalValor / totalLitros) : tanquePreco;
+    const _totalLitrosCalc = tanqueLitros + abastLitros;
+    const _totalValorCalc = (tanqueLitros * tanquePreco) + abastTotal;
+    const precoMedio = _totalLitrosCalc > 0 ? (_totalValorCalc / _totalLitrosCalc) : tanquePreco;
+    /* Trecho 0: tanque_confirmado ja inclui abastecimento. N>0: soma abastecimento do trecho */
+    const totalLitros = (revisandoIdx === 0) ? tanqueLitros : _totalLitrosCalc;
+    const totalValor = totalLitros * precoMedio;
 
     /* ==== 4. Combustível gasto ==== */
-    const qtdGasto = parseFloat(g("rvCombGasto")?.value) || 0;
+    const qtdGasto = _parseBR(g("rvCombGasto")?.value);
     const unidGasto = g("rvCombGastoUnidade")?.value || "L";
     const gastoLitros = unidGasto === "LB" ? (qtdGasto / LB_POR_KG) / DENSIDADE_JETA1 : qtdGasto;
     const valorGasto = gastoLitros * precoMedio;
@@ -10325,18 +10586,47 @@ const Agenda = (() => {
     /* ==== 5. Preenche campos readonly ==== */
     const elAntes = g("rvTanqueAntes");
     if (elAntes) {
-      elAntes.parentNode.style.display = "flex"; elAntes.parentNode.style.justifyContent = "space-between"; elAntes.parentNode.style.alignItems = "center"; elAntes.parentNode.style.width = "100%";
       const isLB = (aero.tanque_unidade === "LB");
-      const vL = Math.round(tanqueLitros); const vLB = Math.round(tanqueLitros * LB_POR_LITRO);
-      const sP = "font-size:15px; font-weight:800; color:var(--text); margin-left:6px;";
-      const sS = "font-size:13px; color:var(--muted); margin-left:6px;";
-      const tL = isLB ? "<span style='"+sS+"'>"+vL+" L</span>" : "<span style='"+sP+"'>"+vL+" L</span>";
-      const tLB = isLB ? "<span style='"+sP+"'>"+vLB+" LB</span>" : "<span style='"+sS+"'>"+vLB+" LB</span>";
-      const ord = isLB ? (tLB + " <span style='font-size:13px'>-</span> " + tL) : (tL + " <span style='font-size:13px'>-</span> " + tLB);
-      elAntes.innerHTML = ord + " <span style='"+sS+"'>| " + fmtBR(tanquePreco) + "/L</span>";
+      const vL = Math.round(tanqueLitros);
+      const vLB = Math.round(tanqueLitros * LB_POR_LITRO);
+      const tL = isLB ? vL + " L" : "<b>" + vL + " L</b>";
+      const tLB = isLB ? "<b>" + vLB + " LB</b>" : vLB + " LB";
+      const ord = isLB ? (tLB + " - " + tL) : (tL + " - " + tLB);
+      elAntes.innerHTML = ord + " | " + fmtBR(tanquePreco) + "/L";
     }
     const elAntesTot = g("rvTanqueAntesTotal");
-    if (elAntesTot) elAntesTot.innerHTML = '<span style="font-size:14px; font-weight:normal; color:var(--text); white-space:nowrap;">Total: ' + fmtBR(tanqueLitros * tanquePreco) + '</span>';
+    if (elAntesTot) elAntesTot.textContent = 'Total: ' + fmtBR(tanqueLitros * tanquePreco);
+    /* ==== 5a. Sugerir valor pro Confirmar Tanque (trecho 0) ==== */
+    if (revisandoIdx === 0) {
+      const inpConf = g("rvTanqueConfirmado");
+      // Só auto-sugere se o usuário NÃO editou manualmente
+      if (inpConf && !window.__thConfirmadoEditado) {
+        // Sugestão = tanque antes + abastecimento (sempre soma)
+        const qtdSug = tanqueUnidade === "LB" ? _totalLitrosCalc * LB_POR_KG * DENSIDADE_JETA1 : _totalLitrosCalc;
+        inpConf.value = Math.round(qtdSug);
+      }
+    }
+
+    /* ==== 5b. Tanque após abastecimento (decolagem) ==== */
+    const elDecolWrap = g("rvTanqueDecolWrap");
+    const elDecol = g("rvTanqueDecol");
+    const elDecolTot = g("rvTanqueDecolTotal");
+    if (elDecolWrap && elDecol && elDecolTot) {
+      if (abasteceu && abastLitros > 0) {
+        elDecolWrap.style.display = "block";
+        const isLB2 = (aero.tanque_unidade === "LB");
+        // Display sempre mostra antes + abastecimento
+        const dL = Math.round(_totalLitrosCalc);
+        const dLB = Math.round(_totalLitrosCalc * LB_POR_LITRO);
+        const tL2 = isLB2 ? dL + " L" : "<b>" + dL + " L</b>";
+        const tLB2 = isLB2 ? "<b>" + dLB + " LB</b>" : dLB + " LB";
+        const ord2 = isLB2 ? (tLB2 + " - " + tL2) : (tL2 + " - " + tLB2);
+        elDecol.innerHTML = ord2 + " | " + fmtBR(precoMedio) + "/L";
+        elDecolTot.textContent = 'Total: ' + fmtBR(_totalValorCalc);
+      } else {
+        elDecolWrap.style.display = "none";
+      }
+    }
 
     /* Total do abastecimento */
     const elAbastTot = g("rvCombTotal");
@@ -10480,17 +10770,17 @@ const Agenda = (() => {
     }
 
     g("rvAbasteceu").value = String(rv.combustivel?.abasteceu ?? false);
-    g("rvCombValor").value = rv.combustivel?.valor_litro ?? "";
+    g("rvCombValor").value = rv.combustivel?.valor_litro ? _fmtNumBR(rv.combustivel.valor_litro) : "";
 
     const aeroRev0 = Aircraft.get().find(a => a.tail === ev.aeronave_tail);
     const unidGastoSalva = aeroRev0?.tanque_unidade || aeroRev0?.unidade_combustivel || rv.combustivel?.unidade_gasto || "L";
     const unidAbastSalva = rv.combustivel?.unidade_abast || "L";
 
     const litrosGasto = Number(rv.combustivel?.gasto_litros) || 0;
-    g("rvCombGasto").value = litrosGasto > 0 ? +litrosParaUnidade(litrosGasto, unidGastoSalva).toFixed(1) : "";
+    g("rvCombGasto").value = litrosGasto > 0 ? _fmtQtdBR(+litrosParaUnidade(litrosGasto, unidGastoSalva).toFixed(1)) : "";
 
     const litrosAbast = Number(rv.combustivel?.litros_abastecidos) || 0;
-    g("rvCombLitros").value = litrosAbast > 0 ? +litrosParaUnidade(litrosAbast, unidAbastSalva).toFixed(1) : "";
+    g("rvCombLitros").value = litrosAbast > 0 ? _fmtQtdBR(+litrosParaUnidade(litrosAbast, unidAbastSalva).toFixed(1)) : "";
 
     g("rvObs").value = rv.observacoes || "";
 
@@ -10539,6 +10829,35 @@ const Agenda = (() => {
       }
     }
 
+    /* Configura o bloco de Confirmar Tanque (apenas no trecho 0) */
+    const wrapConf = g("rvConfirmarTanqueWrap");
+    const inpConf = g("rvTanqueConfirmado");
+    const unidConf = g("rvTanqueConfirmadoUnid");
+    if (wrapConf && inpConf && unidConf) {
+      if (idx === 0) {
+        wrapConf.style.display = "block";
+        unidConf.textContent = aeroRev0?.tanque_unidade || "L";
+        const confSalvo = rv.combustivel?.tanque_confirmado_qtd;
+        inpConf.value = (confSalvo !== undefined && confSalvo !== null) ? confSalvo : "";
+        // Se já tem valor salvo, marca como "editado" (respeita o histórico)
+        window.__thConfirmadoEditado = (confSalvo !== undefined && confSalvo !== null && confSalvo !== "");
+        // Listener: quando o usuário digita, marca como editado; quando apaga, volta a auto-sugerir
+        if (!inpConf.dataset.boundConfirmado) {
+          inpConf.dataset.boundConfirmado = "1";
+          inpConf.addEventListener("input", () => {
+            const v = parseFloat(inpConf.value);
+            window.__thConfirmadoEditado = (!isNaN(v) && v > 0);
+            if (!window.__thConfirmadoEditado) {
+              // Se apagou, re-sugere na hora
+              calcularValorCombGasto();
+            }
+          });
+        }
+      } else {
+        wrapConf.style.display = "none";
+      }
+    }
+
     const abastSel = g("rvAbasteceu");
     if (abastSel && !abastSel.dataset.boundEstado) {
       abastSel.dataset.boundEstado = "1";
@@ -10553,6 +10872,19 @@ const Agenda = (() => {
       if (el && !el.dataset.boundPreview) {
         el.dataset.boundPreview = "1";
         el.addEventListener("input", calcularValorCombGasto);
+        // Formatação ao sair do campo (só para Valor R$/L)
+        if (id === "rvCombValor") {
+          el.addEventListener("blur", () => {
+            const v = _parseBR(el.value);
+            if (v > 0) el.value = _fmtNumBR(v);
+          });
+        }
+        if (id === "rvCombLitros" || id === "rvCombGasto") {
+          el.addEventListener("blur", () => {
+            const v = _parseBR(el.value);
+            if (v > 0) el.value = _fmtQtdBR(v);
+          });
+        }
       }
     });
 
@@ -10564,10 +10896,10 @@ const Agenda = (() => {
         const de = sel.dataset.unidadeAnterior || "L";
         const para = sel.value;
         if (de === para) return;
-        const atual = parseFloat(inp.value) || 0;
+        const atual = _parseBR(inp.value) || 0;
         if (atual > 0) {
           const litros = unidadeParaLitros(atual, de);
-          inp.value = +litrosParaUnidade(litros, para).toFixed(1);
+          inp.value = _fmtQtdBR(+litrosParaUnidade(litros, para).toFixed(1));
         }
         sel.dataset.unidadeAnterior = para;
         calcularValorCombGasto();
@@ -10715,33 +11047,66 @@ const Agenda = (() => {
 
     const abasteceu = g("rvAbasteceu").value === "true";
 
+    /* Valida Tanque Confirmado no trecho 0 (obrigatorio) */
+    let tanqueConfirmadoQtd = null;
+    if (revisandoIdx === 0) {
+      const inpConf = g("rvTanqueConfirmado");
+      tanqueConfirmadoQtd = parseFloat(inpConf?.value);
+      if (isNaN(tanqueConfirmadoQtd) || tanqueConfirmadoQtd <= 0) {
+        alert("\u26A0 Preencha o Tanque Confirmado na Decolagem (obrigatorio).");
+        if (inpConf) inpConf.focus();
+        return;
+      }
+    }
+
     /* ==== Combustível gasto (em litros) ==== */
-    const gastoRaw = parseFloat(g("rvCombGasto").value) || 0;
+    const gastoRaw = _parseBR(g("rvCombGasto").value);
     const gastoUnidade = g("rvCombGastoUnidade").value || "L";
     const gastoLitros = gastoUnidade === "LB" ? (gastoRaw / LB_POR_KG) / DENSIDADE_JETA1 : gastoRaw;
 
     /* ==== Abastecimento ==== */
-    const abastRaw = abasteceu ? (parseFloat(g("rvCombLitros").value) || 0) : 0;
+    const abastRaw = abasteceu ? _parseBR(g("rvCombLitros").value) : 0;
     const abastUnidade = g("rvCombLitrosUnidade")?.value || "L";
     const abastLitros = abastUnidade === "LB" ? (abastRaw / LB_POR_KG) / DENSIDADE_JETA1 : abastRaw;
-    const valorLitroAbast = abasteceu ? (parseFloat(g("rvCombValor").value) || 0) : 0;
+    const valorLitroAbast = abasteceu ? _parseBR(g("rvCombValor").value) : 0;
 
     /* ==== Busca aeronave ==== */
     const aeroIdx = Aircraft.get().findIndex(a => a.tail === ev.aeronave_tail);
     if (aeroIdx < 0) { alert("Aeronave não encontrada."); return; }
     const aero = Aircraft.get()[aeroIdx];
 
-    /* ==== Tanque ANTES do voo ====
-       Se este trecho já tinha revisão, usa o "antes" guardado nela.
-       Senão, usa o estado atual do cadastro. */
+    /* ==== Tanque ANTES do voo (cascata) ====
+       - Trecho 0: SEMPRE cadastro atual
+       - Trecho N>0: cascata do anterior (se revisado); senão, cadastro
+    */
     const revisaoAntiga = ev.trechos[revisandoIdx]?.revisao?.combustivel;
-    let tanqueAntesLitros, tanqueAntesPreco;
-    
-    // CORREÇÃO: Usa SEMPRE o cadastro atual da aeronave para bater com a tela
-    const tanqueQtd = Number(aero.tanque_qtd) || 0;
     const tanqueUnid = aero.tanque_unidade || "L";
-    tanqueAntesLitros = tanqueUnid === "LB" ? (tanqueQtd / LB_POR_KG) / DENSIDADE_JETA1 : tanqueQtd;
-    tanqueAntesPreco = Number(aero.tanque_preco) || 0;
+    let tanqueAntesLitros, tanqueAntesPreco;
+    if (revisandoIdx === 0) {
+      /* Primeiro trecho: usa Tanque Confirmado (validado antes) */
+      const confFinal = tanqueConfirmadoQtd;
+      console.log("[DEBUG save trecho 0]", {
+        tanqueConfirmadoQtd: tanqueConfirmadoQtd,
+        inpConfValue: g("rvTanqueConfirmado")?.value,
+        confFinal: confFinal,
+        tanqueUnid: tanqueUnid,
+        tanqueAntesLitros: confFinal === null || confFinal === undefined ? "NULL/UNDEF" : (tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal)
+      });
+      tanqueAntesLitros = tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal;
+      tanqueAntesPreco = Number(aero.tanque_preco) || 0;
+    } else {
+      const trPrevS = ev.trechos[revisandoIdx - 1];
+      const cPrevS = trPrevS?.revisao?.combustivel;
+      if (cPrevS && cPrevS.tanque_depois_qtd !== undefined) {
+        const _qtdLB = Number(cPrevS.tanque_depois_qtd) || 0;
+        tanqueAntesLitros = tanqueUnid === "LB" ? (_qtdLB / LB_POR_KG) / DENSIDADE_JETA1 : _qtdLB;
+        tanqueAntesPreco = Number(cPrevS.tanque_depois_preco) || Number(aero.tanque_preco) || 0;
+      } else {
+        const tq = Number(aero.tanque_qtd) || 0;
+        tanqueAntesLitros = tanqueUnid === "LB" ? (tq / LB_POR_KG) / DENSIDADE_JETA1 : tq;
+        tanqueAntesPreco = Number(aero.tanque_preco) || 0;
+      }
+    }
 
     // Limpa o histórico antigo deste trecho para não descontar o combustível duas vezes
     if (revisaoAntiga) {
@@ -10758,9 +11123,12 @@ const Agenda = (() => {
 
     /* ==== Cálculos ==== */
     const valorAbast = abastLitros * valorLitroAbast;
-    const totalLitros = tanqueAntesLitros + abastLitros;
-    const totalValor = (tanqueAntesLitros * tanqueAntesPreco) + valorAbast;
-    const precoMedio = totalLitros > 0 ? (totalValor / totalLitros) : tanqueAntesPreco;
+    const _totalLitrosCalc = tanqueAntesLitros + abastLitros;
+    const _totalValorCalc = (tanqueAntesLitros * tanqueAntesPreco) + valorAbast;
+    const precoMedio = _totalLitrosCalc > 0 ? (_totalValorCalc / _totalLitrosCalc) : tanqueAntesPreco;
+    /* Trecho 0: confirmado ja inclui abastecimento. N>0: soma abastecimento do trecho */
+    const totalLitros = (revisandoIdx === 0) ? tanqueAntesLitros : _totalLitrosCalc;
+    const totalValor = totalLitros * precoMedio;
     const tanqueDepoisLitros = Math.max(0, totalLitros - gastoLitros); // Evita tanque negativo
     const valorGasto = gastoLitros * precoMedio;
 
@@ -10772,9 +11140,8 @@ const Agenda = (() => {
     const unidAero = aero.tanque_unidade || "L";
     const convSaida = (litros) => unidAero === "LB" ? litros * LB_POR_KG * DENSIDADE_JETA1 : litros;
 
-    /* ==== Atualiza aeronave ==== */
-    aero.tanque_qtd = +convSaida(tanqueDepoisLitros).toFixed(1);
-    aero.tanque_preco = +precoMedio.toFixed(4);
+    /* ==== Atualiza aeronave: feita pelo R5 (só quando _todosConcluidos) ==== */
+    /* Removido: aero.tanque_qtd = +convSaida(tanqueDepoisLitros).toFixed(1); */
 
 
     /* Histórico */
@@ -10814,13 +11181,16 @@ const Agenda = (() => {
         valor_litro: valorLitroAbast,
         total_abastecimento: +valorAbast.toFixed(2),
         /* Extras pra auditoria */
-        tanque_antes_qtd: +tanqueAntesLitros.toFixed(2),
+        tanque_antes_qtd: +convSaida(tanqueAntesLitros).toFixed(2),
         tanque_antes_preco: +tanqueAntesPreco.toFixed(4),
-        tanque_depois_qtd: +tanqueDepoisLitros.toFixed(2),
+        tanque_depois_qtd: +convSaida(tanqueDepoisLitros).toFixed(2),
         tanque_depois_preco: +precoMedio.toFixed(4),
         valor_gasto_total: +valorGasto.toFixed(2),
         unidade_gasto: g("rvCombGastoUnidade")?.value || "L",
-        unidade_abast: g("rvCombLitrosUnidade")?.value || "L"
+        unidade_abast: g("rvCombLitrosUnidade")?.value || "L",
+        tanque_confirmado_qtd: tanqueConfirmadoQtd !== null ? +tanqueConfirmadoQtd : undefined,
+        tanque_confirmado_litros: tanqueConfirmadoQtd !== null ? (tanqueUnid === "LB" ? (tanqueConfirmadoQtd / LB_POR_KG) / DENSIDADE_JETA1 : tanqueConfirmadoQtd) : undefined,
+        tanque_confirmado_unidade: tanqueConfirmadoQtd !== null ? tanqueUnid : undefined
       },
       observacoes: g("rvObs").value.trim() || "",
       despesas: (function() {
@@ -10846,6 +11216,69 @@ const Agenda = (() => {
     };
 
     const trechosNovos = ev.trechos.map((t, i) => i === revisandoIdx ? { ...t, revisao } : t);
+
+    /* Snapshot: esse voo já foi "aplicado" no tanque da aeronave antes?
+       Se sim, edições posteriores NÃO recascateiam nem atualizam a aeronave. */
+    const eraAplicado = ev._tanque_aplicado === true;
+
+    /* ==== CASCATA: recalcula trechos seguintes já revisados ====
+       Quando o usuário edita um trecho, os seguintes (já revisados)
+       precisam ter tanque_antes_qtd e tanque_depois_qtd atualizados
+       em cadeia, senão ficam com valores inconsistentes do snapshot.
+    */
+    for (let _i = revisandoIdx + 1; _i < trechosNovos.length; _i++) {
+      if (eraAplicado) break;   /* já aplicado: não recascateia */
+      const _tr = trechosNovos[_i];
+      const _comb = _tr.revisao?.combustivel;
+      if (_tr.revisao?.status !== "concluido" || !_comb) continue;
+      const _trPrev = trechosNovos[_i - 1];
+      const _cPrev = _trPrev?.revisao?.combustivel;
+      if (!_cPrev || _cPrev.tanque_depois_qtd === undefined) continue;
+
+      const _qtdLB = Number(_cPrev.tanque_depois_qtd) || 0;
+      const _unid = aero.tanque_unidade || "L";
+      const _novoAntesL = _unid === "LB" ? (_qtdLB / LB_POR_KG) / DENSIDADE_JETA1 : _qtdLB;
+      const _novoAntesP = Number(_cPrev.tanque_depois_preco) || Number(_comb.tanque_antes_preco) || 0;
+      const _abastL = _comb.abasteceu ? (Number(_comb.litros_abastecidos) || 0) : 0;
+      const _gastoL = Number(_comb.gasto_litros) || 0;
+      const _totalL = _novoAntesL + _abastL;
+      const _valAbast = _abastL * (Number(_comb.valor_litro) || 0);
+      const _totalV = (_novoAntesL * _novoAntesP) + _valAbast;
+      const _precoM = _totalL > 0 ? (_totalV / _totalL) : _novoAntesP;
+      const _novoDepoisL = Math.max(0, _totalL - _gastoL);
+      const _valGasto = _gastoL * _precoM;
+
+      _tr.revisao = {
+        ..._tr.revisao,
+        combustivel: {
+          ..._comb,
+          tanque_antes_qtd: +(_unid === "LB" ? _novoAntesL * LB_POR_KG * DENSIDADE_JETA1 : _novoAntesL).toFixed(2),
+          tanque_antes_preco: +_novoAntesP.toFixed(4),
+          tanque_depois_qtd: +(_unid === "LB" ? _novoDepoisL * LB_POR_KG * DENSIDADE_JETA1 : _novoDepoisL).toFixed(2),
+          tanque_depois_preco: +_precoM.toFixed(4),
+          valor_gasto_total: +_valGasto.toFixed(2)
+        }
+      };
+    }
+
+    /* ==== Atualiza tanque da aeronave SOMENTE SE:
+       1) Não foi aplicado ainda (evita rodar 2x)
+       2) TODOS os trechos estão concluídos (voos completos apenas)
+    ==== */
+    const _todosConcluidos = trechosNovos.every(t => t.revisao && t.revisao.status === "concluido");
+    let _lastRevIdx = -1;
+    for (let _j = trechosNovos.length - 1; _j >= 0; _j--) {
+      if (trechosNovos[_j].revisao?.status === "concluido") { _lastRevIdx = _j; break; }
+    }
+    if (!eraAplicado && _todosConcluidos && _lastRevIdx >= 0) {
+      const _lc = trechosNovos[_lastRevIdx].revisao.combustivel;
+      if (_lc && _lc.tanque_depois_qtd !== undefined) {
+        aero.tanque_qtd = +_lc.tanque_depois_qtd.toFixed(1);
+        aero.tanque_preco = +_lc.tanque_depois_preco.toFixed(4);
+        ev._tanque_aplicado = true;
+        ev._tanque_aplicado_em = new Date().toISOString();
+      }
+    }
 
     /* === PATCH 7: gerenciar continuação automática quando pouso fora do planejado ===
        Casos:
@@ -10932,7 +11365,9 @@ const Agenda = (() => {
       criado_por: ev.criado_por,
       criado_em: ev.criado_em,
       atualizado_por: Session.get().id || "local-admin",
-      atualizado_em: new Date().toISOString()
+      atualizado_em: new Date().toISOString(),
+      _tanque_aplicado: ev._tanque_aplicado === true,
+      _tanque_aplicado_em: ev._tanque_aplicado_em || null
     };
 
     const btn = g("rvSaveBtn");
@@ -11114,6 +11549,7 @@ const Agenda = (() => {
     posicaoAtualAeronave, buscarPilotosAuto,
     totalAbastecimentos, totalCustoOperacional, horasVoadasAeronave, horasVoadasAeronave,
     conflitoAeronave, calcularSpanEvento, intervaloVoo, trechoMinutosRange, trechoMinutosRangeLocal,
+    render,
     getEventos: () => events };
 })();
 
@@ -11234,6 +11670,9 @@ const Users = (() => {
       const wrapApagar = g("usTbApagarSensiveisWrap");
       if (wrapApagar) wrapApagar.style.display = (u?.perfil === "admin") ? "" : "none";
     }
+    if (g("usTbEditarExecutados")) {
+      g("usTbEditarExecutados").checked = (u?.extras?.pode_editar_executados === true);
+    }
 
     if (g("usTbPassageiro")) {
       g("usTbPassageiro").checked =
@@ -11254,6 +11693,7 @@ const Users = (() => {
       const wrapApagar = g("usTbApagarSensiveisWrap");
       if (wrapApagar) wrapApagar.style.display = (g("usPerfil").value === "admin") ? "" : "none";
       if (g("usPerfil").value !== "admin" && g("usTbApagarSensiveis")) g("usTbApagarSensiveis").checked = false;
+      if (g("usPerfil").value !== "admin" && g("usPerfil").value !== "piloto" && g("usTbEditarExecutados")) g("usTbEditarExecutados").checked = false;
     };
     g("userModal").classList.add("is-open");
   }
@@ -11275,6 +11715,7 @@ const Users = (() => {
     const tambem_passageiro = (g("usTbPassageiro")?.checked === true);
     const tambem_solicitante = (g("usTbSolicitante")?.checked === true);
     const pode_apagar_dados = (g("usTbApagarSensiveis")?.checked === true);
+    const pode_editar_executados = (g("usTbEditarExecutados")?.checked === true);
     const p = { id: editingId||("u-"+Date.now()), nome: g("usNome").value.trim(), email: g("usEmail").value.trim(),
       perfil: perfil, tambem_e_piloto: tambem_e_piloto,
       tambem_passageiro: tambem_passageiro,
@@ -11313,15 +11754,30 @@ const Users = (() => {
           perfil: p.perfil,
           tambem_e_piloto: p.tambem_e_piloto,
           ativo: p.ativo,
+          exibicaoAeroporto: p.exibicaoAeroporto,
           extras: (() => {
             const e = { ...p.extras };
             if (tambem_passageiro === true) e.tambem_passageiro = true; else delete e.tambem_passageiro;
             if (tambem_solicitante === true) e.tambem_solicitante = true; else delete e.tambem_solicitante;
             if (pode_apagar_dados === true) e.pode_apagar_dados = true; else delete e.pode_apagar_dados;
+            if (pode_editar_executados === true) e.pode_editar_executados = true; else delete e.pode_editar_executados;
             return e;
           })()
         }).eq("id", editingId).select("*").single();
         if (error) { alert("Erro ao salvar: " + error.message); return; }
+        /* (debug removido) */
+        const _auth = (typeof Auth !== "undefined" && Auth && Auth.getUser) ? Auth.getUser() : null;
+        if (_auth && String(_auth.id) === String(editingId)) {
+          const u = _auth;
+          u.exibicaoAeroporto = p.exibicaoAeroporto;
+          u.nome = p.nome;
+          u.email = p.email;
+          u.perfil = p.perfil;
+          u.tambem_e_piloto = p.tambem_e_piloto;
+          u.extras = atualizado.extras;
+          if (typeof Session !== "undefined" && Session.load) Session.load();
+          window.dispatchEvent(new CustomEvent("sessionUpdated", { detail: { origem: "submitForm" } }));
+        }
         g("userModal").classList.remove("is-open");
         /* Sincroniza papéis (cria passageiro/solicitante) — usa dados do BANCO */
         try {
@@ -12537,6 +12993,22 @@ const Custos = (() => {
 
     outrosBuffer = Array.isArray(c.outros) ? JSON.parse(JSON.stringify(c.outros)) : [];
     renderOutros();
+
+    /* === Alertas === */
+    let alertasBase = c.alertas || {};
+    if (ehNovo) {
+      const anos = Object.keys(custos).sort().reverse();
+      const cloneDe = anos.length > 0 ? custos[anos[0]] : null;
+      if (cloneDe && cloneDe.alertas) alertasBase = cloneDe.alertas;
+    }
+    g("ccAlertaCvaData").value = alertasBase.cva?.data || "";
+    g("ccAlertaCvaAviso").value = String(alertasBase.cva?.aviso_dias || 30);
+    g("ccAlertaHorasLimite").value = alertasBase.horas?.limite ?? "";
+    g("ccAlertaHorasData").value = alertasBase.horas?.marco_zero || "";
+    g("ccAlertaHorasAviso").value = String(alertasBase.horas?.aviso_horas || 20);
+    alertasCustomBuffer = Array.isArray(alertasBase.custom) ? JSON.parse(JSON.stringify(alertasBase.custom)) : [];
+    renderAlertaCustom();
+
     atualizarTotal();
     g("custosCicloModal").classList.add("is-open");
   }
@@ -12580,6 +13052,60 @@ const Custos = (() => {
     renderOutros();
   }
 
+  let alertasCustomBuffer = [];
+
+  function renderAlertaCustom() {
+    const box = document.getElementById("ccAlertaCustomLista");
+    if (!box) return;
+    if (!alertasCustomBuffer.length) {
+      box.innerHTML = '<p class="hint" style="margin:0 0 8px">Nenhum alerta personalizado. Clique em + Adicionar.</p>';
+    } else {
+      box.innerHTML = alertasCustomBuffer.map((a, i) => {
+        return '<div style="display:grid;grid-template-columns:1fr 140px 120px 40px;gap:8px;margin-bottom:8px;align-items:center">'
+          + '<input type="text" value="' + String(a.nome || "").replace(/"/g, "&quot;") + '" data-alerta-nome="' + i + '" placeholder="Nome do alerta" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;font-size:13px">'
+          + '<input type="date" value="' + (a.data || "") + '" data-alerta-data="' + i + '" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;font-size:13px">'
+          + '<select data-alerta-aviso="' + i + '" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;font-size:13px">'
+          +   [7, 15, 30, 60, 90, 120].map(d => '<option value="' + d + '"' + (a.aviso_dias === d ? ' selected' : '') + '>' + d + ' dias</option>').join('')
+          + '</select>'
+          + '<button type="button" class="btn btn--danger" data-alerta-del="' + i + '" style="padding:10px">✕</button>'
+          + '</div>';
+      }).join("");
+      box.querySelectorAll("[data-alerta-nome]").forEach(el => {
+        el.addEventListener("input", e => {
+          const i = +e.target.dataset.alertaNome;
+          if (alertasCustomBuffer[i]) alertasCustomBuffer[i].nome = e.target.value;
+        });
+      });
+      box.querySelectorAll("[data-alerta-data]").forEach(el => {
+        el.addEventListener("input", e => {
+          const i = +e.target.dataset.alertaData;
+          if (alertasCustomBuffer[i]) alertasCustomBuffer[i].data = e.target.value;
+        });
+      });
+      box.querySelectorAll("[data-alerta-aviso]").forEach(el => {
+        el.addEventListener("change", e => {
+          const i = +e.target.dataset.alertaAviso;
+          if (alertasCustomBuffer[i]) alertasCustomBuffer[i].aviso_dias = Number(e.target.value);
+        });
+      });
+      box.querySelectorAll("[data-alerta-del]").forEach(el => {
+        el.addEventListener("click", e => {
+          const i = +e.target.dataset.alertaDel;
+          alertasCustomBuffer.splice(i, 1);
+          renderAlertaCustom();
+        });
+      });
+    }
+    const addBtn = document.getElementById("ccAlertaAddCustom");
+    if (addBtn && !addBtn.dataset.bound) {
+      addBtn.dataset.bound = "1";
+      addBtn.addEventListener("click", () => {
+        alertasCustomBuffer.push({ nome: "", data: "", aviso_dias: 30 });
+        renderAlertaCustom();
+      });
+    }
+  }
+
   async function salvarCiclo() {
     const g = (id) => document.getElementById(id);
     const aero = aeroAtual();
@@ -12605,6 +13131,18 @@ const Custos = (() => {
         subtotal_anual: (Number(g("ccManHoras").value) || 0) * (Number(g("ccManPorHora").value) || 0)
       },
       outros: outrosBuffer.slice(),
+      alertas: {
+        cva: {
+          data: g("ccAlertaCvaData").value || null,
+          aviso_dias: Number(g("ccAlertaCvaAviso").value) || 30
+        },
+        horas: {
+          limite: Number(g("ccAlertaHorasLimite").value) || null,
+          marco_zero: g("ccAlertaHorasData").value || null,
+          aviso_horas: Number(g("ccAlertaHorasAviso").value) || 20
+        },
+        custom: alertasCustomBuffer.slice()
+      },
       criado_em: custos[chave]?.criado_em || new Date().toISOString(),
       atualizado_em: new Date().toISOString()
     };
@@ -12614,6 +13152,7 @@ const Custos = (() => {
     g("custosCicloModal").classList.remove("is-open");
     renderLista();
     atualizarResumoBotao();
+    try { if (typeof Alertas !== "undefined" && Alertas.render) Alertas.render(); } catch(e) {}
   }
 
   async function excluirCiclo(ano) {
@@ -12981,7 +13520,12 @@ const Executados = (() => {
       .sort((a,b) => {
         const da = (a.trechos||[]).map(t => t.data).filter(Boolean).sort().pop() || "";
         const db = (b.trechos||[]).map(t => t.data).filter(Boolean).sort().pop() || "";
-        return db.localeCompare(da);
+        // Desempate por data primeiro (mais recente em cima)
+        if (da !== db) return db.localeCompare(da);
+        // Mesma data: desempata por HORA do primeiro trecho (mais novo em cima)
+        const ha = (a.trechos?.[0]?.hora) || "";
+        const hb = (b.trechos?.[0]?.hora) || "";
+        return hb.localeCompare(ha);
       });
   }
 
@@ -13260,7 +13804,10 @@ const Executados = (() => {
     var cardBorder = isMobile ? "border:1px solid #e2e8f0; border-left:4px solid " + corAero + ";" : "border-left:3px solid var(--green);";
     var shadow = isMobile ? "box-shadow: 0 2px 6px rgba(0,0,0,0.04);" : "";
 
-    var rotaStr = (primeiro.origem || "?") + " → " + (ultimo.revisao?.local_pouso_real || ultimo.destino || "?");
+    var _trsSorted = (ev.trechos || []).slice().sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora));
+    var rotaStr = _trsSorted.length
+      ? (_trsSorted[0].origem || "?") + _trsSorted.map(t => " → " + (t.revisao?.local_pouso_real || t.destino || "?")).join("")
+      : ((primeiro.origem || "?") + " → " + (ultimo.revisao?.local_pouso_real || ultimo.destino || "?"));
     var paxCount = paxIds.length;
 
     var html = '<div class="event event--clickable" data-exe-toggle style="cursor:pointer; background:' + cardBg + '; ' + (cardColor ? 'color:'+cardColor+';' : '') + ' ' + cardBorder + ' ' + shadow + ' margin-bottom:8px; padding:14px 16px; border-radius:10px; box-sizing:border-box;">';
@@ -13288,6 +13835,10 @@ const Executados = (() => {
         }
         html += '</div>';
     }
+    var podeEditarExe = Session.get().extras?.pode_editar_executados === true;
+    if (podeEditarExe) {
+        html += '<button class="event__btn" data-action="edit-event" data-id="' + esc(ev.id) + '" title="Editar voo (solicitante, observacoes, etc)" style="width:30px; height:30px; font-size:14px; flex:none; cursor:pointer;">✏️</button>';
+    }
     if (podeDeletar) {
         html += '<button class="event__btn event__btn--danger" data-exe-del="1" data-exe-ev="' + esc(ev.id) + '" title="Excluir voo executado" style="width:30px; height:30px; font-size:14px; flex:none;">X</button>';
     }
@@ -13312,7 +13863,7 @@ const Executados = (() => {
     html += '<div data-exe-detail class="exe-detail">';
     html += '<div style="font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:800; margin-bottom:8px;">Resumo do voo</div>';
     html += '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-bottom:14px; padding:10px 14px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:12px;">';
-    html +=   '<div><div style="color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:700;">Tipo</div><b>' + esc(ev.tipo||"Voo regular") + '</b></div>';
+    html +=   '<div><div style="color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:700;">Tipo</div><b>' + esc((ev.tipo === "Translado" ? "Troca de HR" : ev.tipo) || "Voo regular") + '</b></div>';
     
     var solNome = "—";
     if (ev.solicitante_id) {
@@ -14378,11 +14929,11 @@ const Manutencao = (() => {
       const t = String(tipo || "").toLowerCase();
       if (t.includes("preventiva") || t.includes("preventivo")) return "Preventiva";
       if (t.includes("corretiva") || t.includes("corretivo")) return "Corretiva";
-      if (t.includes("translado") || t.includes("teste")) return "Troca de Hr";
+      if (t.includes("translado") || t.includes("teste")) return "Voo de Manutenção";
       return "Outros";
     };
     if (criterio === "categoria") {
-      const ORDEM = ["Preventiva", "Corretiva", "Troca de Hr", "Outros"];
+      const ORDEM = ["Preventiva", "Corretiva", "Voo de Manutenção", "Outros"];
       const map = {};
       itens.forEach(it => {
         const c = categoriaDe(it.tipo);
@@ -14436,7 +14987,7 @@ const Manutencao = (() => {
       const t = String(tipo || "").toLowerCase();
       if (t.includes("preventiva") || t.includes("preventivo")) return "Preventiva";
       if (t.includes("corretiva") || t.includes("corretivo")) return "Corretiva";
-      if (t.includes("translado") || t.includes("teste")) return "Troca de Hr";
+      if (t.includes("translado") || t.includes("teste")) return "Voo de Manutenção";
       return "Outros";
     };
     /* Verifica se deve incluir pendentes */
@@ -14545,7 +15096,7 @@ const Manutencao = (() => {
         
         body.push([
           { content: H.fmtData(it.data), styles: st },
-          { content: isPendente ? "Pendente" : (String(it.tipo || "").toLowerCase() === "translado" ? "Manutenção" : categoriaDe(it.tipo)), styles: st },
+          { content: isPendente ? "Pendente" : (String(it.tipo || "").toLowerCase() === "translado" ? "Voo de Manutenção" : categoriaDe(it.tipo)), styles: st },
           { content: it.tipo ? it.tipo.charAt(0).toUpperCase() + it.tipo.slice(1) : "", styles: st },
           { content: it.descricao || it.obs || "", styles: st },
           { content: c > 0 ? H.fmtBR(c) : "", styles: st }
@@ -15490,6 +16041,34 @@ const Alertas = (() => {
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
   const fmtData = (s) => { if (!s) return ""; const [y,m,d] = s.split("-"); return d+"/"+m+"/"+s.split("-")[0]; };
 
+  /* Helpers de dispensa */
+  function _alertaId(a) {
+    if (a.ev_id) return (a.tipo || "") + "|" + a.ev_id;
+    return (a.tipo || "") + "|" + (a.aeronave || "") + "|" + (a.custom_nome || "");
+  }
+  function _alertaDispensado(id) {
+    try {
+      var d = JSON.parse(localStorage.getItem("dv.alertas.dispensados") || "{}");
+      var item = d[id];
+      if (!item) return false;
+      if (Date.now() - item.ts > 30 * 86400000) {
+        delete d[id];
+        localStorage.setItem("dv.alertas.dispensados", JSON.stringify(d));
+        return false;
+      }
+      return true;
+    } catch(e) { return false; }
+  }
+  function dispensar(id) {
+    if (!id) return;
+    try {
+      var d = JSON.parse(localStorage.getItem("dv.alertas.dispensados") || "{}");
+      d[id] = { ts: Date.now() };
+      localStorage.setItem("dv.alertas.dispensados", JSON.stringify(d));
+      render();
+    } catch(e) { console.warn("[Alertas.dispensar]", e); }
+  }
+
   /* Calcula todos os alertas ativos */
   function calcular() {
     const alertas = [];
@@ -15501,7 +16080,81 @@ const Alertas = (() => {
       return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
     })();
 
+    /* 0. Alertas de aeronaves (CVA, Horas, Custom) */
+    const _aerosDash = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
+    const _hojeDate = new Date(hojeStr + "T00:00:00");
+    _aerosDash.forEach(function(aero) {
+      if (aero.ativo === false) return;
+      const _custos = aero.custos_por_ano || {};
+      const _anos = Object.keys(_custos).sort().reverse();
+      if (!_anos.length) return;
+      const _anoAtual = String(new Date().getFullYear());
+      const _anoCic = _anos.includes(_anoAtual) ? _anoAtual : _anos[0];
+      const _al = _custos[_anoCic] && _custos[_anoCic].alertas;
+      if (!_al) return;
+      
+      /* CVA */
+      if (_al.cva && _al.cva.data) {
+        const _cvaData = new Date(_al.cva.data + "T00:00:00");
+        const _diasCva = Math.floor((_cvaData - _hojeDate) / 86400000);
+        if (_diasCva <= (_al.cva.aviso_dias || 30)) {
+          alertas.push({
+            tipo: "cva",
+            aeronave: aero.tail,
+            severidade: _diasCva <= 7 ? "danger" : "warning",
+            titulo: "\ud83d\udccb " + aero.tail + " \u2014 CVA " + (_diasCva < 0 ? "vencido" : "vence em " + _diasCva + " dia" + (_diasCva !== 1 ? "s" : "")),
+            sub: "Vencimento: " + fmtData(_al.cva.data)
+          });
+        }
+      }
+      
+      /* Horas disponíveis */
+      if (_al.horas && _al.horas.limite && _al.horas.marco_zero) {
+        let _horasVoadas = 0;
+        eventos.forEach(function(ev) {
+          if (ev.aeronave_tail !== aero.tail) return;
+          (ev.trechos || []).forEach(function(tr) {
+            if (!tr.revisao || tr.revisao.status !== "concluido") return;
+            if (!tr.data || tr.data < _al.horas.marco_zero) return;
+            const dur = tr.revisao.tempo_voo || tr.duracao;
+            if (dur && /^\d{1,2}:\d{2}/.test(dur)) {
+              const parts = dur.split(":");
+              _horasVoadas += (parseInt(parts[0], 10) || 0) + (parseInt(parts[1], 10) || 0) / 60;
+            }
+          });
+        });
+        const _restantes = _al.horas.limite - _horasVoadas;
+        if (_restantes <= (_al.horas.aviso_horas || 20)) {
+          alertas.push({
+            tipo: "horas",
+            aeronave: aero.tail,
+            severidade: _restantes <= 10 ? "danger" : "warning",
+            titulo: "\u23f1 " + aero.tail + " \u2014 " + Math.round(_restantes) + "h restantes",
+            sub: "Limite: " + _al.horas.limite + "h \u00b7 Voadas: " + _horasVoadas.toFixed(1) + "h"
+          });
+        }
+      }
+      
+      /* Custom */
+      (_al.custom || []).forEach(function(cust) {
+        if (!cust.data) return;
+        const _dData = new Date(cust.data + "T00:00:00");
+        const _dRestantes = Math.floor((_dData - _hojeDate) / 86400000);
+        if (_dRestantes <= (cust.aviso_dias || 30)) {
+          alertas.push({
+            tipo: "custom",
+            aeronave: aero.tail,
+            custom_nome: cust.nome || "Alerta",
+            severidade: _dRestantes <= 7 ? "danger" : "warning",
+            titulo: "\ud83d\udd14 " + aero.tail + " \u2014 " + (cust.nome || "Alerta"),
+            sub: (_dRestantes < 0 ? "Vencido h\u00e1 " + Math.abs(_dRestantes) + " dias" : "Em " + _dRestantes + " dia" + (_dRestantes !== 1 ? "s" : "")) + " \u00b7 " + fmtData(cust.data)
+          });
+        }
+      });
+    });
+
     eventos.forEach(ev => {
+      if (ev.tipo === "Bloquear aeronave") return; /* bloqueio não precisa de piloto */
       if (ev.piloto_p1) return; /* já tem piloto */
       if (!ev.trechos || !ev.trechos.length) return;
       /* Pega a primeira data do voo */
@@ -15517,6 +16170,7 @@ const Alertas = (() => {
 
       alertas.push({
         tipo: "sem_piloto",
+        aeronave: ev.aeronave_tail || "",
         severidade: "danger",
         titulo: (ev.aeronave_tail || "—") + " sem piloto definido",
         sub: fmtData(primeiraData) + " · " + (ev.trechos[0].origem || "—") + " → " + (ev.trechos[ev.trechos.length-1].destino || "—"),
@@ -15542,6 +16196,8 @@ const Alertas = (() => {
       const mesmaData = dataIda === dataVolta;
       alertas.push({
         tipo: "manutencao",
+        aeronave: ev.aeronave_tail || "",
+        ev_id: ev.id,
         severidade: "danger",
         titulo: "🔧 " + (ev.aeronave_tail || "—") + " em manutenção",
         sub: mesmaData
@@ -15574,7 +16230,7 @@ const Alertas = (() => {
       });
     });
 
-    return alertas;
+    return alertas.filter(function(a) { return !_alertaDispensado(_alertaId(a)); });
   }
 
   /* Renderiza no dashboard */
@@ -15597,17 +16253,55 @@ const Alertas = (() => {
 
     box.innerHTML = lista.map(a => {
       const cor = a.severidade === "danger" ? "var(--red)" : "var(--yellow)";
-      return '<li class="alert" data-alerta-ev="' + esc(a.ev_id) + '" data-alerta-tipo="' + esc(a.tipo || '') + '" style="cursor:pointer">'
-        + '<strong style="color:' + cor + '">⚠ ' + esc(a.titulo) + '</strong>'
+      const alertId = _alertaId(a);
+      
+      // Procura QUALQUER prefixo de aeronave no título para transformar em badge
+      let prefixoBadge = "";
+      let textoTitulo = a.titulo;
+      var _aerosList = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
+      var _aeroAchada = null;
+      
+      // 1. Tenta usar o campo direto se existir
+      if (a.aeronave) {
+        _aeroAchada = a.aeronave;
+      } else {
+        // 2. Senão, varre a lista de aeronaves buscando no texto
+        for (var _ai = 0; _ai < _aerosList.length; _ai++) {
+          if (a.titulo.indexOf(_aerosList[_ai].tail) !== -1) {
+            _aeroAchada = _aerosList[_ai].tail;
+            break;
+          }
+        }
+      }
+      
+      if (_aeroAchada) {
+        var cAero = (typeof window.corDaAeronave === "function") ? window.corDaAeronave(_aeroAchada) : "var(--accent)";
+        prefixoBadge = '<span style="display:inline-block; background:' + cAero + ' !important; color:#fff !important; padding:2px 6px; border-radius:4px; font-weight:800; font-size:11px; margin-right:6px; vertical-align:middle; font-family:ui-monospace,monospace;">' + esc(_aeroAchada) + '</span>';
+        
+        // Remove o texto do prefixo e sujeiras tipo "— " ou "- " do começo
+        textoTitulo = a.titulo.replace(_aeroAchada, "").replace(/^[\s—\-\u2014]+/, "").trim();
+      }
+      
+      return '<li class="alert" data-alerta-id="' + esc(alertId) + '" data-alerta-ev="' + esc(a.ev_id || '') + '" data-alerta-tipo="' + esc(a.tipo || '') + '" style="cursor:pointer;position:relative;padding-right:24px">'
+        + '<strong style="color:' + cor + '; display:block; margin-bottom:2px;">⚠ ' + prefixoBadge + esc(textoTitulo) + '</strong>'
         + '<small>' + esc(a.sub) + '</small>'
+        + '<button type="button" class="alerta-x" data-alerta-id="' + esc(alertId) + '" title="Dispensar por 30 dias" style="position:absolute;top:2px;right:2px;background:transparent;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px;width:16px;height:16px;line-height:1;border-radius:50%;opacity:0.5;">✕</button>'
         + '</li>';
     }).join("");
 
-    /* Clica no alerta → vai pra agenda e destaca o voo */
+    box.querySelectorAll(".alerta-x").forEach(btn => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        dispensar(btn.dataset.alertaId);
+      });
+    });
+
     box.querySelectorAll("[data-alerta-ev]").forEach(li => {
-      li.addEventListener("click", () => {
+      li.addEventListener("click", (ev) => {
+        if (ev.target.classList.contains("alerta-x")) return;
+        if (!li.dataset.alertaEv) return;
         Router.go("agenda");
-        /* Bloqueio: NAO expande o card */
         if (li.dataset.alertaTipo === "bloqueio") return;
         setTimeout(() => {
           if (typeof Agenda !== "undefined" && Agenda.toggleExpand) {
@@ -15618,8 +16312,64 @@ const Alertas = (() => {
     });
   }
 
-  return { render, calcular };
+  return { render, calcular, dispensar };
 })();
+
+/* Helper global: re-renderiza a página ativa (usado pelo event system) */
+window.renderCurrentPage = function() {
+  try {
+    var _pg = document.querySelector(".page:not([hidden])")?.id || "";
+    /* Re-renderiza em background */
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Sempre re-renderiza TODOS os componentes que dependem de sessão
+    // (Início mobile + Dashboard desktop + Agenda + Alertas)
+    // ═══════════════════════════════════════════════════════════════
+    
+    // 1. Início (mobile) — usa InicioPage.render()
+    if (typeof InicioPage !== "undefined" && InicioPage.render) {
+      try { InicioPage.render(); } catch(e) { console.warn("[renderCurrentPage] InicioPage erro:", e); }
+    }
+    
+    // 2. Agenda — renderiza missionList e calendário
+    if (typeof Agenda !== "undefined" && Agenda.render) {
+      try { Agenda.render(); } catch(e) { console.warn("[renderCurrentPage] Agenda erro:", e); }
+    }
+    
+    // 3. Alertas — renderiza o card "Atenção" do Dashboard Desktop
+    if (typeof Alertas !== "undefined" && Alertas.render) {
+      try { Alertas.render(); } catch(e) { console.warn("[renderCurrentPage] Alertas erro:", e); }
+    }
+    
+    // 4. Aircraft.render() — renderiza o #aircraftCards do Dashboard Desktop
+    // (usa try/catch porque o módulo pode não estar inicializado ainda)
+    if (typeof Aircraft !== "undefined" && Aircraft.render) {
+      try { Aircraft.render(); } catch(e) { /* silencioso */ }
+    }
+    
+    // 5. Se estiver no Dashboard Desktop, força re-render completo
+    if (_pg === "page-dashboard") {
+      try { if (typeof Dashboard !== "undefined" && Dashboard.render) { Dashboard.render(); } } catch(e) {}
+    }
+    
+    // 6. Páginas específicas
+    if (_pg === "page-flights" && typeof Executados !== "undefined" && Executados.render) {
+      try { Executados.render(); } catch(e) {}
+    }
+    if (_pg === "page-troca-horas" && typeof TrocaHoras !== "undefined" && TrocaHoras.render) {
+      try { TrocaHoras.render(); } catch(e) {}
+    }
+    
+    /* concluído */
+  } catch(e) {
+    console.warn("[renderCurrentPage] erro geral:", e);
+  }
+};
+
+/* Listener global: quando o usuário salva algo (sessão atualizada), re-renderiza */
+window.addEventListener("sessionUpdated", function(ev) {
+  setTimeout(function() { window.renderCurrentPage(); }, 50);
+});
 
 const Router = (() => {
   const PAGES = ["dashboard","inicio","config","agenda","piloto","ciclos","troca-horas","backup","users","passageiros","solicitantes","registros","airports","flights","map","maintenance","comprovantes"];
@@ -15854,7 +16604,6 @@ async function renderResumoOperacional() {
     + '<ul class="legend">'
     +   '<li><i style="background:#2388ff"></i>Manutenção ' + pMan.toFixed(1) + '%</li>'
     +   (outros > 0 ? '<li><i style="background:#e5b83d"></i>Outros ' + pOut.toFixed(1) + '%</li>' : '')
-    +   (translado > 0 ? '<li><i style="background:#9aa9b8"></i>Troca de Hr ' + pTr.toFixed(1) + '%</li>' : '')
     + '</ul>';
 }
 
@@ -16001,7 +16750,6 @@ async function renderCustosPorAeronave() {
         +   item("Corretiva", d.cat.corretiva, cores.corretiva)
         +   item("Preventiva", d.cat.preventiva, cores.preventiva)
         +   item("Outros", d.cat.outros, cores.outros)
-        +   item("Troca de Hr", d.cat.translado, cores.translado)
         + '</div>'
         + '</div>';
     }).join("");
@@ -16016,8 +16764,7 @@ async function renderCustosPorAeronave() {
       const cats = [
         { key: "corretiva",  label: "Corretiva",  cor: cores.corretiva  },
         { key: "preventiva", label: "Preventiva", cor: cores.preventiva },
-        { key: "outros",     label: "Outros",     cor: cores.outros     },
-        { key: "translado",  label: "Troca de Hr",  cor: cores.translado  }
+        { key: "outros",     label: "Outros",     cor: cores.outros     }
       ];
       cats.forEach(c => {
         const v = cat[c.key + "C"] || 0;   /* usa versão computada */
@@ -16049,8 +16796,7 @@ async function renderCustosPorAeronave() {
       const cats = [
         { label: "Corretiva",  v: cat.corretivaC,  cor: cores.corretiva  },
         { label: "Preventiva", v: cat.preventivaC, cor: cores.preventiva },
-        { label: "Outros",     v: cat.outrosC,     cor: cores.outros     },
-        { label: "Troca de Hr",  v: cat.transladoC,  cor: cores.translado  }
+        { label: "Outros",     v: cat.outrosC,     cor: cores.outros     }
       ];
       cats.forEach(c => {
         if (c.v <= 0) return;
@@ -16088,7 +16834,6 @@ async function renderCustosPorAeronave() {
       +   '<th>Corretiva</th>'
       +   '<th>Preventiva</th>'
       +   '<th>Outros</th>'
-      +   '<th>Troca de Hr</th>'
       +   '<th>Total</th>'
       + '</tr></thead><tbody>'
       + comDados.map(d => {
@@ -16098,7 +16843,6 @@ async function renderCustosPorAeronave() {
             + '<td>'+fmt(d.cat.corretiva)+'</td>'
             + '<td>'+fmt(d.cat.preventiva)+'</td>'
             + '<td>'+fmt(d.cat.outros)+'</td>'
-            + '<td>'+fmt(d.cat.translado)+'</td>'
             + '<td class="cpa-table__total" title="Total computado">'+fmt(d.cat.totalComputado)+'</td>'
             + '</tr>';
         }).join("")
@@ -16107,7 +16851,6 @@ async function renderCustosPorAeronave() {
       +   '<td>'+fmt(tCorr)+'</td>'
       +   '<td>'+fmt(tPrev)+'</td>'
       +   '<td>'+fmt(tOut)+'</td>'
-      +   '<td>'+fmt(tTr)+'</td>'
       +   '<td class="cpa-table__total">'+fmt(totalGeral)+'</td>'
       + '</tr></tfoot></table>';
   }
@@ -16212,7 +16955,7 @@ const TrocaHoras = (() => {
         modeloMap[mod].credito_min += minRestante;
         modeloMap[mod].itens.push({ id: l.id, tipo: "credito", minutos: minRestante, total: minTotal, consumido: minConsumido });
       } else if (l.tipo === "debito") {
-        const mod = l.modelo || "—";
+        const mod = l.modelo_linkado || l.modelo || "—";
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
         const minPago = consumoDeb[l.id] || 0;
@@ -16269,7 +17012,7 @@ const TrocaHoras = (() => {
   function renderDashboard() {
     const box = document.getElementById("thDashboard");
     if (!box) return;
-    const saldo = calcularSaldo();
+    const saldo = calcularSaldo().filter(e => e.credito_min > 0 || e.debito_min > 0);
     if (!saldo.length) {
       box.innerHTML = '<p class="hint" style="margin:0">Sem lançamentos. Cadastre créditos e débitos para ver o saldo por modelo.</p>';
       return;
@@ -16338,8 +17081,20 @@ const TrocaHoras = (() => {
     window.__thCredSelecionado = null;
     window.__thCredEditandoId = l.id;
     const g = (id) => document.getElementById(id);
-    if (g("thCredResponsavel")) g("thCredResponsavel").value = l.responsavel || "";
-    if (g("thCredEmpresa")) g("thCredEmpresa").value = l.empresa_emprestada || "";
+    let __respId = l.responsavel_id || "";
+    if (!__respId && l.responsavel) {
+      const __solMatch = (typeof Solicitantes !== "undefined" && Solicitantes.get)
+        ? Solicitantes.get().find(s => s.nome === l.responsavel)
+        : null;
+      if (__solMatch) __respId = __solMatch.id;
+    }
+    popularSelectResponsavelCredito(__respId);
+    let __empId = l.empresa_emprestada_id || "";
+    if (!__empId && l.empresa_emprestada) {
+      const __match = lerEmpresas().find(e => e.nome === l.empresa_emprestada);
+      if (__match) __empId = __match.id;
+    }
+    popularSelectEmpresaCredito(__empId);
     const el = g("thCredResumo");
     if (el) el.innerHTML = ''
       + '<div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:1.7">'
@@ -16452,6 +17207,16 @@ function renderLista() {
                   +   '</div>'
                   + '</div>'
                   + '<div style="font-size:13px;font-weight:700">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_tail || "—") + '</div>'
+                  + (() => {
+                    try {
+                      const agenda = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]");
+                      const ev = agenda.find(x => String(x.id) === String(l.ev_id));
+                      const trs = ev?.trechos || [];
+                      if (!trs.length) return "";
+                      const rota = trs[0].origem + trs.map(t => " → " + t.destino).join("");
+                      return '<div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--text)">Rota:</b> ' + esc(rota) + '</div>';
+                    } catch(e) { return ""; }
+                  })()
                   + '<div style="font-size:12px;color:var(--muted);margin-top:2px">Total: ' + esc(l.tempo_voo || "00:00") + ' · Resp: ' + esc(l.responsavel || "—") + (l.empresa_emprestada ? ' · ' + esc(l.empresa_emprestada) : '') + '</div>'
                   + infoConsumo
                   + '</div>';
@@ -16474,6 +17239,12 @@ function renderLista() {
                   +   '</div>'
                   + '</div>'
                   + '<div style="font-size:13px;font-weight:700">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_prefixo || "—") + '</div>'
+                  + (() => {
+                    const trs = l.trechos || [];
+                    if (!trs.length) return "";
+                    const rota = trs[0].origem + trs.map(t => " → " + t.destino).join("");
+                    return '<div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--text)">Rota:</b> ' + esc(rota) + '</div>';
+                  })()
                   + '<div style="font-size:12px;color:var(--muted);margin-top:2px">Total: ' + minutosParaHHMM(totalMin) + ' · Empresa: ' + esc(l.empresa_nome || "—") + '</div>'
                   + infoConsumo
                   + '</div>';
@@ -16569,13 +17340,13 @@ function renderLista() {
       +   '</div>'
       +   '<div class="settings-section">'
       +     '<h3>Lançamento</h3>'
-      +     '<label class="field" style="margin-bottom:10px"><span>Responsável *</span><input id="thCredResponsavel" placeholder="Quem autorizou o empréstimo"></label>'
-      +     '<label class="field"><span>Empresa que pegou emprestado (opcional)</span><input id="thCredEmpresa" placeholder="Ex: Aero Taxi XYZ"></label>'
+      +     '<label class="field" style="margin-bottom:10px"><span>Responsável (solicitante) *</span><select id="thCredResponsavel"><option value="">— selecionar —</option></select></label>'
+      +     '<label class="field"><span>Empresa que pegou emprestado *</span><select id="thCredEmpresa"></select></label>'
       +   '</div>'
-      +   '<div class="dialog__actions">'
-      +     '<button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="thCreditoModal">Cancelar</button>'
-      +     '<button type="button" class="btn" id="thCredSalvar">Salvar crédito</button>'
-      +   '</div>'
+      + '</div>'
+      + '<div class="dialog__actions">'
+      +   '<button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="thCreditoModal">Fechar</button>'
+      +   '<button type="button" class="btn" id="thCredSalvar">Salvar crédito</button>'
       + '</div>'
       + '</div></div>';
     document.body.insertAdjacentHTML("beforeend", html);
@@ -16583,6 +17354,30 @@ function renderLista() {
     if (btnBuscar) btnBuscar.addEventListener("click", buscarVoosFinalizados);
     const btnSalvar = document.getElementById("thCredSalvar");
     if (btnSalvar) btnSalvar.addEventListener("click", salvarCredito);
+  }
+
+  function popularSelectEmpresaCredito(selectedId) {
+    const sel = document.getElementById("thCredEmpresa");
+    if (!sel) return;
+    const lista = lerEmpresas();
+    let html = '<option value="">— sem empresa (pessoa física) —</option>';
+    html += lista.map(e =>
+      '<option value="' + esc(e.id) + '"' + (e.id === selectedId ? " selected" : "") + ">" + esc(e.nome) + "</option>"
+    ).join("");
+    sel.innerHTML = html;
+  }
+
+  function popularSelectResponsavelCredito(selectedId) {
+    const sel = document.getElementById("thCredResponsavel");
+    if (!sel) return;
+    const lista = (typeof Solicitantes !== "undefined" && Solicitantes.get)
+      ? Solicitantes.get().filter(s => s.ativo !== false)
+      : [];
+    let html = '<option value="">— selecionar —</option>';
+    html += lista.map(s =>
+      '<option value="' + esc(s.id) + '"' + (s.id === selectedId ? " selected" : "") + ">" + esc(s.nome) + "</option>"
+    ).join("");
+    sel.innerHTML = html;
   }
 
   function abrirCredito() {
@@ -16594,8 +17389,8 @@ function renderLista() {
     if (g("thCredPrefixo")) g("thCredPrefixo").value = "";
     if (g("thCredResultados")) g("thCredResultados").innerHTML = "";
     if (g("thCredForm")) g("thCredForm").hidden = true;
-    if (g("thCredResponsavel")) g("thCredResponsavel").value = "";
-    if (g("thCredEmpresa")) g("thCredEmpresa").value = "";
+    popularSelectResponsavelCredito();
+    popularSelectEmpresaCredito();
     const btnSalvar = g("thCredSalvar");
     if (btnSalvar) btnSalvar.textContent = "Salvar crédito";
     const h2 = document.querySelector("#thCreditoModal h2");
@@ -16645,7 +17440,7 @@ function renderLista() {
           const cor = (typeof Aircraft !== "undefined" && Aircraft.get) ? (Aircraft.get().find(a => a.tail === ev.aeronave_tail)?.color || "#38a8ff") : "#38a8ff";
           return '<button type="button" data-ev-id="' + esc(ev.id) + '" style="width:100%;text-align:left;display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;font-family:inherit;color:var(--text)">'
             + '<span style="font-family:ui-monospace,monospace;font-size:11px;font-weight:800;color:#fff;background:' + cor + ';padding:3px 7px;border-radius:4px">' + esc(ev.aeronave_tail || "—") + '</span>'
-            + '<span style="flex:1;min-width:0"><span style="font-size:12px;font-weight:700;display:block">' + esc(primeira.origem || "—") + ' → ' + esc(primeira.destino || "—") + '</span>'
+            + '<span style="flex:1;min-width:0"><span style="font-size:12px;font-weight:700;display:block">' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</span>'
             + '<span style="font-size:11px;color:var(--muted)">' + esc(primeira.data || "") + ' · ' + tempo + ' · ' + trs.length + ' trecho' + (trs.length > 1 ? 's' : '') + '</span></span>'
             + '</button>';
         }).join("")
@@ -16685,7 +17480,7 @@ function renderLista() {
       +   '<div><span style="color:var(--muted)">Passageiros:</span> <b>' + paxSet.size + '</b></div>'
       +   '<div><span style="color:var(--muted)">Solicitante:</span> <b>' + esc(solNome) + '</b></div>'
       + '</div>'
-      + '<div style="margin-top:8px"><span style="color:var(--muted)">Rota:</span> <b>' + esc(primeira.origem || "—") + ' → ' + esc(trs[trs.length-1].destino || "—") + '</b></div>'
+      + '<div style="margin-top:8px"><span style="color:var(--muted)">Rota:</span> <b style="display:inline-block;word-break:break-word;max-width:100%;line-height:1.4">' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</b></div>'
       + '</div>';
 
     const form = document.getElementById("thCredForm");
@@ -16696,9 +17491,17 @@ function renderLista() {
     const ev = window.__thCredSelecionado;
     if (!ev) { alert("Selecione um voo primeiro."); return; }
 
-    const responsavel = (document.getElementById("thCredResponsavel").value || "").trim();
-    if (!responsavel) { alert("Preencha o responsável."); return; }
-    const empresaEmp = (document.getElementById("thCredEmpresa").value || "").trim();
+    const responsavelId = (document.getElementById("thCredResponsavel").value || "").trim();
+    if (!responsavelId) { alert("Selecione o responsável (solicitante)."); return; }
+    const responsavelObj = (typeof Solicitantes !== "undefined" && Solicitantes.get)
+      ? Solicitantes.get().find(s => s.id === responsavelId)
+      : null;
+    const responsavel = responsavelObj?.nome || responsavelId;
+    const empresaId = (document.getElementById("thCredEmpresa").value || "").trim();
+    if (!empresaId) { alert("Selecione a empresa que pegou emprestado (obrigatório)."); return; }
+    const empresaSel = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
+    const empresaNome = empresaSel?.nome || "";
+    const empresaLogo = empresaSel?.logo || "";
 
     const trs = ev.trechos || [];
     const primeira = trs[0];
@@ -16717,7 +17520,10 @@ function renderLista() {
       passageiros: paxSet.size,
       solicitante_id: ev.solicitante_id || "",
       responsavel: responsavel,
-      empresa_emprestada: empresaEmp || "",
+      responsavel_id: responsavelId,
+      empresa_emprestada: empresaNome,
+      empresa_emprestada_id: empresaId || null,
+      empresa_logo_snapshot: empresaLogo,
       ev_id: ev.id,
       observacoes: "",
       criado_em: new Date().toISOString()
@@ -16727,7 +17533,7 @@ function renderLista() {
     const editId = window.__thCredEditandoId;
     if (editId) {
       const i = lista.findIndex(x => x.id === editId);
-      if (i >= 0) lista[i] = { ...lista[i], responsavel, empresa_emprestada: empresaEmp || "" };
+      if (i >= 0) lista[i] = { ...lista[i], responsavel, responsavel_id: responsavelId, empresa_emprestada: empresaNome, empresa_emprestada_id: empresaId || null, empresa_logo_snapshot: empresaLogo };
     } else {
       lista.push(lancamento);
     }
@@ -16817,7 +17623,9 @@ function renderLista() {
       return;
     }
     const emp = lerEmpresas().find(e => e.id === empId);
-    const modelos = Array.isArray(emp?.modelos) ? emp.modelos : [];
+    const modelos = (Array.isArray(emp?.modelos) ? emp.modelos : [])
+      .map(m => typeof m === "string" ? { nome: m, vinculado_a: null } : m)
+      .filter(m => m && m.nome);
     if (!modelos.length) {
       sel.innerHTML = '<option value="">— empresa sem modelos cadastrados —</option>';
       sel.disabled = true;
@@ -16829,16 +17637,18 @@ function renderLista() {
     if (hint) hint.textContent = "";
 
     const todosModelos = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list() : [];
-    const outros = todosModelos.filter(m => !modelos.includes(m));
-    const temAtual = modeloAtual && modelos.includes(modeloAtual);
+    const nomesModelos = modelos.map(m => m.nome);
+    const outros = todosModelos.filter(m => !nomesModelos.includes(m));
+    const temAtual = modeloAtual && nomesModelos.includes(modeloAtual);
     const mostrarOutros = !!window.__thDebMostrarOutros;
 
     let html = '<option value="">— selecionar —</option>';
 
-    /* Modelos da empresa */
+    /* Modelos da empresa (com indicação de vínculo) */
     html += modelos.map(m => {
-      const selAttr = (m === modeloAtual) ? ' selected' : '';
-      return '<option value="' + esc(m) + '"' + selAttr + '>' + esc(m) + '</option>';
+      const selAttr = (m.nome === modeloAtual) ? " selected" : "";
+      const label = m.vinculado_a ? (m.nome + " → " + m.vinculado_a) : m.nome;
+      return '<option value="' + esc(m.nome) + '"' + selAttr + ">" + esc(label) + "</option>";
     }).join("");
 
     /* Se "mostrar outros" ativo OU modelo atual está fora */
@@ -17159,14 +17969,26 @@ function renderLista() {
 
     const empresa = lerEmpresas().find(e => e.id === empresaId);
     const empresaNome = empresa?.nome || "—";
+    const empresaLogo = empresa?.logo || "";
+    /* Procura o vínculo do modelo na empresa (aceita formato antigo e novo) */
+    const modeloVinculado = (() => {
+      const ms = Array.isArray(empresa?.modelos) ? empresa.modelos : [];
+      for (const m of ms) {
+        if (typeof m === "string" && m === modelo) return null;
+        if (m && m.nome === modelo) return m.vinculado_a || null;
+      }
+      return null;
+    })();
 
     const lancamento = {
       id: "th-d-" + Date.now(),
       tipo: "debito",
       aeronave_prefixo: prefixo,
       modelo: modelo,
+      modelo_linkado: modeloVinculado,
       empresa_id: empresaId,
       empresa_nome: empresaNome,
+      empresa_logo_snapshot: empresaLogo,
       solicitante_id: solicitanteId,
       trechos: __thDebTrechos.map(t => ({ ...t })),
       observacoes: obs,
@@ -17198,12 +18020,22 @@ function renderLista() {
       + '<label class="field" style="margin-bottom:10px"><span>CNPJ / Documento</span><input id="thEmpresaCnpj" placeholder="00.000.000/0000-00"></label>'
       + '<label class="field" style="margin-bottom:10px"><span>Contato</span><input id="thEmpresaContato" placeholder="Nome / Telefone / Email"></label>'
       + '<label class="field"><span>Observações</span><textarea id="thEmpresaObs" rows="2" placeholder="Opcional"></textarea></label>'
+      + '<div style="margin:14px 0 10px;padding:10px;background:var(--panel);border-radius:8px">'
+      +   '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:6px">Logo da empresa (opcional)</div>'
+      +   '<input type="file" id="thEmpresaLogoFile" accept="image/*" style="font-size:12px">'
+      +   '<div id="thEmpresaLogoPreviewWrap" style="display:none;margin-top:8px;align-items:center;gap:8px">'
+      +     '<img id="thEmpresaLogoPreview" style="max-width:120px;max-height:60px;border-radius:6px;border:1px solid var(--line)">'
+      +     '<button type="button" class="btn btn--secondary" id="thEmpresaLogoRemover" style="font-size:11px;padding:4px 8px">Remover</button>'
+      +   '</div>'
+      +   '<input type="hidden" id="thEmpresaLogoData">'
+      + '</div>'
       + '<div class="settings-section">'
       +   '<h3>Modelos que a empresa opera</h3>'
-      +   '<div id="thEmpresaModelos" style="max-height:180px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px"></div>'
+      +   '<p class="hint" style="margin:-8px 0 10px">Marque os modelos e, na frente de cada um, escolha a qual modelo <strong>nosso</strong> ele deve ser vinculado para debitar horas automaticamente.</p>'
+      +   '<div id="thEmpresaModelos" style="max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px"></div>'
       + '</div>'
       + '<div id="thEmpresaListaWrap" style="margin-top:14px">'
-      +   '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:20px 0 10px;padding:8px 12px;background:var(--nav-active-bg);border-left:3px solid var(--accent);border-radius:6px">📋 Empresas cadastradas</div>'
+      +   '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:20px 0 10px;padding:8px 12px;background:var(--nav-active-bg);border-radius:6px">📋 Empresas cadastradas</div>'
       +   '<div id="thEmpresaLista"></div>'
       + '</div>'
       + '<div class="dialog__actions">'
@@ -17214,27 +18046,77 @@ function renderLista() {
     document.body.insertAdjacentHTML("beforeend", html);
     const btn = document.getElementById("thEmpresaSalvar");
     if (btn) btn.addEventListener("click", salvarEmpresa);
+    const logoFile = document.getElementById("thEmpresaLogoFile");
+    if (logoFile) logoFile.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 100 * 1024) { alert("Logo muito grande (máx 100 KB). Reduza a imagem."); e.target.value = ""; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        const hidden = document.getElementById("thEmpresaLogoData");
+        if (hidden) hidden.value = dataUrl;
+        const prev = document.getElementById("thEmpresaLogoPreview");
+        const wrap = document.getElementById("thEmpresaLogoPreviewWrap");
+        if (prev) prev.src = dataUrl;
+        if (wrap) wrap.style.display = "flex";
+      };
+      reader.readAsDataURL(file);
+    });
+    const logoRemover = document.getElementById("thEmpresaLogoRemover");
+    if (logoRemover) logoRemover.addEventListener("click", () => {
+      const hidden = document.getElementById("thEmpresaLogoData");
+      if (hidden) hidden.value = "";
+      const prev = document.getElementById("thEmpresaLogoPreview");
+      const wrap = document.getElementById("thEmpresaLogoPreviewWrap");
+      if (prev) prev.src = "";
+      if (wrap) wrap.style.display = "none";
+      const fileInput = document.getElementById("thEmpresaLogoFile");
+      if (fileInput) fileInput.value = "";
+    });
   }
 
   function popularModelosEmpresa(selecionados) {
     const box = document.getElementById("thEmpresaModelos");
     if (!box) return;
     const modelos = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list() : [];
-    const set = new Set(selecionados || []);
     if (!modelos.length) {
       box.innerHTML = '<p class="hint" style="margin:0;padding:6px">Nenhum modelo cadastrado. Use "📋 Modelos" em Aeronaves.</p>';
       return;
     }
-    box.innerHTML = modelos.map(m => {
-      const checked = set.has(m) ? ' checked' : '';
-      return '<label style="display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:pointer;border-radius:6px;transition:background .1s" onmouseover="this.style.background=\'var(--panel)\'" onmouseout="this.style.background=\'\'">' + '<input type="checkbox" class="thEmpModeloChk" value="' + esc(m) + '"' + checked + '>' + '<span style="font-size:12px">' + esc(m) + '</span>' + '</label>';
+    /* Normaliza entrada: aceita ["string"] ou [{nome, vinculado_a}] */
+    const linkMap = {};
+    (selecionados || []).forEach(m => {
+      if (typeof m === "string") linkMap[m] = "";
+      else if (m && m.nome) linkMap[m.nome] = m.vinculado_a || "";
+    });
+    const sorted = [...modelos].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    box.innerHTML = sorted.map(m => {
+      const checked = linkMap.hasOwnProperty(m) ? " checked" : "";
+      const linked = linkMap[m] || "";
+      const options = '<option value="">— sem vínculo —</option>' +
+        sorted.filter(x => x !== m).map(x =>
+          '<option value="' + esc(x) + '"' + (x === linked ? " selected" : "") + '>' + esc(x) + '</option>'
+        ).join("");
+      return '<div class="thEmpModeloRow" data-modelo="' + esc(m) + '" style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--line)">'
+        + '<label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0">'
+        +   '<input type="checkbox" class="thEmpModeloChk"' + checked + '>'
+        +   '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span>'
+        + '</label>'
+        + '<select class="thEmpModeloLink" title="Vincular a qual modelo nosso" style="font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card);max-width:180px">' + options + '</select>'
+        + '</div>';
     }).join("");
   }
 
   function capturarModelosEmpresa() {
     const box = document.getElementById("thEmpresaModelos");
     if (!box) return [];
-    return Array.from(box.querySelectorAll(".thEmpModeloChk:checked")).map(c => c.value);
+    return Array.from(box.querySelectorAll(".thEmpModeloRow"))
+      .filter(row => row.querySelector(".thEmpModeloChk")?.checked)
+      .map(row => ({
+        nome: row.dataset.modelo,
+        vinculado_a: (row.querySelector(".thEmpModeloLink")?.value || "").trim() || null
+      }));
   }
 
   function abrirEmpresa() {
@@ -17245,6 +18127,10 @@ function renderLista() {
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
+    if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = "";
+    if (g("thEmpresaLogoPreview")) g("thEmpresaLogoPreview").src = "";
+    if (g("thEmpresaLogoPreviewWrap")) g("thEmpresaLogoPreviewWrap").style.display = "none";
+    if (g("thEmpresaLogoFile")) g("thEmpresaLogoFile").value = "";
     if (g("thEmpresaModalTitle")) g("thEmpresaModalTitle").textContent = "Cadastrar empresa";
     popularModelosEmpresa([]);
     renderListaEmpresas();
@@ -17263,7 +18149,7 @@ function renderLista() {
     const idEditando = (document.getElementById("thEmpresaId")?.value || "");
     box.innerHTML = lista.map(e => {
       const ativa = e.id === idEditando;
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);border-radius:6px;' + (ativa ? 'background:var(--nav-active-bg);border-left:3px solid var(--accent);padding-left:8px' : '') + '">'
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);border-radius:6px;' + (ativa ? 'background:var(--nav-active-bg);padding-left:8px' : '') + '">'
         + '<button type="button" data-th-emp-edit="' + esc(e.id) + '" style="flex:1;min-width:0;text-align:left;border:0;background:transparent;cursor:pointer;padding:0;font-family:inherit;color:inherit">'
         +   '<div style="font-size:13px;font-weight:700;color:var(--text)">' + esc(e.nome) + (ativa ? ' <span style="font-size:10px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.05em">· editando</span>' : '') + '</div>'
         +   (e.cnpj ? '<div style="font-size:11px;color:var(--muted)">' + esc(e.cnpj) + '</div>' : '')
@@ -17305,6 +18191,15 @@ function renderLista() {
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = e.cnpj || "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = e.contato || "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = e.obs || "";
+    if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = e.logo || "";
+    if (e.logo) {
+      if (g("thEmpresaLogoPreview")) g("thEmpresaLogoPreview").src = e.logo;
+      if (g("thEmpresaLogoPreviewWrap")) g("thEmpresaLogoPreviewWrap").style.display = "flex";
+    } else {
+      if (g("thEmpresaLogoPreview")) g("thEmpresaLogoPreview").src = "";
+      if (g("thEmpresaLogoPreviewWrap")) g("thEmpresaLogoPreviewWrap").style.display = "none";
+    }
+    if (g("thEmpresaLogoFile")) g("thEmpresaLogoFile").value = "";
     popularModelosEmpresa(e.modelos || []);
     if (g("thEmpresaModalTitle")) g("thEmpresaModalTitle").textContent = "Editar empresa";
     if (g("thEmpresaSalvar")) g("thEmpresaSalvar").textContent = "Atualizar empresa";
@@ -17324,16 +18219,17 @@ function renderLista() {
     const contato = (document.getElementById("thEmpresaContato").value || "").trim();
     const obs = (document.getElementById("thEmpresaObs").value || "").trim();
     const idEdit = (document.getElementById("thEmpresaId").value || "").trim();
+    const logo = (document.getElementById("thEmpresaLogoData")?.value || "").trim();
     const modelos = capturarModelosEmpresa();
 
     const lista = lerEmpresas();
     if (idEdit) {
       const i = lista.findIndex(e => e.id === idEdit);
-      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, modelos };
+      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, logo, modelos };
     } else {
       lista.push({
         id: "th-e-" + Date.now(),
-        nome, cnpj, contato, obs, modelos,
+        nome, cnpj, contato, obs, logo, modelos,
         criado_em: new Date().toISOString()
       });
     }
@@ -17384,7 +18280,7 @@ function renderLista() {
       +     '<div id="thLinkConvYLabel" style="font-size:10px;color:var(--muted);margin-top:3px"></div>'
       +   '</div>'
       + '</div>'
-      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:11px;color:var(--text)"></div>'
+      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)"></div>'
       + '</div>'      + '<h3>3. Conversão entre modelos</h3>'
       + '<div id="thLinkConvSection" style="display:none">'
       + '<p class="hint" style="margin:-4px 0 10px;font-size:11px">Defina quanto vale 1h de cada modelo (ex: 2h de King Air = 4h de Pilatus)</p>'
@@ -17401,7 +18297,7 @@ function renderLista() {
       +     '<div id="thLinkConvYLabel" style="font-size:10px;color:var(--muted);margin-top:3px"></div>'
       +   '</div>'
       + '</div>'
-      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-left:3px solid var(--accent);border-radius:6px;font-size:11px;color:var(--text)"></div>'
+      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)"></div>'
       + '</div>'
       + '<h3 style="margin-top:14px">4. Horas a linkar</h3>'
       +   '<label class="field"><span>Horas do crédito a consumir</span>'
@@ -17529,7 +18425,10 @@ function renderLista() {
   function popularSelectDebitosLink() {
     const sel = document.getElementById("thLinkDebito");
     if (!sel) return;
-    const debs = lerLancamentos().filter(l => l.tipo === "debito" && saldoDebito(l.id) > 0);
+    const debs = lerLancamentos().filter(l =>
+      l.tipo === "debito" && saldoDebito(l.id) > 0 &&
+      (!l.modelo_linkado || l.modelo_linkado === l.modelo)
+    );
     sel.innerHTML = '<option value="">— selecionar débito —</option>'
       + debs.map(l => '<option value="' + esc(l.id) + '">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_prefixo || "—") + ' · deve ' + minutosParaHHMM(saldoDebito(l.id)) + '</option>').join("");
   }
@@ -17713,7 +18612,7 @@ function renderLista() {
         dataLink = d.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric" }) + " " + d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
       } catch(e) { dataLink = lk.criado_em || ""; }
 
-      return '<div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;margin-bottom:8px">'
+      return '<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)">'
         +   '<span style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em">🔗 Voo Linkado</span>'
         +   '<div style="display:flex;gap:8px;align-items:center">'
@@ -17749,6 +18648,672 @@ function renderLista() {
     }).filter(Boolean).join("");
   }
 
+  /* ---------- Relatório (CSV / XLS) ---------- */
+  function _thRelYMD(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + dd;
+  }
+  function _thRelYMDToBR(s) {
+    if (!s) return "";
+    const p = String(s).split("-");
+    if (p.length !== 3) return s;
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+  function _thRelSomaMin(trechos) {
+    return (trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao || ""), 0);
+  }
+  function _thRelSomaPax(trechos) {
+    return (trechos || []).reduce((s, t) => s + ((t.passageiros_ids || []).length), 0);
+  }
+  function _thRelSolicitanteNome(id) {
+    if (!id) return "";
+    try {
+      if (typeof Solicitantes !== "undefined" && typeof Solicitantes.getLista === "function") {
+        const l = Solicitantes.getLista();
+        const s = Array.isArray(l) ? l.find(x => x.id === id) : null;
+        if (s && s.nome) return s.nome;
+      }
+    } catch(e) {}
+    try {
+      const l = JSON.parse(localStorage.getItem("dv.solicitantes.v1") || "[]");
+      const s = l.find(x => x.id === id);
+      return s?.nome || "";
+    } catch(e) { return ""; }
+  }
+  function _thRelAgendaLista() {
+    try {
+      if (typeof Agenda !== "undefined" && typeof Agenda.getLista === "function") {
+        const l = Agenda.getLista();
+        if (Array.isArray(l)) return l;
+      }
+    } catch(e) {}
+    try {
+      const l = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]");
+      if (Array.isArray(l)) return l;
+    } catch(e) {}
+    return [];
+  }
+  function _thRelTrechosCredito(l) {
+    const evs = _thRelAgendaLista();
+    const ev = evs.find(x => x.id === l.ev_id);
+    if (ev && Array.isArray(ev.trechos)) return ev.trechos;
+    return [];
+  }
+  function _thRelInfo(icao) {
+  if (!icao) return null;
+  const code = String(icao).toUpperCase().trim();
+  try {
+    const raw = localStorage.getItem("dv.aerodromosOverrides.v1");
+    if (raw) {
+      const ov = JSON.parse(raw);
+      if (ov && ov[code]) {
+        return { nome: ov[code].nome || "", cidade: ov[code].cidade || "", uf: ov[code].uf || "" };
+      }
+    }
+    if (typeof window.AERODROMOS !== "undefined" && window.AERODROMOS) {
+      const arr = Array.isArray(window.AERODROMOS) ? window.AERODROMOS : Object.values(window.AERODROMOS);
+      const a = arr.find(x => x && String(x.icao || x.ICAO || x.code || "").toUpperCase() === code);
+      if (a) return { nome: a.nome || a.name || "", cidade: a.cidade || a.city || "", uf: a.uf || "" };
+    }
+    if (typeof window.Airports !== "undefined" && window.Airports) {
+      if (typeof Airports.get === "function") {
+        const arr = Airports.get();
+        if (Array.isArray(arr)) {
+          const a = arr.find(x => x && String(x.icao || "").toUpperCase() === code);
+          if (a) return { nome: a.nome || a.name || "", cidade: a.cidade || a.city || "", uf: a.uf || "" };
+        }
+      } else if (Array.isArray(Airports)) {
+        const a = Airports.find(x => x && String(x.icao || "").toUpperCase() === code);
+        if (a) return { nome: a.nome || a.name || "", cidade: a.cidade || a.city || "", uf: a.uf || "" };
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+function _thRelCity(icao) {
+  const info = _thRelInfo(icao);
+  return info ? (info.cidade || info.nome || "") : "";
+}
+
+  function _thRelColetar(filtros) {
+    const empresaId = filtros.empresa_id || "";
+    const de = filtros.data_de || "";
+    const ate = filtros.data_ate || "";
+    const empresaSel = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
+    const empresaNome = empresaSel?.nome || "";
+    const creditos = [];
+    const debitos = [];
+    const resumoMap = {};
+    const addResumo = (modelo, tipo, min) => {
+      if (!modelo) return;
+      if (!resumoMap[modelo]) resumoMap[modelo] = { aeronave: modelo, credito_min: 0, debito_min: 0 };
+      if (tipo === "credito") resumoMap[modelo].credito_min += min;
+      else resumoMap[modelo].debito_min += min;
+    };
+
+
+    lerLancamentos().forEach(l => {
+      if (l.tipo === "credito") {
+        if (empresaId && l.empresa_emprestada_id !== empresaId && l.empresa_emprestada !== empresaNome) return;
+        const trechos = _thRelTrechosCredito(l);
+        const trs = trechos.length ? trechos : [{ data: l.data, origem: "-", destino: "-", duracao: l.tempo_voo || "00:00", passageiros_ids: [] }];
+
+
+        trs.forEach(t => {
+          const dataL = t.data || l.data || "";
+          if (de && dataL && dataL < de) return;
+          if (ate && dataL && dataL > ate) return;
+
+
+          creditos.push({
+            data: dataL,
+            origem: (t.origem || "-").toUpperCase(),
+            destino: (t.destino || "-").toUpperCase(),
+            tempo: t.duracao || "00:00",
+            prefixo: l.aeronave_tail || "-",
+            passageiros: (t.passageiros_ids || []).length,
+            solicitante: _thRelSolicitanteNome(l.solicitante_id),
+            empresa: l.empresa_emprestada || "",
+            obs: l.observacoes || ""
+          });
+          addResumo(l.modelo || "-", "credito", tempoParaMinutos(t.duracao || "00:00"));
+        });
+      } else if (l.tipo === "debito") {
+        if (empresaId && l.empresa_id !== empresaId) return;
+        const trs = l.trechos || [];
+
+
+        trs.forEach(t => {
+          const dataL = t.data || "";
+          if (de && dataL && dataL < de) return;
+          if (ate && dataL && dataL > ate) return;
+
+
+          debitos.push({
+            data: dataL,
+            origem: (t.origem || "-").toUpperCase(),
+            destino: (t.destino || "-").toUpperCase(),
+            tempo: t.duracao || "00:00",
+            prefixo: l.aeronave_prefixo || "-",
+            passageiros: (t.passageiros_ids || []).length,
+            solicitante: _thRelSolicitanteNome(l.solicitante_id),
+            empresa: l.empresa_nome || "",
+            obs: l.observacoes || ""
+          });
+          addResumo(l.modelo_linkado || l.modelo || "-", "debito", tempoParaMinutos(t.duracao || "00:00"));
+        });
+      }
+    });
+
+
+    const resumo = Object.values(resumoMap).map(e => {
+      const total = e.credito_min - e.debito_min;
+      const absT = Math.abs(total);
+      const sinal = total > 0 ? "+" : (total < 0 ? "-" : "");
+      return {
+        aeronave: e.aeronave,
+        credito: minutosParaHHMM(e.credito_min),
+        debito: minutosParaHHMM(e.debito_min),
+        saldo: sinal + minutosParaHHMM(absT),
+        _cred: e.credito_min, _deb: e.debito_min, _total: total
+      };
+    }).sort((a, b) => a.aeronave.localeCompare(b.aeronave, "pt-BR"));
+
+
+    return { creditos, debitos, resumo, filtros, empresaSel };
+  }  function _thRelGerarCSV(rel) {
+    const { creditos, debitos, resumo, filtros, empresaSel } = rel;
+    const limpar = (v) => String(v ?? "").replace(/;/g, ",").replace(/[\r\n]+/g, " ");
+    const hoje = new Date();
+    const dtH = hoje.toLocaleDateString("pt-BR") + " " + hoje.toLocaleTimeString("pt-BR").slice(0,5);
+    const linhas = [];
+    linhas.push("RELATÓRIO DE TROCA DE HORAS DE VOO");
+    linhas.push("Empresa: " + (empresaSel?.nome || "Todas"));
+    linhas.push("Período: " + (_thRelYMDToBR(filtros.data_de) || "—") + " a " + (_thRelYMDToBR(filtros.data_ate) || "—"));
+    linhas.push("Gerado em: " + dtH);
+    linhas.push("");
+    linhas.push("CRÉDITOS (horas emprestadas da nossa frota)");
+    linhas.push("Data;Origem;Destino;Tempo;Prefixo;Passageiros;Solicitante;Empresa;Observação");
+    creditos.forEach(c => {
+      linhas.push([_thRelYMDToBR(c.data), limpar(c.origem), limpar(c.destino), c.tempo, c.prefixo, c.passageiros, limpar(c.solicitante), limpar(c.empresa), limpar(c.obs)].join(";"));
+    });
+    linhas.push("");
+    linhas.push("DÉBITOS (horas usadas de terceiros)");
+    linhas.push("Data;Origem;Destino;Tempo;Prefixo;Passageiros;Solicitante;Empresa;Observação");
+    debitos.forEach(d => {
+      linhas.push([_thRelYMDToBR(d.data), limpar(d.origem), limpar(d.destino), d.tempo, d.prefixo, d.passageiros, limpar(d.solicitante), limpar(d.empresa), limpar(d.obs)].join(";"));
+    });
+    linhas.push("");
+    linhas.push("RESUMO POR AERONAVE");
+    linhas.push("Aeronave;Crédito;Débito;Saldo");
+    resumo.forEach(r => linhas.push([limpar(r.aeronave), r.credito, r.debito, r.saldo].join(";")));
+    const totC = resumo.reduce((s, r) => s + r._cred, 0);
+    const totD = resumo.reduce((s, r) => s + r._deb, 0);
+    const totT = totC - totD;
+    const sinalT = totT > 0 ? "+" : (totT < 0 ? "−" : "");
+    linhas.push(["TOTAL", minutosParaHHMM(totC), minutosParaHHMM(totD), sinalT + minutosParaHHMM(Math.abs(totT))].join(";"));
+    return linhas.join("\r\n");
+  }
+  function _thRelGerarXLS(rel) {
+    const { creditos, debitos, resumo, filtros, empresaSel } = rel;
+    const nossoLogo = (() => {
+      try { const st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); if (st.logo) return st.logo; } catch(e) {}
+      return localStorage.getItem("dv_company_logo") || "";
+    })();
+    const empresaLogo = empresaSel?.logo || "";
+    const empNome = empresaSel?.nome || "Todas as empresas";
+    const periodo = (_thRelYMDToBR(filtros.data_de) || "-") + " a " + (_thRelYMDToBR(filtros.data_ate) || "-");
+    const dtH = new Date().toLocaleString("pt-BR");
+    const totC = resumo.reduce((s, r) => s + r._cred, 0);
+    const totD = resumo.reduce((s, r) => s + r._deb, 0);
+    const totT = totC - totD;
+    const sinalT = totT > 0 ? "+" : (totT < 0 ? "-" : "");
+
+
+    const BS = "border:1px solid #CBD5E1;padding:4px;font-size:10px;";
+    const BSC = BS + "text-align:center;";
+    const TH = "border:1px solid #CBD5E1;padding:5px;background:#1e293b;color:#fff;font-size:10px;font-weight:bold;text-align:center;";
+    const SEC = "border:1px solid #1e293b;padding:6px;background:#1e293b;color:#fff;font-size:11px;font-weight:bold;text-align:left;";
+
+
+    const theadCols = ["Data","Origem","Destino","Tempo","Prefixo","Pax","Solicitante","Empresa","Obs."].map(function(h){ return '<th style="' + TH + '">' + esc(h) + '</th>'; }).join('');
+
+
+    const renderRows = function(arr, altName) {
+      return arr.length
+        ? arr.map(function(r, i) {
+            const bg = i % 2 === 0 ? '' : 'background:#f5f7fa;';
+            return '<tr style="' + bg + '">'
+              + '<td style="' + BS + '">' + esc(_thRelYMDToBR(r.data)) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.origem) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.destino) + '</td>'
+              + '<td style="' + BSC + '">' + esc(r.tempo) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.prefixo) + '</td>'
+              + '<td style="' + BSC + '">' + esc(r.passageiros) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.solicitante) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.empresa) + '</td>'
+              + '<td style="' + BS + '">' + esc(r.obs) + '</td>'
+              + '</tr>';
+          }).join('')
+        : '<tr><td colspan="9" style="' + BSC + 'padding:10px;font-style:italic;color:#999">- sem ' + esc(altName) + ' -</td></tr>';
+    };
+
+
+    const creditosHtml = renderRows(creditos, 'creditos');
+    const debitosHtml = renderRows(debitos, 'debitos');
+
+
+    const resumoHtml = resumo.length
+      ? resumo.map(function(r, i) {
+          const bg = i % 2 === 0 ? '' : 'background:#f5f7fa;';
+          const cor = r._total > 0 ? '#080' : (r._total < 0 ? '#c00' : '#555');
+          return '<tr style="' + bg + '">'
+            + '<td style="' + BS + '">' + esc(r.aeronave) + '</td>'
+            + '<td style="' + BSC + '">' + esc(r.credito) + '</td>'
+            + '<td style="' + BSC + '">' + esc(r.debito) + '</td>'
+            + '<td style="' + BSC + 'color:' + cor + ';font-weight:bold;">' + esc(r.saldo) + '</td>'
+            + '</tr>';
+        }).join('')
+      : '<tr><td colspan="4" style="' + BSC + 'padding:10px;font-style:italic;color:#999">- sem lancamentos -</td></tr>';
+
+
+    const logoCell = (nossoLogo || empresaLogo)
+      ? '<tr><td colspan="9" style="border:none;padding:8px 0;">'
+        + (nossoLogo ? '<img src="' + nossoLogo + '" style="max-height:40px;max-width:150px;margin-right:20px;">' : '')
+        + (empresaLogo ? '<img src="' + empresaLogo + '" style="max-height:40px;max-width:150px;">' : '')
+        + '</td></tr>'
+      : '';
+
+
+    const locSet = new Set();
+    [...creditos, ...debitos].forEach(r => {
+      if (r.origem && r.origem !== "-") locSet.add(r.origem.trim().toUpperCase());
+      if (r.destino && r.destino !== "-") locSet.add(r.destino.trim().toUpperCase());
+    });
+    const locs = Array.from(locSet).sort();
+    let footerHtml = '';
+    if (locs.length) {
+          footerHtml = '<br><div style="font-size:9px;color:#64748B;padding:10px 0;">'
+      + '<b>Legenda de Localidades:</b><br>' + locs.map(icao => {
+        const info = _thRelInfo(icao);
+        const parts = [];
+        if (info) {
+          if (info.nome) parts.push(info.nome);
+          if (info.cidade) parts.push(info.cidade);
+        }
+        let locStr = parts.join(" - ");
+        if (info && info.uf) locStr += " · " + info.uf;
+        return `<b>${esc(icao)}</b> - ${esc(locStr || "-")}`;
+      }).join(' &nbsp;|&nbsp; ')
+      + '</div>';
+    }
+
+
+    const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8">'
+      + '<style>table{border-collapse:collapse;font-family:Arial,sans-serif;}</style>'
+      + '</head><body>'
+      + '<table>'
+      + logoCell
+      + '<tr><td colspan="9" style="border:none;font-size:16px;font-weight:bold;color:#1e293b;padding:4px 0;">' + esc(localStorage.getItem("dv_company_name") || window.APP_CONFIG?.APP_NAME || "Air Polato") + '</td></tr>'
+      + '<tr><td colspan="9" style="border:none;font-size:12px;color:#38a8ff;font-weight:bold;padding:2px 0;">Relatorio de Troca de Horas de Voo</td></tr>'
+      + '<tr><td colspan="9" style="border:none;font-size:10px;color:#64748B;padding:2px 0;">Empresa: ' + esc(empNome) + ' &middot; Periodo: ' + esc(periodo) + '</td></tr>'
+      + '<tr><td colspan="9" style="border:none;font-size:9px;color:#94A3B8;padding:2px 0;">Emitido em ' + esc(dtH) + '</td></tr>'
+      + '<tr><td colspan="9" style="border:none;padding:6px 0;">&nbsp;</td></tr>'
+      + '</table>'
+      + '<table><thead>'
+      + '<tr><th colspan="9" style="' + SEC + '">CREDITOS (horas emprestadas da nossa frota)</th></tr>'
+      + '<tr>' + theadCols + '</tr>'
+      + '</thead><tbody>' + creditosHtml + '</tbody></table>'
+      + '<br>'
+      + '<table><thead>'
+      + '<tr><th colspan="9" style="' + SEC + '">DEBITOS (horas usadas de terceiros)</th></tr>'
+      + '<tr>' + theadCols + '</tr>'
+      + '</thead><tbody>' + debitosHtml + '</tbody></table>'
+      + '<br>'
+      + '<table><thead>'
+      + '<tr><th colspan="4" style="' + SEC + '">RESUMO POR AERONAVE</th></tr>'
+      + '<tr>'
+      + '<th style="' + TH + '">Aeronave</th>'
+      + '<th style="' + TH + '">Credito</th>'
+      + '<th style="' + TH + '">Debito</th>'
+      + '<th style="' + TH + '">Saldo</th>'
+      + '</tr></thead><tbody>' + resumoHtml
+      + '<tr style="background:#eef2f7;font-weight:bold;">'
+      + '<td style="' + BS + 'font-weight:bold;">TOTAL</td>'
+      + '<td style="' + BSC + 'font-weight:bold;">' + minutosParaHHMM(totC) + '</td>'
+      + '<td style="' + BSC + 'font-weight:bold;">' + minutosParaHHMM(totD) + '</td>'
+      + '<td style="' + BSC + 'font-weight:bold;">' + sinalT + minutosParaHHMM(Math.abs(totT)) + '</td>'
+      + '</tr>'
+      + '</tbody></table>'
+      + footerHtml
+      + '</body></html>';
+    return html;
+  }  function _thRelBaixar(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  async function _thRelGerarPDF(rel) {
+    if (typeof window.jspdf === "undefined") { alert("Biblioteca jsPDF nao carregada."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+
+    const _cores = () => ({
+      cor1: localStorage.getItem("dv_report_color1") || "#1e293b",
+      cor2: localStorage.getItem("dv_report_color2") || "#38a8ff"
+    });
+    const _hex2rgb = (hex) => {
+      hex = String(hex || "").replace("#", "");
+      const r = parseInt(hex.slice(0,2), 16); const g = parseInt(hex.slice(2,4), 16); const b = parseInt(hex.slice(4,6), 16);
+      return [isNaN(r)?0:r, isNaN(g)?0:g, isNaN(b)?0:b];
+    };
+    const _logoDataURL = () => {
+      try { const st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); if (st.logo) return st.logo; } catch(e) {}
+      return localStorage.getItem("dv_company_logo") || "";
+    };
+    const _logoParaCanvas = (src) => new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const c = document.createElement("canvas");
+            c.width = img.width; c.height = img.height;
+            c.getContext("2d").drawImage(img, 0, 0);
+            resolve({ data: c.toDataURL("image/png"), w: c.width, h: c.height });
+          } catch(e) { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = src;
+      } catch(e) { resolve(null); }
+    });
+
+
+    const { cor1, cor2 } = _cores();
+    const cor1Rgb = _hex2rgb(cor1);
+    const cor2Rgb = _hex2rgb(cor2);
+    const { creditos, debitos, resumo, filtros, empresaSel } = rel;
+
+
+    const MARGIN = 8;
+    const LOGO_X = MARGIN;
+    const LOGO_Y = 5;
+    const LOGO_H = 14;
+    const LOGO_MAX_W = 100;
+    const LOGO_ROW_H = 20;
+    const TOP_MARGIN_TABLE = 5;
+    const GAP_LOGO = 3;
+    const X_SPACE = 8;
+
+
+    const nossoLogo = _logoDataURL();
+    const empresaLogo = empresaSel?.logo || "";
+    const empNome = empresaSel?.nome || "Todas as empresas";
+    const mostrarSegundo = !!empresaSel;
+
+
+    const drawLogoAt = async (src, targetX) => {
+      if (!src || !src.startsWith("data:image")) return null;
+      try {
+        const box = await _logoParaCanvas(src);
+        if (!box) return null;
+        const ratio = box.w / box.h;
+        let h = LOGO_H;
+        let w = h * ratio;
+        if (w > LOGO_MAX_W) { w = LOGO_MAX_W; h = w / ratio; }
+        const lx = targetX;
+        const ly = LOGO_Y + (LOGO_ROW_H - h) / 2;
+        doc.addImage(box.data, "PNG", lx, ly, w, h, undefined, "SLOW");
+        return { w: w, h: h };
+      } catch(e) { return null; }
+    };
+
+
+    const drawX = (targetX) => {
+      const xCenter = targetX + X_SPACE / 2;
+      const yCenter = LOGO_Y + LOGO_ROW_H / 2;
+      doc.setFontSize(18);
+      doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+      doc.setFont("helvetica", "bold");
+      doc.text("X", xCenter, yCenter + 3, { align: "center" });
+    };
+
+
+    const drawTextLogo = (text, targetX, targetW) => {
+      const xCenter = targetX + targetW / 2;
+      const yCenter = LOGO_Y + LOGO_ROW_H / 2;
+      doc.setFontSize(10);
+      doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+      doc.setFont("helvetica", "bold");
+      const lines = doc.splitTextToSize(text, targetW);
+      const totalH = lines.length * 4;
+      const startY = yCenter - totalH / 2 + 3;
+      lines.forEach((line, i) => doc.text(line, xCenter, startY + i * 4, { align: "center" }));
+    };
+
+
+    let xCursor = LOGO_X;
+    const dimNosso = await drawLogoAt(nossoLogo, xCursor);
+    if (dimNosso) xCursor += dimNosso.w + GAP_LOGO;
+
+
+    if (mostrarSegundo) {
+      drawX(xCursor);
+      xCursor += X_SPACE + GAP_LOGO;
+      const dimEmp = await drawLogoAt(empresaLogo, xCursor);
+      if (dimEmp) xCursor += dimEmp.w + GAP_LOGO;
+      else { drawTextLogo(empNome, xCursor, 40); xCursor += 40 + GAP_LOGO; }
+    }
+
+
+    const textX = xCursor + 6;
+    const centerY = LOGO_Y + LOGO_ROW_H / 2;
+    doc.setFontSize(14);
+    doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+    doc.setFont("helvetica", "bold");
+    doc.text("Relatorio de Troca de Horas de Voo", textX, centerY - 8);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.setFont("helvetica", "normal");
+    const periodo = (_thRelYMDToBR(filtros.data_de) || "-") + " a " + (_thRelYMDToBR(filtros.data_ate) || "-");
+    doc.text("Empresa: " + empNome + "  |  Periodo: " + periodo, textX, centerY + 1);
+    doc.text("Emitido em " + new Date().toLocaleString("pt-BR"), textX, centerY + 9);
+
+
+    let yCursor = LOGO_Y + LOGO_ROW_H + 4;
+
+
+    const baseStyles = { fontSize: 8, cellPadding: { top: 1, bottom: 1, left: 2, right: 2 }, valign: "middle", lineWidth: 0.1, lineColor: [220, 220, 220] };
+    const headStyles = { fillColor: cor1Rgb, textColor: [255,255,255], fontStyle: "bold", halign: "center", cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 } };
+    const footStyles = { fillColor: cor2Rgb, textColor: [255,255,255], fontStyle: "bold", halign: "right", cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 } };
+    const altStyles = { fillColor: [245, 248, 252] };
+    /* Calcula locs ANTES do autoTable pra reservar espaco do rodape */
+    const locSet = new Set();
+    [...creditos, ...debitos].forEach(r => {
+      if (r.origem && r.origem !== "-") locSet.add(r.origem.trim().toUpperCase());
+      if (r.destino && r.destino !== "-") locSet.add(r.destino.trim().toUpperCase());
+    });
+    const locs = Array.from(locSet).sort();
+    const locItems = locs.map(icao => {
+      const info = _thRelInfo(icao);
+      const parts = [];
+      if (info) {
+        if (info.nome) parts.push(info.nome);
+        if (info.cidade) parts.push(info.cidade);
+      }
+      let locStr = parts.join(" - ");
+      if (info && info.uf) locStr += " \u00b7 " + info.uf;
+      return { icao: icao, textLoc: locStr ? " - " + locStr : "" };
+    });
+    const RODAPE_FONT_SIZE = 6.5;
+    const RODAPE_LINE_H = 3.5;
+    const RODAPE_BASE_Y = doc.internal.pageSize.height - 8;
+    const RODAPE_LARGURA = doc.internal.pageSize.width - MARGIN * 2;
+    let simLines = 1;
+    let simX = 0;
+    doc.setFontSize(RODAPE_FONT_SIZE);
+    for (const item of locItems) {
+      doc.setFont("helvetica", "bold");
+      const wIcao = doc.getTextWidth(item.icao);
+      doc.setFont("helvetica", "normal");
+      const wLoc = doc.getTextWidth(item.textLoc);
+      const totalW = wIcao + wLoc + 4;
+      if (simX + totalW > RODAPE_LARGURA) { simLines++; simX = 0; }
+      simX += totalW;
+    }
+    const RODAPE_ALTURA = simLines * RODAPE_LINE_H;
+    const margBottom = Math.max(20, 8 + RODAPE_ALTURA + 5);
+    const marg = { left: MARGIN, right: MARGIN, top: TOP_MARGIN_TABLE, bottom: margBottom };
+
+
+    const secao = (txt, y) => {
+      doc.setFontSize(10);
+      doc.setTextColor(cor1Rgb[0], cor1Rgb[1], cor1Rgb[2]);
+      doc.setFont("helvetica", "bold");
+      doc.text(txt, MARGIN, y);
+      return y + 4;
+    };
+
+
+    const headCols = [["Data","Origem","Destino","Tempo","Prefixo","Pax","Solicitante","Empresa","Obs."]];
+
+
+    yCursor = secao("CREDITOS (horas emprestadas da nossa frota)", yCursor);
+    const bodyC = creditos.map(c => [_thRelYMDToBR(c.data), c.origem, c.destino, c.tempo, c.prefixo, String(c.passageiros || 0), c.solicitante, c.empresa, c.obs]);
+    doc.autoTable({ startY: yCursor, head: headCols, body: bodyC.length ? bodyC : [["-","-","-","-","-","-","-","-","sem creditos"]], styles: baseStyles, headStyles, alternateRowStyles: altStyles, margin: marg });
+    yCursor = doc.lastAutoTable.finalY + 6;
+
+
+    if (yCursor > 175) { doc.addPage(); yCursor = MARGIN + 5; }
+    yCursor = secao("DEBITOS (horas usadas de terceiros)", yCursor);
+    const bodyD = debitos.map(d => [_thRelYMDToBR(d.data), d.origem, d.destino, d.tempo, d.prefixo, String(d.passageiros || 0), d.solicitante, d.empresa, d.obs]);
+    doc.autoTable({ startY: yCursor, head: headCols, body: bodyD.length ? bodyD : [["-","-","-","-","-","-","-","-","sem debitos"]], styles: baseStyles, headStyles, alternateRowStyles: altStyles, margin: marg });
+    yCursor = doc.lastAutoTable.finalY + 6;
+
+
+    if (yCursor > 175) { doc.addPage(); yCursor = MARGIN + 5; }
+    yCursor = secao("RESUMO POR AERONAVE", yCursor);
+    const totC = resumo.reduce((s, r) => s + r._cred, 0);
+    const totD = resumo.reduce((s, r) => s + r._deb, 0);
+    const totT = totC - totD;
+    const sinalT = totT > 0 ? "+" : (totT < 0 ? "-" : "");
+    const bodyR = resumo.map(r => [r.aeronave, r.credito, r.debito, r.saldo]);
+    doc.autoTable({
+      startY: yCursor,
+      head: [["Aeronave","Credito","Debito","Saldo"]],
+      body: bodyR.length ? bodyR : [["-","-","-","sem lancamentos"]],
+      foot: [["TOTAL", minutosParaHHMM(totC), minutosParaHHMM(totD), sinalT + minutosParaHHMM(Math.abs(totT))]],
+      showFoot: "lastPage",
+      styles: Object.assign({}, baseStyles, { fontSize: 9 }),
+      headStyles: headStyles,
+      footStyles: footStyles,
+      alternateRowStyles: altStyles,
+      margin: marg
+    });
+
+
+    if (locs.length) {
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageW = doc.internal.pageSize.width;
+      doc.setPage(totalPages);
+      const topY = RODAPE_BASE_Y - (simLines - 1) * RODAPE_LINE_H;
+      let xPos = MARGIN;
+      let yPos = topY;
+      let linhaAtual = 0;
+      doc.setFontSize(RODAPE_FONT_SIZE);
+      doc.setTextColor(150);
+
+      for (let k = 0; k < locItems.length; k++) {
+        const item = locItems[k];
+        doc.setFont("helvetica", "bold");
+        const wIcao = doc.getTextWidth(item.icao);
+        doc.setFont("helvetica", "normal");
+        const wLoc = doc.getTextWidth(item.textLoc);
+        const totalW = wIcao + wLoc + 4;
+
+        if (xPos + totalW > pageW - MARGIN) {
+          xPos = MARGIN;
+          linhaAtual++;
+          yPos = topY + linhaAtual * RODAPE_LINE_H;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text(item.icao, xPos, yPos);
+        if (item.textLoc) {
+          doc.setFont("helvetica", "normal");
+          doc.text(item.textLoc, xPos + wIcao, yPos);
+        }
+        xPos += totalW;
+      }
+
+      doc.setDrawColor(220);
+      doc.setLineWidth(0.1);
+      doc.line(MARGIN, topY - 3, pageW - MARGIN, topY - 3);
+    }
+    doc.save("relatorio-troca-horas-" + new Date().toISOString().slice(0,10) + ".pdf");
+  }
+  function _thRelGerar(formato) {
+    const g = (id) => document.getElementById(id);
+    const empresaId = g("thRelEmpresa")?.value || "";
+    const dataDe = g("thRelDataDe")?.value || "";
+    const dataAte = g("thRelDataAte")?.value || "";
+    const rel = _thRelColetar({ empresa_id: empresaId, data_de: dataDe, data_ate: dataAte });
+    const ts = new Date().toISOString().slice(0,10);
+    if (formato === "pdf") {
+      _thRelGerarPDF(rel);
+    } else {
+      const html = _thRelGerarXLS(rel);
+      _thRelBaixar(html, "relatorio-troca-horas-" + ts + ".xls", "application/vnd.ms-excel;charset=utf-8");
+    }
+  }
+  function injectModalRelatorio() {
+    if (document.getElementById("thRelModal")) return;
+    const html = '<div class="modal" id="thRelModal"><div class="dialog dialog--wide">'
+      + '<h2>📊 Relatório de Troca de Horas</h2>'
+      + '<p class="hint" style="margin-top:-14px;margin-bottom:18px">Filtre por empresa e período, depois baixe em CSV ou XLS.</p>'
+      + '<div class="settings-section">'
+      +   '<h3>Filtros</h3>'
+      +   '<div class="formgrid">'
+      +     '<label class="field"><span>Empresa</span><select id="thRelEmpresa"></select></label>'
+      +     '<label class="field"><span>Data de</span><input type="date" id="thRelDataDe"></label>'
+      +     '<label class="field"><span>Data até</span><input type="date" id="thRelDataAte"></label>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="dialog__actions">'
+      +   '<button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="thRelModal">Fechar</button>'
+      +   '<button type="button" class="btn btn--secondary" id="thRelGerarPdf">📄 Baixar PDF</button>'
+      +   '<button type="button" class="btn" id="thRelGerarXls">📊 Baixar XLS</button>'
+      + '</div>'
+      + '</div></div>';
+    document.body.insertAdjacentHTML("beforeend", html);
+    const btnPdf = document.getElementById("thRelGerarPdf");
+    if (btnPdf) btnPdf.addEventListener("click", () => _thRelGerar("pdf"));
+    const btnXls = document.getElementById("thRelGerarXls");
+    if (btnXls) btnXls.addEventListener("click", () => _thRelGerar("xls"));
+  }
+  function abrirRelatorio() {
+    injectModalRelatorio();
+    const g = (id) => document.getElementById(id);
+    const sel = g("thRelEmpresa");
+    if (sel) {
+      const lista = lerEmpresas();
+      sel.innerHTML = '<option value="">Todas as empresas</option>'
+        + lista.map(e => '<option value="' + esc(e.id) + '">' + esc(e.nome) + '</option>').join("");
+    }
+    const hoje = new Date();
+    const de = new Date(hoje.getFullYear(), 0, 1);
+    if (g("thRelDataDe")) g("thRelDataDe").value = _thRelYMD(de);
+    if (g("thRelDataAte")) g("thRelDataAte").value = _thRelYMD(hoje);
+    const m = g("thRelModal");
+    if (m) m.classList.add("is-open");
+  }
+
   /* ---------- Init ---------- */
   function initListeners() {
     const bc = document.getElementById("thBtnCredito");
@@ -17759,9 +19324,11 @@ function renderLista() {
     if (be && !be.dataset.bound) { be.dataset.bound = "1"; be.addEventListener("click", abrirEmpresa); }
     const bl = document.getElementById("thBtnLink");
     if (bl && !bl.dataset.bound) { bl.dataset.bound = "1"; bl.addEventListener("click", abrirLink); }
+    const br = document.getElementById("thBtnRelatorio");
+    if (br && !br.dataset.bound) { br.dataset.bound = "1"; br.addEventListener("click", abrirRelatorio); }
   }
 
-  return { render, initListeners, lerLancamentos, salvarLancamentos, lerEmpresas, salvarEmpresas, lerLinks, salvarLinks, calcularSaldo, tempoParaMinutos, minutosParaHHMM, modeloDaAeronave, repopularModeloDebito, toggleOutrosModelosDebito, onModeloDebitoChange };
+  return { render, initListeners, abrirRelatorio, lerLancamentos, salvarLancamentos, lerEmpresas, salvarEmpresas, lerLinks, salvarLinks, calcularSaldo, tempoParaMinutos, minutosParaHHMM, modeloDaAeronave, repopularModeloDebito, toggleOutrosModelosDebito, onModeloDebitoChange };
 })();
 
 
@@ -18042,7 +19609,7 @@ const Backup = (() => {
     /* Alerta */
     if (alerta) {
       if (!isSupabase) {
-        alerta.innerHTML = '<div style="padding:10px 14px;background:rgba(56,168,255,.10);border-left:3px solid var(--accent);border-radius:6px;font-size:12px;color:var(--text)">'
+        alerta.innerHTML = '<div style="padding:10px 14px;background:rgba(56,168,255,.10);border-radius:6px;font-size:12px;color:var(--text)">'
           + '💡 Você está no <b>modo local</b>. Depois de migrar pro Supabase, esta página mostrará o <b>uso real</b> (banco, egress, MAU).'
           + '</div>';
       } else {
@@ -19110,7 +20677,7 @@ Router.init();
             if (local) local.style.display = "none";
           } else {
             if (cloud) cloud.style.display = "none";
-            if (local) local.style.display = "none";
+            if (local) local.style.display = "";
           }
         }
         if (p === "passageiros") Passengers.renderList();
@@ -19533,8 +21100,21 @@ Router.init();
   /* "Abasteceu": só esconde/mostra detalhes. Desabilitar campos e recalcular
      são tratados em abrirRevisao() (atualizarEstadoAbast + calcularValorCombGasto). */
   document.getElementById("rvAbasteceu").addEventListener("change", (e) => {
-    const det = document.getElementById("rvCombDetalhes");
-    if (det) det.hidden = e.target.value !== "true";
+    /* Chama atualizarEstadoAbast() que oculta/mostra + bloqueia/desbloqueia */
+    if (typeof atualizarEstadoAbast === "function") {
+      atualizarEstadoAbast();
+    } else {
+      /* Fallback (caso a funcao nao esteja no escopo global) */
+      const det = document.getElementById("rvCombDetalhes");
+      if (det) {
+        det.hidden = e.target.value !== "true";
+        det.style.display = e.target.value === "true" ? "" : "none";
+      }
+    }
+    /* Recalcula o total */
+    if (typeof Agenda !== "undefined" && Agenda.calcularValorCombGasto) {
+      Agenda.calcularValorCombGasto();
+    }
   });
   /* NOTA: os listeners de rvCombGasto/rvCombLitros/rvCombValor/unidades
      são registrados em abrirRevisao() (com dataset.boundPreview/boundUnidade),
@@ -19641,12 +21221,6 @@ Router.init();
 
       <div class="revisao-sec mobile-card">
         <h4>Combustível</h4>
-        <div class="revisao-tempo-calc" style="margin-bottom:14px;background:var(--bg);border-left-color:var(--line)">
-          <span>Tanque antes do voo:</span>
-          <strong id="rvTanqueAntes">0 L · R$ 0,00/L</strong>
-          <span id="rvTanqueAntesTotal" style="font-size:11px;color:var(--muted);margin-left:auto"></span>
-        </div>
-
         <label class="field" style="margin-bottom:14px"><span>Abasteceu antes do voo?</span>
           <select id="rvAbasteceu" class="mobile-input-compact"><option value="false">Não</option><option value="true">Sim</option></select>
         </label>
@@ -19654,20 +21228,54 @@ Router.init();
         <div class="revisao-combusto-inline" id="rvCombDetalhes" hidden style="margin-bottom:14px">
           <label class="field"><span>Quantidade abastecida</span>
             <div class="mobile-input-group">
-              <input id="rvCombLitros" type="number" min="0" step="0.1" placeholder="0" class="mobile-input-left mobile-input-compact">
+              <input id="rvCombLitros" type="text" inputmode="decimal" placeholder="0" class="mobile-input-left mobile-input-compact">
               <select id="rvCombLitrosUnidade" class="mobile-select-right mobile-input-compact">
                 <option value="L">L</option>
                 <option value="LB">Lb</option>
               </select>
             </div>
           </label>
-          <label class="field"><span>Valor pago (R$/L)</span><input id="rvCombValor" type="number" min="0" step="0.01" placeholder="0,00" class="mobile-input-compact"></label>
+          <label class="field"><span>Valor pago (R$/L)</span><input id="rvCombValor" type="text" inputmode="decimal" placeholder="0,00" class="mobile-input-compact"></label>
           <label class="field"><span>Total do abastecimento</span><input id="rvCombTotal" type="text" readonly style="background:var(--nav-active-bg)" class="mobile-input-compact"></label>
+        </div>
+
+        <div id="rvTanqueCard" style="margin-bottom:14px;background:var(--bg);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:8px;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr>
+              <td style="text-align:left;padding:0;vertical-align:middle;">
+                <span style="font-weight:400;margin-right:6px;">Tanque antes:</span>
+                <span id="rvTanqueAntes">0 L · R$ 0,00/L</span>
+              </td>
+              <td style="text-align:right;padding:0;white-space:nowrap;vertical-align:middle;">
+                <span id="rvTanqueAntesTotal">Total: R$ 0,00</span>
+              </td>
+            </tr>
+          </table>
+          <div id="rvTanqueDecolWrap" style="display:none;border-top:1px dashed var(--line);padding-top:8px;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <tr>
+                <td style="text-align:left;padding:0;vertical-align:middle;">
+                  <span style="font-weight:400;margin-right:6px;">Tanque após:</span>
+                  <span id="rvTanqueDecol">0 L · R$ 0,00/L</span>
+                </td>
+                <td style="text-align:right;padding:0;white-space:nowrap;vertical-align:middle;">
+                  <span id="rvTanqueDecolTotal">Total: R$ 0,00</span>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div id="rvConfirmarTanqueWrap" style="display:none;border-top:1px dashed var(--line);padding-top:10px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">
+              Tanque confirmado na decolagem: *
+              <input type="number" id="rvTanqueConfirmado" step="1" style="width:100px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;font-weight:700;" placeholder="0">
+              <span id="rvTanqueConfirmadoUnid" style="font-size:13px;color:var(--muted);font-weight:600;">LB</span>
+            </label>
+          </div>
         </div>
 
         <label class="field"><span>Combustível gasto neste trecho</span>
           <div class="mobile-input-group">
-            <input id="rvCombGasto" type="number" min="0" step="0.1" placeholder="0" class="mobile-input-left mobile-input-compact">
+            <input id="rvCombGasto" type="text" inputmode="decimal" placeholder="0" class="mobile-input-left mobile-input-compact">
             <select id="rvCombGastoUnidade" class="mobile-select-right mobile-input-compact">
               <option value="L">L</option>
               <option value="LB">Lb</option>
@@ -19682,11 +21290,11 @@ Router.init();
         </div>
       </div>
 
-      <div class="revisao-sec" id="rvDespesasSec" style="">
-  <h4>Outras Despesas</h4>
-  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;">
-    <input type="checkbox" id="rvDespesasToggle" style="width:20px;height:20px;accent-color:var(--accent);">
-    <span style="font-size:13px;color:var(--text);font-weight:600;">Adicionar outras despesas</span>
+      <div class="revisao-sec mobile-card" id="rvDespesasSec" style="margin-bottom:0; border-bottom:0; padding: 12px 16px !important;">
+  <h4 style="margin-bottom: 8px !important;">Outras Despesas</h4>
+  <label class="mobile-obs-label">
+    <input type="checkbox" id="rvDespesasToggle" class="mobile-obs-check">
+    <span style="font-size:13px; color:var(--text); font-weight:600; white-space: normal;">Adicionar outras despesas</span>
   </label>
   <div id="rvDespesasWrap" style="display:none;">
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -19848,14 +21456,23 @@ Router.init();
 </div>
 </div></div>
 <div class="modal" id="custosAnoModal"><div class="dialog">
-<h2 id="custosAnoTitle">Custos por ano</h2>
-<p class="hint" id="custosAnoSub" style="margin-top:-14px;margin-bottom:18px"></p>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;">
+  <div style="flex:1;min-width:0;">
+    <h2 id="custosAnoTitle" style="margin:0;">Custos por ano</h2>
+    <p class="hint" id="custosAnoSub" style="margin:4px 0 0;"></p>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex:none;">
+    <button type="button" class="btn" id="custosAnoAddBtn" style="padding:7px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;white-space:nowrap;">+ Adicionar ano</button>
+    <button type="button" data-action="close-modal" data-modal="custosAnoModal" title="Fechar" style="background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;flex:none;">✕</button>
+  </div>
+</div>
 
-<div id="custosAnoLista" style="margin-bottom:16px"></div>
+<div style="border-bottom:2px solid var(--line);margin-bottom:14px;"></div>
 
-<div class="dialog__actions">
+<div id="custosAnoLista" style="margin-bottom:8px"></div>
+
+<div class="dialog__actions" style="border-top:1px solid var(--line);padding-top:12px;">
   <button class="btn btn--secondary" data-action="close-modal" data-modal="custosAnoModal">Fechar</button>
-  <button class="btn" id="custosAnoAddBtn">+ Adicionar ano</button>
 </div>
 </div></div>
 
@@ -19897,12 +21514,56 @@ Router.init();
 </div>
 
 <div class="revisao-sec">
+  <h4>Alertas</h4>
+  
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Vencimento CVA</span>
+      <input id="ccAlertaCvaData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaCvaAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="30">30 dias antes</option>
+        <option value="60">60 dias antes</option>
+        <option value="90">90 dias antes</option>
+        <option value="120">120 dias antes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Horas disponíveis</span>
+      <input id="ccAlertaHorasLimite" type="number" step="1" placeholder="200">
+    </label>
+    <label class="field" style="margin-top:8px;"><span>Contando a partir de (marco zero)</span>
+      <input id="ccAlertaHorasData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaHorasAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="20">20 horas restantes</option>
+        <option value="50">50 horas restantes</option>
+        <option value="100">100 horas restantes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--muted);">Outros alertas</span>
+      <button type="button" class="btn btn--secondary" id="ccAlertaAddCustom" style="padding:4px 8px; font-size:11px;">+ Adicionar</button>
+    </div>
+    <div id="ccAlertaCustomLista"></div>
+  </div>
+</div>
+
+<div class="revisao-sec">
   <h4>Outros custos por hora</h4>
   <div id="ccOutrosLista"></div>
   <button type="button" class="btn btn--secondary" id="ccOutrosAdd" style="margin-top:8px">+ Adicionar linha</button>
 </div>
 
-<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important;border-left:3px solid var(--accent)">
+<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Custo total por hora de voo</span>
     <strong id="ccTotal" style="font-size:22px;color:var(--accent);font-weight:800">R$ 0,00</strong>
@@ -19916,14 +21577,23 @@ Router.init();
 </div>
 </div></div>
 <div class="modal" id="custosAnoModal"><div class="dialog">
-<h2 id="custosAnoTitle">Custos por ano</h2>
-<p class="hint" id="custosAnoSub" style="margin-top:-14px;margin-bottom:18px"></p>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;">
+  <div style="flex:1;min-width:0;">
+    <h2 id="custosAnoTitle" style="margin:0;">Custos por ano</h2>
+    <p class="hint" id="custosAnoSub" style="margin:4px 0 0;"></p>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex:none;">
+    <button type="button" class="btn" id="custosAnoAddBtn" style="padding:7px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;white-space:nowrap;">+ Adicionar ano</button>
+    <button type="button" data-action="close-modal" data-modal="custosAnoModal" title="Fechar" style="background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;flex:none;">✕</button>
+  </div>
+</div>
 
-<div id="custosAnoLista" style="margin-bottom:16px"></div>
+<div style="border-bottom:2px solid var(--line);margin-bottom:14px;"></div>
 
-<div class="dialog__actions">
+<div id="custosAnoLista" style="margin-bottom:8px"></div>
+
+<div class="dialog__actions" style="border-top:1px solid var(--line);padding-top:12px;">
   <button class="btn btn--secondary" data-action="close-modal" data-modal="custosAnoModal">Fechar</button>
-  <button class="btn" id="custosAnoAddBtn">+ Adicionar ano</button>
 </div>
 </div></div>
 
@@ -19965,12 +21635,56 @@ Router.init();
 </div>
 
 <div class="revisao-sec">
+  <h4>Alertas</h4>
+  
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Vencimento CVA</span>
+      <input id="ccAlertaCvaData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaCvaAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="30">30 dias antes</option>
+        <option value="60">60 dias antes</option>
+        <option value="90">90 dias antes</option>
+        <option value="120">120 dias antes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Horas disponíveis</span>
+      <input id="ccAlertaHorasLimite" type="number" step="1" placeholder="200">
+    </label>
+    <label class="field" style="margin-top:8px;"><span>Contando a partir de (marco zero)</span>
+      <input id="ccAlertaHorasData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaHorasAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="20">20 horas restantes</option>
+        <option value="50">50 horas restantes</option>
+        <option value="100">100 horas restantes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--muted);">Outros alertas</span>
+      <button type="button" class="btn btn--secondary" id="ccAlertaAddCustom" style="padding:4px 8px; font-size:11px;">+ Adicionar</button>
+    </div>
+    <div id="ccAlertaCustomLista"></div>
+  </div>
+</div>
+
+<div class="revisao-sec">
   <h4>Outros custos por hora</h4>
   <div id="ccOutrosLista"></div>
   <button type="button" class="btn btn--secondary" id="ccOutrosAdd" style="margin-top:8px">+ Adicionar linha</button>
 </div>
 
-<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important;border-left:3px solid var(--accent)">
+<div class="revisao-sec" style="background:var(--nav-active-bg);border-radius:10px;padding:14px !important">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Custo total por hora de voo</span>
     <strong id="ccTotal" style="font-size:22px;color:var(--accent);font-weight:800">R$ 0,00</strong>
@@ -20328,7 +22042,7 @@ Router.init();
   <h2>📧 Enviar roteiro do voo</h2>
   <p class="hint" style="margin-top:-14px;margin-bottom:18px" id="sendEmailSub">—</p>
 
-  <div id="sendEmailPreview" style="background:var(--bg);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.6;border-left:3px solid var(--accent);margin-bottom:16px"></div>
+  <div id="sendEmailPreview" style="background:var(--bg);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.6;margin-bottom:16px"></div>
 
   <div class="settings-section">
     <h3>Destinatários</h3>
@@ -20766,7 +22480,7 @@ document.addEventListener('click', function(e) {
         var htmlFechado = '<div class="inicio-voo-card__date" style="color:' + corTexto + ';">' + _esc(dataF) + emVooIco + '</div>' +
           '<div class="inicio-voo-card__route" style="color:' + corTexto + ';">' + _esc(rota) + '</div>' +
           '<div class="inicio-voo-card__meta" style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">' +
-            '<span style="font-size: 16px; font-weight: 900; color: ' + corAero + '; letter-spacing: 0.5px; filter: brightness(0.85);">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
+            '<span style="display:inline-block !important; font-family:ui-monospace,monospace; font-size:12px; font-weight:800; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; background-color:' + corAero + ' !important; background-image:linear-gradient(' + corAero + ',' + corAero + ') !important; padding:3px 8px !important; border-radius:5px !important; letter-spacing:0.5px; line-height:1.2; border:1px solid rgba(0,0,0,0.15) !important; box-shadow:inset 0 0 0 999px ' + corAero + ', 0 1px 2px rgba(0,0,0,0.1) !important; forced-color-adjust:none !important;">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
             tipoTag +
             '<span style="font-size: 11px; margin-left:4px;">' + _esc(metaRest) + '</span></div>';
         var htmlAberto = '';
@@ -20821,6 +22535,46 @@ document.addEventListener('click', function(e) {
           : '<div class="inicio-aero-card__img"></div>';
         var st = (typeof statusEfetivoAeronave === "function") ? statusEfetivoAeronave(a.tail, a.status) : (a.status || "\u2014");
         var cor = st === "Em opera\u00e7\u00e3o" ? "#30cf8a" : (st === "Em manuten\u00e7\u00e3o" ? "#ff5a5f" : (st === "Indispon\u00edvel" ? "#f2c94c" : "#8fa7bc"));
+        
+        /* CVA e Horas (do ciclo ativo) */
+        var alertasInfo = "";
+        try {
+          var _custosDash = a.custos_por_ano || {};
+          var _anosDash = Object.keys(_custosDash).sort().reverse();
+          var _anoAtualDash = String(new Date().getFullYear());
+          var _anoCicDash = _anosDash.includes(_anoAtualDash) ? _anoAtualDash : _anosDash[0];
+          if (_anoCicDash && _custosDash[_anoCicDash] && _custosDash[_anoCicDash].alertas) {
+            var _alDash = _custosDash[_anoCicDash].alertas;
+            var _hojeDash = new Date(); _hojeDash.setHours(0,0,0,0);
+            if (_alDash.cva && _alDash.cva.data) {
+              var _dcvaDash = new Date(_alDash.cva.data + "T00:00:00");
+              var _diasCvaDash = Math.floor((_dcvaDash - _hojeDash) / 86400000);
+              var _corCva = _diasCvaDash < 0 ? "#ff5a5f" : (_diasCvaDash <= 30 ? "#f2c94c" : "var(--muted)");
+              var _icoCva = _diasCvaDash <= 30 ? "\u26a0\ufe0f " : "";
+              alertasInfo += '<div style="font-size:11px;color:' + _corCva + ';margin-top:4px">' + _icoCva + 'CVA: ' + (_diasCvaDash < 0 ? "vencido" : _diasCvaDash + " dias") + '</div>';
+            }
+            if (_alDash.horas && _alDash.horas.limite && _alDash.horas.marco_zero) {
+              var _horasVoadasDash = 0;
+              (Agenda.getEventos() || []).forEach(function(ev) {
+                if (ev.aeronave_tail !== a.tail) return;
+                (ev.trechos || []).forEach(function(tr) {
+                  if (!tr.revisao || tr.revisao.status !== "concluido") return;
+                  if (!tr.data || tr.data < _alDash.horas.marco_zero) return;
+                  var durDash = tr.revisao.tempo_voo || tr.duracao;
+                  if (durDash && /^\d{1,2}:\d{2}/.test(durDash)) {
+                    var partsDash = durDash.split(":");
+                    _horasVoadasDash += (parseInt(partsDash[0], 10) || 0) + (parseInt(partsDash[1], 10) || 0) / 60;
+                  }
+                });
+              });
+              var _restantesDash = _alDash.horas.limite - _horasVoadasDash;
+              var _corH = _restantesDash <= 0 ? "#ff5a5f" : (_restantesDash <= 20 ? "#f2c94c" : "var(--muted)");
+              var _icoH = _restantesDash <= 20 ? "\u26a0\ufe0f " : "";
+              alertasInfo += '<div style="font-size:11px;color:' + _corH + ';margin-top:2px">' + _icoH + 'Horas: ' + Math.round(_restantesDash) + 'h restantes</div>';
+            }
+          }
+        } catch(e) {}
+        
         return '<div class="inicio-aero-card">' +
           foto +
           '<div class="inicio-aero-card__body">' +
@@ -20830,6 +22584,7 @@ document.addEventListener('click', function(e) {
             '</div>' +
             '<span class="inicio-aero-card__status" style="background:' + cor + '22;color:' + cor + '">' + _esc(st) + '</span>' +
           '</div>' +
+          (alertasInfo ? '<div style="padding:0 14px 10px">' + alertasInfo + '</div>' : '') +
         '</div>';
       }).join("");
     }
@@ -20911,6 +22666,7 @@ document.addEventListener('click', function(e) {
       try { renderRevisoes(); } catch(e) { console.warn("[InicioPage.revisoes]", e); }
       try { renderVoos(); } catch(e) { console.warn("[InicioPage.voos]", e); }
       try { renderAeronaves(); } catch(e) { console.warn("[InicioPage.aero]", e); }
+      try { if (typeof Alertas !== "undefined" && Alertas.render) Alertas.render(); } catch(e) { console.warn("[InicioPage.alertas]", e); }
     }
 
     return { render: render };
@@ -22347,7 +24103,7 @@ document.addEventListener("DOMContentLoaded", function() {
         var htmlFechado = '<div class="inicio-voo-card__date" style="color:' + corTexto + ';">' + _esc(dataF) + emVooIco + '</div>' +
           '<div class="inicio-voo-card__route" style="color:' + corTexto + ';">' + _esc(rota) + '</div>' +
           '<div class="inicio-voo-card__meta" style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">' +
-            '<span style="font-size: 16px; font-weight: 900; color: ' + corAero + '; letter-spacing: 0.5px; filter: brightness(0.85);">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
+            '<span style="display:inline-block !important; font-family:ui-monospace,monospace; font-size:12px; font-weight:800; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; background-color:' + corAero + ' !important; background-image:linear-gradient(' + corAero + ',' + corAero + ') !important; padding:3px 8px !important; border-radius:5px !important; letter-spacing:0.5px; line-height:1.2; border:1px solid rgba(0,0,0,0.15) !important; box-shadow:inset 0 0 0 999px ' + corAero + ', 0 1px 2px rgba(0,0,0,0.1) !important; forced-color-adjust:none !important;">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
             tipoTag +
             '<span style="font-size: 11px; margin-left:4px;">' + _esc(metaRest) + '</span></div>';
         var htmlAberto = '';
@@ -22390,12 +24146,73 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!aeros.length) { box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Nenhuma aeronave ativa.</div>'; return; }
 
         box.innerHTML = aeros.map(function(a) {
-            var foto = a.image ? '<img class="inicio-aero-card__img" src="' + _esc(a.image) + '" alt="' + _esc(a.model || "") + '">' : '<div class="inicio-aero-card__img"></div>';
+            var _e = function(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); };
+            var foto = a.image ? '<img class="inicio-aero-card__img" src="' + _e(a.image) + '" alt="' + _e(a.model || "") + '">' : '<div class="inicio-aero-card__img"></div>';
             var st = (typeof statusEfetivoAeronave === "function") ? statusEfetivoAeronave(a.tail, a.status) : (a.status || "\u2014");
             var cor = st === "Em opera\u00e7\u00e3o" ? "#30cf8a" : (st === "Em manuten\u00e7\u00e3o" ? "#ff5a5f" : (st === "Indispon\u00edvel" ? "#f2c94c" : "#8fa7bc"));
-            return '<div class="inicio-aero-card">' + foto + '<div class="inicio-aero-card__body"><div><div class="inicio-aero-card__model">' + _esc(a.model || "\u2014") + '</div><div class="inicio-aero-card__tail">' + _esc(a.tail || "\u2014") + '</div></div><span class="inicio-aero-card__status" style="background:' + cor + '22;color:' + cor + '">' + _esc(st) + '</span></div></div>';
+            
+            var alertasInfo = "";
+            try {
+              var _custosDash = a.custos_por_ano || {};
+              var _anosDash = Object.keys(_custosDash).sort().reverse();
+              var _anoAtualDash = String(new Date().getFullYear());
+              var _anoCicDash = _anosDash.includes(_anoAtualDash) ? _anoAtualDash : _anosDash[0];
+              if (_anoCicDash && _custosDash[_anoCicDash] && _custosDash[_anoCicDash].alertas) {
+                var _alDash = _custosDash[_anoCicDash].alertas;
+                var _hojeDash = new Date(); _hojeDash.setHours(0,0,0,0);
+                if (_alDash.cva && _alDash.cva.data) {
+                  var _dcvaDash = new Date(_alDash.cva.data + "T00:00:00");
+                  var _diasCvaDash = Math.floor((_dcvaDash - _hojeDash) / 86400000);
+                  var _corCva = _diasCvaDash < 0 ? "#ff5a5f" : (_diasCvaDash <= 30 ? "#f2c94c" : "var(--muted)");
+                  var _icoCva = _diasCvaDash <= 30 ? "\u26a0\ufe0f " : "";
+                  alertasInfo += '<div style="font-size:11px;color:' + _corCva + ';margin-top:4px">' + _icoCva + 'CVA: ' + (_diasCvaDash < 0 ? "vencido" : _diasCvaDash + " dias") + '</div>';
+                }
+                if (_alDash.horas && !_alDash.horas.limite && _alDash.horas.marco_zero) {
+                alertasInfo += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Horas: definir limite no ciclo</div>';
+              }
+              if (_alDash.horas && _alDash.horas.limite && _alDash.horas.marco_zero) {
+                  var _horasVoadasDash = 0;
+                  (Agenda.getEventos() || []).forEach(function(ev) {
+                    if (ev.aeronave_tail !== a.tail) return;
+                    (ev.trechos || []).forEach(function(tr) {
+                      if (!tr.revisao || tr.revisao.status !== "concluido") return;
+                      if (!tr.data || tr.data < _alDash.horas.marco_zero) return;
+                      var durDash = tr.revisao.tempo_voo || tr.duracao;
+                      if (durDash && /^\d{1,2}:\d{2}/.test(durDash)) {
+                        var partsDash = durDash.split(":");
+                        _horasVoadasDash += (parseInt(partsDash[0], 10) || 0) + (parseInt(partsDash[1], 10) || 0) / 60;
+                      }
+                    });
+                  });
+                  var _restantesDash = _alDash.horas.limite - _horasVoadasDash;
+                  var _corH = _restantesDash <= 0 ? "#ff5a5f" : (_restantesDash <= 20 ? "#f2c94c" : "var(--muted)");
+                  var _icoH = _restantesDash <= 20 ? "\u26a0\ufe0f " : "";
+                  alertasInfo += '<div style="font-size:11px;color:' + _corH + ';margin-top:2px">' + _icoH + 'Horas: ' + Math.round(_restantesDash) + 'h restantes</div>';
+                }
+              }
+            } catch(e) {}
+            
+            return '<div class="inicio-aero-card">' + foto + '<div class="inicio-aero-card__body"><div><div class="inicio-aero-card__model">' + _e(a.model || "\u2014") + '</div><div class="inicio-aero-card__tail">' + _e(a.tail || "\u2014") + '</div></div><span class="inicio-aero-card__status" style="background:' + cor + '22;color:' + cor + '">' + _e(st) + '</span></div>' + (alertasInfo ? '<div style="padding:0 14px 10px">' + alertasInfo + '</div>' : '') + '</div>';
         }).join("");
     }
+
+    // Helpers locais (usados por renderVoos/renderRevisoes/renderAeronaves)
+    var _esc = function(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) {
+            return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
+        });
+    };
+    var _ymd = function(d) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, "0");
+        var dd = String(d.getDate()).padStart(2, "0");
+        return y + "-" + m + "-" + dd;
+    };
+    var _fmtDDMM = function(iso) {
+        if (!iso) return "";
+        var p = String(iso).split("-");
+        return p[2] + "/" + p[1];
+    };
 
     // Única definição de window.InicioPage
     window.InicioPage = {
@@ -22403,15 +24220,28 @@ document.addEventListener("DOMContentLoaded", function() {
             try { renderRevisoes(); } catch(e) { console.warn("[InicioPage.revisoes]", e); }
             try { renderVoos(); } catch(e) { console.warn("[InicioPage.voos]", e); }
             try { renderAeronaves(); } catch(e) { console.warn("[InicioPage.aero]", e); }
+            try { if (typeof Alertas !== "undefined" && Alertas.render) Alertas.render(); } catch(e) { console.warn("[InicioPage.alertas]", e); }
         }
     };
 
     console.log("[Home] InicioPage definido (versão única, sem duplicação).");
 
-    // Força renderização inicial
-    setTimeout(function() {
+    // Renderização inicial com retry (espera dados carregarem do Supabase)
+    function _tryRender(retries) {
+        if (!window.InicioPage) return;
+        var _aeros = (typeof Aircraft !== "undefined" && Aircraft.getAtivos) ? Aircraft.getAtivos() : (typeof Aircraft !== "undefined" && Aircraft.get ? Aircraft.get() : []);
+        if ((!_aeros || _aeros.length === 0) && retries > 0) {
+            setTimeout(function() { _tryRender(retries - 1); }, 500);
+            return;
+        }
+        window.InicioPage.render();
+    }
+    setTimeout(function() { _tryRender(20); }, 500);
+
+    // Re-render quando os dados da agenda/agenda carregarem
+    window.addEventListener("agendaCarregada", function() {
         if (window.InicioPage && window.InicioPage.render) window.InicioPage.render();
-    }, 1000);
+    });
 })();
 </script>
 <style>
@@ -22435,8 +24265,6 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 </style>
-
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const loadColor = (inputId, labelId, storageKey, defaultColor) => {
