@@ -7259,7 +7259,7 @@ const Aircraft = (() => {
       const ciclos = Object.keys(a.custos_por_ano || {});
       const ano = ciclos.includes(anoAtual) ? anoAtual : (ciclos.sort().reverse()[0] || anoAtual);
       try {
-        const total = await Manutencao.totalComputado(a.id, ano);
+        const total = await Manutencao.totalPreventiva(a.id, ano); /* AIRPOLATO-ONLY: só preventivas */
         const txt = Fmt.money(total || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         el.textContent = total > 0 ? txt + " (ciclo " + ano + ")" : "—";
       } catch(e) {
@@ -7404,7 +7404,7 @@ const Aircraft = (() => {
           }
           
           return '<dl class="aircraft-card__costs" style="grid-template-columns:1fr 1fr;margin-top:8px">'
-            + '<div><dt>Manutenção do ciclo</dt><dd id="'+manutId+'">Carregando...</dd></div>'
+            + '<div><dt>Manutenção Preventiva</dt><dd id="'+manutId+'">Carregando...</dd></div>'''  /* AIRPOLATO-ONLY: label alterado */
             + '<div><dt>Preço médio comb.</dt><dd>'+esc(precoCombTxt)+'</dd></div>'
             + '<div style="margin-top:10px"><dt>Vencimento CVA</dt><dd style="'+_cvaCls+'">'+esc(_cvaTxt)+'</dd></div>'
             + '<div style="margin-top:10px"><dt>Horas disponíveis</dt><dd style="'+_horasCls+'">'+esc(_horasTxt)+'</dd></div>'
@@ -14377,7 +14377,8 @@ const Manutencao = (() => {
           const atual = manutencoes.find(t => t.id === x.id);
           if (atual) {
             x.valor = atual.valor;
-            x.computar = atual.computar; 
+            /* AIRPOLATO-ONLY: NÃO sobrescreve se o usuário já definiu manualmente (checkbox) */
+            if (x.computar === undefined) x.computar = atual.computar;
             /* Força tipo translado pra ficar na seção certa */
             x.tipo = "translado";
           }
@@ -14641,6 +14642,19 @@ const Manutencao = (() => {
     let total = 0;
     lanc.forEach(x => {
       if (x.computar !== false) total += Number(x.valor) || 0;
+    });
+    return total;
+  }
+
+  /* AIRPOLATO-ONLY: soma apenas manutenções preventivas (usada no card do Dashboard) */
+  async function totalPreventiva(aeroId, ano) {
+    const lanc = await getLancamentos(aeroId, ano);
+    let total = 0;
+    lanc.forEach(x => {
+      if (x.ignorado === true) return;
+      if (x.tipo !== "preventiva") return;
+      if (x.computar === false) return;
+      total += Number(x.valor) || 0;
     });
     return total;
   }
@@ -15148,7 +15162,7 @@ const Manutencao = (() => {
     if (m) m.classList.add("is-open");
   }
 
-  return { render, carregar, popularSelects, popularCiclos, exportarRelatorio, exportarPDFManut, abrirModalRelatorio, agruparManut, abrirNovo, salvar, excluirDoModal, totalComputado, getLista: () => lista };
+  return { render, carregar, popularSelects, popularCiclos, exportarRelatorio, exportarPDFManut, abrirModalRelatorio, agruparManut, abrirNovo, salvar, excluirDoModal, totalComputado, totalPreventiva /* AIRPOLATO-ONLY */, getLista: () => lista };
 })();
 
 const Tripulacao = (() => {
