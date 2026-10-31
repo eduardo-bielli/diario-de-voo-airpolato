@@ -308,6 +308,9 @@ body.sidebar-is-open{overflow:hidden}
 .tag{font-size:9px;font-weight:800;padding:5px 9px;border-radius:6px;height:max-content}
 .tag--blue{background:#167fe8;color:#fff}
 .tag--yellow{background:var(--yellow);color:#18202b}
+.tag--red{background:#ff5a5f;color:#fff}
+.tag--gray{background:#9aa9b8;color:#fff}
+.tag--yellow-dark{background:#b8860b;color:#fff}
 .list{max-height:52vh;overflow-y:auto}
 #executadosList{max-height:none !important;overflow:visible !important}
 .list__row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
@@ -368,6 +371,9 @@ body.sidebar-is-open{overflow:hidden}
 .aircraft-card dd{color:var(--text);font-weight:700;margin:4px 0 0;font-size:13px}
 .aircraft-card__costs dd{font-size:11px}
 .mission,.alert{padding:11px 14px;border-bottom:1px solid var(--line)}
+.alert-list{height:360px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--line) transparent;box-sizing:border-box}
+.alert-list::-webkit-scrollbar{width:6px}
+.alert-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 .mission:last-child,.alert:last-child{border-bottom:0}
 .mission{display:grid;grid-template-columns:48px 1fr 65px;gap:10px;align-items:center}
 .mission__day{background:var(--nav-active-bg);border-radius:6px;text-align:center;padding:6px 2px;font-size:14px;font-weight:800}
@@ -7350,8 +7356,53 @@ const Aircraft = (() => {
             + '<div><dt>Horas totais</dt><dd>'+esc(totalTxt)+'</dd></div></dl>';
         })()
       + '<dl class="aircraft-card__info" style="grid-template-columns:1fr;margin-top:8px"><div><dt>Posição atual</dt><dd style="'+posCls+'" title="'+posTitle+'">'+esc(posStr)+'</dd></div></dl>'
-      + '<dl class="aircraft-card__costs" style="grid-template-columns:1fr 1fr"><div><dt>Manutenção do ciclo</dt><dd id="'+manutId+'">Carregando...</dd></div>'
-      + '<div><dt>Preço médio comb.</dt><dd>'+esc(precoCombTxt)+'</dd></div></dl>'
+      + (function() {
+          var _custos = a.custos_por_ano || {};
+          var _anos = Object.keys(_custos).sort().reverse();
+          var _anoAtual = String(new Date().getFullYear());
+          var _anoCic = _anos.includes(_anoAtual) ? _anoAtual : _anos[0];
+          var _al = _anoCic && _custos[_anoCic] ? _custos[_anoCic].alertas : null;
+          
+          var _cvaTxt = "—", _cvaCls = "color:var(--muted)";
+          var _horasTxt = "—", _horasCls = "color:var(--muted)";
+          
+          if (_al) {
+            if (_al.cva && _al.cva.data) {
+              var _hoje = new Date(); _hoje.setHours(0,0,0,0);
+              var _dcva = new Date(_al.cva.data + "T00:00:00");
+              var _dias = Math.floor((_dcva - _hoje) / 86400000);
+              if (_dias < 0) { _cvaTxt = "Vencido há " + Math.abs(_dias) + "d"; _cvaCls = "color:var(--red);font-weight:800"; }
+              else if (_dias <= (_al.cva.aviso_dias || 30)) { _cvaTxt = _dias + " dias"; _cvaCls = "color:var(--yellow);font-weight:800"; }
+              else { _cvaTxt = _dias + " dias"; _cvaCls = "color:var(--text)"; }
+            }
+            if (_al.horas && _al.horas.limite && _al.horas.marco_zero) {
+              var _hv = 0;
+              (Agenda.getEventos() || []).forEach(function(ev2) {
+                if (ev2.aeronave_tail !== a.tail) return;
+                (ev2.trechos || []).forEach(function(tr2) {
+                  if (!tr2.revisao || tr2.revisao.status !== "concluido") return;
+                  if (!tr2.data || tr2.data < _al.horas.marco_zero) return;
+                  var _dur = tr2.revisao.tempo_voo || tr2.duracao;
+                  if (_dur && /^\d{1,2}:\d{2}/.test(_dur)) {
+                    var _p = _dur.split(":");
+                    _hv += (parseInt(_p[0],10)||0) + (parseInt(_p[1],10)||0)/60;
+                  }
+                });
+              });
+              var _rest = _al.horas.limite - _hv;
+              if (_rest <= 0) { _horasTxt = Math.round(_rest) + "h"; _horasCls = "color:var(--red);font-weight:800"; }
+              else if (_rest <= (_al.horas.aviso_horas || 20)) { _horasTxt = Math.round(_rest) + "h"; _horasCls = "color:var(--yellow);font-weight:800"; }
+              else { _horasTxt = Math.round(_rest) + "h / " + _al.horas.limite + "h"; _horasCls = "color:var(--text)"; }
+            }
+          }
+          
+          return '<dl class="aircraft-card__costs" style="grid-template-columns:1fr 1fr;margin-top:8px">'
+            + '<div><dt>Manutenção do ciclo</dt><dd id="'+manutId+'">Carregando...</dd></div>'
+            + '<div><dt>Preço médio comb.</dt><dd>'+esc(precoCombTxt)+'</dd></div>'
+            + '<div style="margin-top:10px"><dt>Vencimento CVA</dt><dd style="'+_cvaCls+'">'+esc(_cvaTxt)+'</dd></div>'
+            + '<div style="margin-top:10px"><dt>Horas disponíveis</dt><dd style="'+_horasCls+'">'+esc(_horasTxt)+'</dd></div>'
+            + '</dl>';
+        })()
       + '</div></article>';
   }
   function renderList() {
@@ -8734,6 +8785,7 @@ const Agenda = (() => {
     if (list) {
       const proximosVoos = [];
       events.forEach(ev => {
+        if (ev.tipo === "Bloquear aeronave") return; // bloqueio não é voo
         const trechosFut = (ev.trechos||[]).filter(t => t.data && parseYmd(t.data) >= today);
         if (trechosFut.length) {
           const proximo = trechosFut.sort((a,b) => (a.data+a.hora).localeCompare(b.data+b.hora))[0];
@@ -8748,12 +8800,15 @@ const Agenda = (() => {
         const dd = String(d.getDate()).padStart(2,"0");
         const mm = MONTHS[d.getMonth()].slice(0,3).toUpperCase();
         const hh = hhmm(trecho.hora);
-        const tc = ev.tipo === "Voo Extra" ? "tag tag--yellow" : "tag tag--blue";
+        const tc = ev.tipo === "Voo Extra" ? "tag tag--yellow-dark" :
+                   ev.tipo === "Manutenção" ? "tag tag--red" :
+                   (ev.tipo === "Translado" || ev.tipo === "Troca de Hr") ? "tag tag--gray" :
+                   "tag tag--blue";
         const lb = ev.tipo === "Voo Extra" ? "Extra" : ev.tipo === "Manutenção" ? "Manut." : (ev.tipo === "Translado" || ev.tipo === "Troca de Hr") ? "Troca Hr" : "Voo";
         const paxCount = Array.isArray(ev.passageiros_ids) ? ev.passageiros_ids.length : (Array.isArray(ev.passageiros) ? ev.passageiros.length : 0);
         return '<li class="mission"><div class="mission__day">'+dd+'<small>'+mm+'</small></div>'
           + '<div class="mission__info"><strong>'+hh+' · '+esc(trecho.origem)+' → '+esc(trecho.destino)+'</strong>'
-          + '<small>'+esc(ev.aeronave_tail||"—")+' · '+paxCount+' PAX · '+(ev.trechos||[]).length+' trecho'+((ev.trechos||[]).length>1?'s':'')+'</small></div>'
+          + '<small>'+(function(){var _c=(typeof window.corDaAeronave==="function")?window.corDaAeronave(ev.aeronave_tail):"#3b82f6";return '<span style="display:inline-block;background:'+_c+' !important;color:#fff !important;-webkit-text-fill-color:#fff !important;padding:2px 6px;border-radius:4px;font-family:ui-monospace,monospace;font-weight:800;font-size:10px;letter-spacing:0.3px;margin-right:4px;box-shadow:inset 0 0 0 999px '+_c+' !important;vertical-align:middle;">'+esc(ev.aeronave_tail||"—")+'</span>';})()+' · '+paxCount+' PAX · '+(ev.trechos||[]).length+' trecho'+((ev.trechos||[]).length>1?'s':'')+'</small></div>'
           + '<span class="'+tc+'">'+lb+'</span></li>';
       }).join("");
     }
@@ -12745,6 +12800,22 @@ const Custos = (() => {
 
     outrosBuffer = Array.isArray(c.outros) ? JSON.parse(JSON.stringify(c.outros)) : [];
     renderOutros();
+
+    /* === Alertas === */
+    let alertasBase = c.alertas || {};
+    if (ehNovo) {
+      const anos = Object.keys(custos).sort().reverse();
+      const cloneDe = anos.length > 0 ? custos[anos[0]] : null;
+      if (cloneDe && cloneDe.alertas) alertasBase = cloneDe.alertas;
+    }
+    g("ccAlertaCvaData").value = alertasBase.cva?.data || "";
+    g("ccAlertaCvaAviso").value = String(alertasBase.cva?.aviso_dias || 30);
+    g("ccAlertaHorasLimite").value = alertasBase.horas?.limite ?? "";
+    g("ccAlertaHorasData").value = alertasBase.horas?.marco_zero || "";
+    g("ccAlertaHorasAviso").value = String(alertasBase.horas?.aviso_horas || 20);
+    alertasCustomBuffer = Array.isArray(alertasBase.custom) ? JSON.parse(JSON.stringify(alertasBase.custom)) : [];
+    renderAlertaCustom();
+
     atualizarTotal();
     g("custosCicloModal").classList.add("is-open");
   }
@@ -12788,6 +12859,60 @@ const Custos = (() => {
     renderOutros();
   }
 
+  let alertasCustomBuffer = [];
+
+  function renderAlertaCustom() {
+    const box = document.getElementById("ccAlertaCustomLista");
+    if (!box) return;
+    if (!alertasCustomBuffer.length) {
+      box.innerHTML = '<p class="hint" style="margin:0 0 8px">Nenhum alerta personalizado. Clique em + Adicionar.</p>';
+    } else {
+      box.innerHTML = alertasCustomBuffer.map((a, i) => {
+        return '<div style="display:grid;grid-template-columns:1fr 140px 120px 40px;gap:8px;margin-bottom:8px;align-items:center">'
+          + '<input type="text" value="' + String(a.nome || "").replace(/"/g, "&quot;") + '" data-alerta-nome="' + i + '" placeholder="Nome do alerta" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;font-size:13px">'
+          + '<input type="date" value="' + (a.data || "") + '" data-alerta-data="' + i + '" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;font-size:13px">'
+          + '<select data-alerta-aviso="' + i + '" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;font-size:13px">'
+          +   [7, 15, 30, 60, 90, 120].map(d => '<option value="' + d + '"' + (a.aviso_dias === d ? ' selected' : '') + '>' + d + ' dias</option>').join('')
+          + '</select>'
+          + '<button type="button" class="btn btn--danger" data-alerta-del="' + i + '" style="padding:10px">✕</button>'
+          + '</div>';
+      }).join("");
+      box.querySelectorAll("[data-alerta-nome]").forEach(el => {
+        el.addEventListener("input", e => {
+          const i = +e.target.dataset.alertaNome;
+          if (alertasCustomBuffer[i]) alertasCustomBuffer[i].nome = e.target.value;
+        });
+      });
+      box.querySelectorAll("[data-alerta-data]").forEach(el => {
+        el.addEventListener("input", e => {
+          const i = +e.target.dataset.alertaData;
+          if (alertasCustomBuffer[i]) alertasCustomBuffer[i].data = e.target.value;
+        });
+      });
+      box.querySelectorAll("[data-alerta-aviso]").forEach(el => {
+        el.addEventListener("change", e => {
+          const i = +e.target.dataset.alertaAviso;
+          if (alertasCustomBuffer[i]) alertasCustomBuffer[i].aviso_dias = Number(e.target.value);
+        });
+      });
+      box.querySelectorAll("[data-alerta-del]").forEach(el => {
+        el.addEventListener("click", e => {
+          const i = +e.target.dataset.alertaDel;
+          alertasCustomBuffer.splice(i, 1);
+          renderAlertaCustom();
+        });
+      });
+    }
+    const addBtn = document.getElementById("ccAlertaAddCustom");
+    if (addBtn && !addBtn.dataset.bound) {
+      addBtn.dataset.bound = "1";
+      addBtn.addEventListener("click", () => {
+        alertasCustomBuffer.push({ nome: "", data: "", aviso_dias: 30 });
+        renderAlertaCustom();
+      });
+    }
+  }
+
   async function salvarCiclo() {
     const g = (id) => document.getElementById(id);
     const aero = aeroAtual();
@@ -12813,6 +12938,18 @@ const Custos = (() => {
         subtotal_anual: (Number(g("ccManHoras").value) || 0) * (Number(g("ccManPorHora").value) || 0)
       },
       outros: outrosBuffer.slice(),
+      alertas: {
+        cva: {
+          data: g("ccAlertaCvaData").value || null,
+          aviso_dias: Number(g("ccAlertaCvaAviso").value) || 30
+        },
+        horas: {
+          limite: Number(g("ccAlertaHorasLimite").value) || null,
+          marco_zero: g("ccAlertaHorasData").value || null,
+          aviso_horas: Number(g("ccAlertaHorasAviso").value) || 20
+        },
+        custom: alertasCustomBuffer.slice()
+      },
       criado_em: custos[chave]?.criado_em || new Date().toISOString(),
       atualizado_em: new Date().toISOString()
     };
@@ -12822,6 +12959,7 @@ const Custos = (() => {
     g("custosCicloModal").classList.remove("is-open");
     renderLista();
     atualizarResumoBotao();
+    try { if (typeof Alertas !== "undefined" && Alertas.render) Alertas.render(); } catch(e) {}
   }
 
   async function excluirCiclo(ano) {
@@ -15702,6 +15840,34 @@ const Alertas = (() => {
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
   const fmtData = (s) => { if (!s) return ""; const [y,m,d] = s.split("-"); return d+"/"+m+"/"+s.split("-")[0]; };
 
+  /* Helpers de dispensa */
+  function _alertaId(a) {
+    if (a.ev_id) return (a.tipo || "") + "|" + a.ev_id;
+    return (a.tipo || "") + "|" + (a.aeronave || "") + "|" + (a.custom_nome || "");
+  }
+  function _alertaDispensado(id) {
+    try {
+      var d = JSON.parse(localStorage.getItem("dv.alertas.dispensados") || "{}");
+      var item = d[id];
+      if (!item) return false;
+      if (Date.now() - item.ts > 30 * 86400000) {
+        delete d[id];
+        localStorage.setItem("dv.alertas.dispensados", JSON.stringify(d));
+        return false;
+      }
+      return true;
+    } catch(e) { return false; }
+  }
+  function dispensar(id) {
+    if (!id) return;
+    try {
+      var d = JSON.parse(localStorage.getItem("dv.alertas.dispensados") || "{}");
+      d[id] = { ts: Date.now() };
+      localStorage.setItem("dv.alertas.dispensados", JSON.stringify(d));
+      render();
+    } catch(e) { console.warn("[Alertas.dispensar]", e); }
+  }
+
   /* Calcula todos os alertas ativos */
   function calcular() {
     const alertas = [];
@@ -15713,7 +15879,81 @@ const Alertas = (() => {
       return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
     })();
 
+    /* 0. Alertas de aeronaves (CVA, Horas, Custom) */
+    const _aerosDash = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
+    const _hojeDate = new Date(hojeStr + "T00:00:00");
+    _aerosDash.forEach(function(aero) {
+      if (aero.ativo === false) return;
+      const _custos = aero.custos_por_ano || {};
+      const _anos = Object.keys(_custos).sort().reverse();
+      if (!_anos.length) return;
+      const _anoAtual = String(new Date().getFullYear());
+      const _anoCic = _anos.includes(_anoAtual) ? _anoAtual : _anos[0];
+      const _al = _custos[_anoCic] && _custos[_anoCic].alertas;
+      if (!_al) return;
+      
+      /* CVA */
+      if (_al.cva && _al.cva.data) {
+        const _cvaData = new Date(_al.cva.data + "T00:00:00");
+        const _diasCva = Math.floor((_cvaData - _hojeDate) / 86400000);
+        if (_diasCva <= (_al.cva.aviso_dias || 30)) {
+          alertas.push({
+            tipo: "cva",
+            aeronave: aero.tail,
+            severidade: _diasCva <= 7 ? "danger" : "warning",
+            titulo: "\ud83d\udccb " + aero.tail + " \u2014 CVA " + (_diasCva < 0 ? "vencido" : "vence em " + _diasCva + " dia" + (_diasCva !== 1 ? "s" : "")),
+            sub: "Vencimento: " + fmtData(_al.cva.data)
+          });
+        }
+      }
+      
+      /* Horas disponíveis */
+      if (_al.horas && _al.horas.limite && _al.horas.marco_zero) {
+        let _horasVoadas = 0;
+        eventos.forEach(function(ev) {
+          if (ev.aeronave_tail !== aero.tail) return;
+          (ev.trechos || []).forEach(function(tr) {
+            if (!tr.revisao || tr.revisao.status !== "concluido") return;
+            if (!tr.data || tr.data < _al.horas.marco_zero) return;
+            const dur = tr.revisao.tempo_voo || tr.duracao;
+            if (dur && /^\d{1,2}:\d{2}/.test(dur)) {
+              const parts = dur.split(":");
+              _horasVoadas += (parseInt(parts[0], 10) || 0) + (parseInt(parts[1], 10) || 0) / 60;
+            }
+          });
+        });
+        const _restantes = _al.horas.limite - _horasVoadas;
+        if (_restantes <= (_al.horas.aviso_horas || 20)) {
+          alertas.push({
+            tipo: "horas",
+            aeronave: aero.tail,
+            severidade: _restantes <= 10 ? "danger" : "warning",
+            titulo: "\u23f1 " + aero.tail + " \u2014 " + Math.round(_restantes) + "h restantes",
+            sub: "Limite: " + _al.horas.limite + "h \u00b7 Voadas: " + _horasVoadas.toFixed(1) + "h"
+          });
+        }
+      }
+      
+      /* Custom */
+      (_al.custom || []).forEach(function(cust) {
+        if (!cust.data) return;
+        const _dData = new Date(cust.data + "T00:00:00");
+        const _dRestantes = Math.floor((_dData - _hojeDate) / 86400000);
+        if (_dRestantes <= (cust.aviso_dias || 30)) {
+          alertas.push({
+            tipo: "custom",
+            aeronave: aero.tail,
+            custom_nome: cust.nome || "Alerta",
+            severidade: _dRestantes <= 7 ? "danger" : "warning",
+            titulo: "\ud83d\udd14 " + aero.tail + " \u2014 " + (cust.nome || "Alerta"),
+            sub: (_dRestantes < 0 ? "Vencido h\u00e1 " + Math.abs(_dRestantes) + " dias" : "Em " + _dRestantes + " dia" + (_dRestantes !== 1 ? "s" : "")) + " \u00b7 " + fmtData(cust.data)
+          });
+        }
+      });
+    });
+
     eventos.forEach(ev => {
+      if (ev.tipo === "Bloquear aeronave") return; /* bloqueio não precisa de piloto */
       if (ev.piloto_p1) return; /* já tem piloto */
       if (!ev.trechos || !ev.trechos.length) return;
       /* Pega a primeira data do voo */
@@ -15729,6 +15969,7 @@ const Alertas = (() => {
 
       alertas.push({
         tipo: "sem_piloto",
+        aeronave: ev.aeronave_tail || "",
         severidade: "danger",
         titulo: (ev.aeronave_tail || "—") + " sem piloto definido",
         sub: fmtData(primeiraData) + " · " + (ev.trechos[0].origem || "—") + " → " + (ev.trechos[ev.trechos.length-1].destino || "—"),
@@ -15754,6 +15995,8 @@ const Alertas = (() => {
       const mesmaData = dataIda === dataVolta;
       alertas.push({
         tipo: "manutencao",
+        aeronave: ev.aeronave_tail || "",
+        ev_id: ev.id,
         severidade: "danger",
         titulo: "🔧 " + (ev.aeronave_tail || "—") + " em manutenção",
         sub: mesmaData
@@ -15786,7 +16029,7 @@ const Alertas = (() => {
       });
     });
 
-    return alertas;
+    return alertas.filter(function(a) { return !_alertaDispensado(_alertaId(a)); });
   }
 
   /* Renderiza no dashboard */
@@ -15809,17 +16052,55 @@ const Alertas = (() => {
 
     box.innerHTML = lista.map(a => {
       const cor = a.severidade === "danger" ? "var(--red)" : "var(--yellow)";
-      return '<li class="alert" data-alerta-ev="' + esc(a.ev_id) + '" data-alerta-tipo="' + esc(a.tipo || '') + '" style="cursor:pointer">'
-        + '<strong style="color:' + cor + '">⚠ ' + esc(a.titulo) + '</strong>'
+      const alertId = _alertaId(a);
+      
+      // Procura QUALQUER prefixo de aeronave no título para transformar em badge
+      let prefixoBadge = "";
+      let textoTitulo = a.titulo;
+      var _aerosList = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
+      var _aeroAchada = null;
+      
+      // 1. Tenta usar o campo direto se existir
+      if (a.aeronave) {
+        _aeroAchada = a.aeronave;
+      } else {
+        // 2. Senão, varre a lista de aeronaves buscando no texto
+        for (var _ai = 0; _ai < _aerosList.length; _ai++) {
+          if (a.titulo.indexOf(_aerosList[_ai].tail) !== -1) {
+            _aeroAchada = _aerosList[_ai].tail;
+            break;
+          }
+        }
+      }
+      
+      if (_aeroAchada) {
+        var cAero = (typeof window.corDaAeronave === "function") ? window.corDaAeronave(_aeroAchada) : "var(--accent)";
+        prefixoBadge = '<span style="display:inline-block; background:' + cAero + ' !important; color:#fff !important; padding:2px 6px; border-radius:4px; font-weight:800; font-size:11px; margin-right:6px; vertical-align:middle; font-family:ui-monospace,monospace;">' + esc(_aeroAchada) + '</span>';
+        
+        // Remove o texto do prefixo e sujeiras tipo "— " ou "- " do começo
+        textoTitulo = a.titulo.replace(_aeroAchada, "").replace(/^[\s—\-\u2014]+/, "").trim();
+      }
+      
+      return '<li class="alert" data-alerta-id="' + esc(alertId) + '" data-alerta-ev="' + esc(a.ev_id || '') + '" data-alerta-tipo="' + esc(a.tipo || '') + '" style="cursor:pointer;position:relative;padding-right:24px">'
+        + '<strong style="color:' + cor + '; display:block; margin-bottom:2px;">⚠ ' + prefixoBadge + esc(textoTitulo) + '</strong>'
         + '<small>' + esc(a.sub) + '</small>'
+        + '<button type="button" class="alerta-x" data-alerta-id="' + esc(alertId) + '" title="Dispensar por 30 dias" style="position:absolute;top:2px;right:2px;background:transparent;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px;width:16px;height:16px;line-height:1;border-radius:50%;opacity:0.5;">✕</button>'
         + '</li>';
     }).join("");
 
-    /* Clica no alerta → vai pra agenda e destaca o voo */
+    box.querySelectorAll(".alerta-x").forEach(btn => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        dispensar(btn.dataset.alertaId);
+      });
+    });
+
     box.querySelectorAll("[data-alerta-ev]").forEach(li => {
-      li.addEventListener("click", () => {
+      li.addEventListener("click", (ev) => {
+        if (ev.target.classList.contains("alerta-x")) return;
+        if (!li.dataset.alertaEv) return;
         Router.go("agenda");
-        /* Bloqueio: NAO expande o card */
         if (li.dataset.alertaTipo === "bloqueio") return;
         setTimeout(() => {
           if (typeof Agenda !== "undefined" && Agenda.toggleExpand) {
@@ -15830,7 +16111,7 @@ const Alertas = (() => {
     });
   }
 
-  return { render, calcular };
+  return { render, calcular, dispensar };
 })();
 
 const Router = (() => {
@@ -20899,14 +21180,23 @@ Router.init();
 </div>
 </div></div>
 <div class="modal" id="custosAnoModal"><div class="dialog">
-<h2 id="custosAnoTitle">Custos por ano</h2>
-<p class="hint" id="custosAnoSub" style="margin-top:-14px;margin-bottom:18px"></p>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;">
+  <div style="flex:1;min-width:0;">
+    <h2 id="custosAnoTitle" style="margin:0;">Custos por ano</h2>
+    <p class="hint" id="custosAnoSub" style="margin:4px 0 0;"></p>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex:none;">
+    <button type="button" class="btn" id="custosAnoAddBtn" style="padding:7px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;white-space:nowrap;">+ Adicionar ano</button>
+    <button type="button" data-action="close-modal" data-modal="custosAnoModal" title="Fechar" style="background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;flex:none;">✕</button>
+  </div>
+</div>
 
-<div id="custosAnoLista" style="margin-bottom:16px"></div>
+<div style="border-bottom:2px solid var(--line);margin-bottom:14px;"></div>
 
-<div class="dialog__actions">
+<div id="custosAnoLista" style="margin-bottom:8px"></div>
+
+<div class="dialog__actions" style="border-top:1px solid var(--line);padding-top:12px;">
   <button class="btn btn--secondary" data-action="close-modal" data-modal="custosAnoModal">Fechar</button>
-  <button class="btn" id="custosAnoAddBtn">+ Adicionar ano</button>
 </div>
 </div></div>
 
@@ -20944,6 +21234,50 @@ Router.init();
   </div>
   <div class="revisao-tempo-calc" style="margin-top:8px">
     <span>Subtotal anual:</span><strong id="ccManSubtotal">R$ 0,00</strong>
+  </div>
+</div>
+
+<div class="revisao-sec">
+  <h4>Alertas</h4>
+  
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Vencimento CVA</span>
+      <input id="ccAlertaCvaData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaCvaAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="30">30 dias antes</option>
+        <option value="60">60 dias antes</option>
+        <option value="90">90 dias antes</option>
+        <option value="120">120 dias antes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Horas disponíveis</span>
+      <input id="ccAlertaHorasLimite" type="number" step="1" placeholder="200">
+    </label>
+    <label class="field" style="margin-top:8px;"><span>Contando a partir de (marco zero)</span>
+      <input id="ccAlertaHorasData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaHorasAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="20">20 horas restantes</option>
+        <option value="50">50 horas restantes</option>
+        <option value="100">100 horas restantes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--muted);">Outros alertas</span>
+      <button type="button" class="btn btn--secondary" id="ccAlertaAddCustom" style="padding:4px 8px; font-size:11px;">+ Adicionar</button>
+    </div>
+    <div id="ccAlertaCustomLista"></div>
   </div>
 </div>
 
@@ -20967,14 +21301,23 @@ Router.init();
 </div>
 </div></div>
 <div class="modal" id="custosAnoModal"><div class="dialog">
-<h2 id="custosAnoTitle">Custos por ano</h2>
-<p class="hint" id="custosAnoSub" style="margin-top:-14px;margin-bottom:18px"></p>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;">
+  <div style="flex:1;min-width:0;">
+    <h2 id="custosAnoTitle" style="margin:0;">Custos por ano</h2>
+    <p class="hint" id="custosAnoSub" style="margin:4px 0 0;"></p>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex:none;">
+    <button type="button" class="btn" id="custosAnoAddBtn" style="padding:7px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;white-space:nowrap;">+ Adicionar ano</button>
+    <button type="button" data-action="close-modal" data-modal="custosAnoModal" title="Fechar" style="background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;flex:none;">✕</button>
+  </div>
+</div>
 
-<div id="custosAnoLista" style="margin-bottom:16px"></div>
+<div style="border-bottom:2px solid var(--line);margin-bottom:14px;"></div>
 
-<div class="dialog__actions">
+<div id="custosAnoLista" style="margin-bottom:8px"></div>
+
+<div class="dialog__actions" style="border-top:1px solid var(--line);padding-top:12px;">
   <button class="btn btn--secondary" data-action="close-modal" data-modal="custosAnoModal">Fechar</button>
-  <button class="btn" id="custosAnoAddBtn">+ Adicionar ano</button>
 </div>
 </div></div>
 
@@ -21012,6 +21355,50 @@ Router.init();
   </div>
   <div class="revisao-tempo-calc" style="margin-top:8px">
     <span>Subtotal anual:</span><strong id="ccManSubtotal">R$ 0,00</strong>
+  </div>
+</div>
+
+<div class="revisao-sec">
+  <h4>Alertas</h4>
+  
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Vencimento CVA</span>
+      <input id="ccAlertaCvaData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaCvaAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="30">30 dias antes</option>
+        <option value="60">60 dias antes</option>
+        <option value="90">90 dias antes</option>
+        <option value="120">120 dias antes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px; padding:12px; background:var(--bg); border-radius:8px;">
+    <label class="field"><span>Horas disponíveis</span>
+      <input id="ccAlertaHorasLimite" type="number" step="1" placeholder="200">
+    </label>
+    <label class="field" style="margin-top:8px;"><span>Contando a partir de (marco zero)</span>
+      <input id="ccAlertaHorasData" type="date">
+    </label>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <span style="font-size:12px; color:var(--muted);">Aviso:</span>
+      <select id="ccAlertaHorasAviso" style="width:140px; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); font-size:12px;">
+        <option value="20">20 horas restantes</option>
+        <option value="50">50 horas restantes</option>
+        <option value="100">100 horas restantes</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--muted);">Outros alertas</span>
+      <button type="button" class="btn btn--secondary" id="ccAlertaAddCustom" style="padding:4px 8px; font-size:11px;">+ Adicionar</button>
+    </div>
+    <div id="ccAlertaCustomLista"></div>
   </div>
 </div>
 
@@ -21817,7 +22204,7 @@ document.addEventListener('click', function(e) {
         var htmlFechado = '<div class="inicio-voo-card__date" style="color:' + corTexto + ';">' + _esc(dataF) + emVooIco + '</div>' +
           '<div class="inicio-voo-card__route" style="color:' + corTexto + ';">' + _esc(rota) + '</div>' +
           '<div class="inicio-voo-card__meta" style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">' +
-            '<span style="font-size: 16px; font-weight: 900; color: ' + corAero + '; letter-spacing: 0.5px; filter: brightness(0.85);">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
+            '<span style="display:inline-block !important; font-family:ui-monospace,monospace; font-size:12px; font-weight:800; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; background-color:' + corAero + ' !important; background-image:linear-gradient(' + corAero + ',' + corAero + ') !important; padding:3px 8px !important; border-radius:5px !important; letter-spacing:0.5px; line-height:1.2; border:1px solid rgba(0,0,0,0.15) !important; box-shadow:inset 0 0 0 999px ' + corAero + ', 0 1px 2px rgba(0,0,0,0.1) !important; forced-color-adjust:none !important;">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
             tipoTag +
             '<span style="font-size: 11px; margin-left:4px;">' + _esc(metaRest) + '</span></div>';
         var htmlAberto = '';
@@ -21872,6 +22259,46 @@ document.addEventListener('click', function(e) {
           : '<div class="inicio-aero-card__img"></div>';
         var st = (typeof statusEfetivoAeronave === "function") ? statusEfetivoAeronave(a.tail, a.status) : (a.status || "\u2014");
         var cor = st === "Em opera\u00e7\u00e3o" ? "#30cf8a" : (st === "Em manuten\u00e7\u00e3o" ? "#ff5a5f" : (st === "Indispon\u00edvel" ? "#f2c94c" : "#8fa7bc"));
+        
+        /* CVA e Horas (do ciclo ativo) */
+        var alertasInfo = "";
+        try {
+          var _custosDash = a.custos_por_ano || {};
+          var _anosDash = Object.keys(_custosDash).sort().reverse();
+          var _anoAtualDash = String(new Date().getFullYear());
+          var _anoCicDash = _anosDash.includes(_anoAtualDash) ? _anoAtualDash : _anosDash[0];
+          if (_anoCicDash && _custosDash[_anoCicDash] && _custosDash[_anoCicDash].alertas) {
+            var _alDash = _custosDash[_anoCicDash].alertas;
+            var _hojeDash = new Date(); _hojeDash.setHours(0,0,0,0);
+            if (_alDash.cva && _alDash.cva.data) {
+              var _dcvaDash = new Date(_alDash.cva.data + "T00:00:00");
+              var _diasCvaDash = Math.floor((_dcvaDash - _hojeDash) / 86400000);
+              var _corCva = _diasCvaDash < 0 ? "#ff5a5f" : (_diasCvaDash <= 30 ? "#f2c94c" : "var(--muted)");
+              var _icoCva = _diasCvaDash <= 30 ? "\u26a0\ufe0f " : "";
+              alertasInfo += '<div style="font-size:11px;color:' + _corCva + ';margin-top:4px">' + _icoCva + 'CVA: ' + (_diasCvaDash < 0 ? "vencido" : _diasCvaDash + " dias") + '</div>';
+            }
+            if (_alDash.horas && _alDash.horas.limite && _alDash.horas.marco_zero) {
+              var _horasVoadasDash = 0;
+              (Agenda.getEventos() || []).forEach(function(ev) {
+                if (ev.aeronave_tail !== a.tail) return;
+                (ev.trechos || []).forEach(function(tr) {
+                  if (!tr.revisao || tr.revisao.status !== "concluido") return;
+                  if (!tr.data || tr.data < _alDash.horas.marco_zero) return;
+                  var durDash = tr.revisao.tempo_voo || tr.duracao;
+                  if (durDash && /^\d{1,2}:\d{2}/.test(durDash)) {
+                    var partsDash = durDash.split(":");
+                    _horasVoadasDash += (parseInt(partsDash[0], 10) || 0) + (parseInt(partsDash[1], 10) || 0) / 60;
+                  }
+                });
+              });
+              var _restantesDash = _alDash.horas.limite - _horasVoadasDash;
+              var _corH = _restantesDash <= 0 ? "#ff5a5f" : (_restantesDash <= 20 ? "#f2c94c" : "var(--muted)");
+              var _icoH = _restantesDash <= 20 ? "\u26a0\ufe0f " : "";
+              alertasInfo += '<div style="font-size:11px;color:' + _corH + ';margin-top:2px">' + _icoH + 'Horas: ' + Math.round(_restantesDash) + 'h restantes</div>';
+            }
+          }
+        } catch(e) {}
+        
         return '<div class="inicio-aero-card">' +
           foto +
           '<div class="inicio-aero-card__body">' +
@@ -21881,6 +22308,7 @@ document.addEventListener('click', function(e) {
             '</div>' +
             '<span class="inicio-aero-card__status" style="background:' + cor + '22;color:' + cor + '">' + _esc(st) + '</span>' +
           '</div>' +
+          (alertasInfo ? '<div style="padding:0 14px 10px">' + alertasInfo + '</div>' : '') +
         '</div>';
       }).join("");
     }
@@ -21962,6 +22390,7 @@ document.addEventListener('click', function(e) {
       try { renderRevisoes(); } catch(e) { console.warn("[InicioPage.revisoes]", e); }
       try { renderVoos(); } catch(e) { console.warn("[InicioPage.voos]", e); }
       try { renderAeronaves(); } catch(e) { console.warn("[InicioPage.aero]", e); }
+      try { if (typeof Alertas !== "undefined" && Alertas.render) Alertas.render(); } catch(e) { console.warn("[InicioPage.alertas]", e); }
     }
 
     return { render: render };
@@ -23398,7 +23827,7 @@ document.addEventListener("DOMContentLoaded", function() {
         var htmlFechado = '<div class="inicio-voo-card__date" style="color:' + corTexto + ';">' + _esc(dataF) + emVooIco + '</div>' +
           '<div class="inicio-voo-card__route" style="color:' + corTexto + ';">' + _esc(rota) + '</div>' +
           '<div class="inicio-voo-card__meta" style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">' +
-            '<span style="font-size: 16px; font-weight: 900; color: ' + corAero + '; letter-spacing: 0.5px; filter: brightness(0.85);">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
+            '<span style="display:inline-block !important; font-family:ui-monospace,monospace; font-size:12px; font-weight:800; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; background-color:' + corAero + ' !important; background-image:linear-gradient(' + corAero + ',' + corAero + ') !important; padding:3px 8px !important; border-radius:5px !important; letter-spacing:0.5px; line-height:1.2; border:1px solid rgba(0,0,0,0.15) !important; box-shadow:inset 0 0 0 999px ' + corAero + ', 0 1px 2px rgba(0,0,0,0.1) !important; forced-color-adjust:none !important;">' + _esc(ev.aeronave_tail || "\u2014") + '</span>' +
             tipoTag +
             '<span style="font-size: 11px; margin-left:4px;">' + _esc(metaRest) + '</span></div>';
         var htmlAberto = '';
@@ -23441,12 +23870,73 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!aeros.length) { box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Nenhuma aeronave ativa.</div>'; return; }
 
         box.innerHTML = aeros.map(function(a) {
-            var foto = a.image ? '<img class="inicio-aero-card__img" src="' + _esc(a.image) + '" alt="' + _esc(a.model || "") + '">' : '<div class="inicio-aero-card__img"></div>';
+            var _e = function(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); };
+            var foto = a.image ? '<img class="inicio-aero-card__img" src="' + _e(a.image) + '" alt="' + _e(a.model || "") + '">' : '<div class="inicio-aero-card__img"></div>';
             var st = (typeof statusEfetivoAeronave === "function") ? statusEfetivoAeronave(a.tail, a.status) : (a.status || "\u2014");
             var cor = st === "Em opera\u00e7\u00e3o" ? "#30cf8a" : (st === "Em manuten\u00e7\u00e3o" ? "#ff5a5f" : (st === "Indispon\u00edvel" ? "#f2c94c" : "#8fa7bc"));
-            return '<div class="inicio-aero-card">' + foto + '<div class="inicio-aero-card__body"><div><div class="inicio-aero-card__model">' + _esc(a.model || "\u2014") + '</div><div class="inicio-aero-card__tail">' + _esc(a.tail || "\u2014") + '</div></div><span class="inicio-aero-card__status" style="background:' + cor + '22;color:' + cor + '">' + _esc(st) + '</span></div></div>';
+            
+            var alertasInfo = "";
+            try {
+              var _custosDash = a.custos_por_ano || {};
+              var _anosDash = Object.keys(_custosDash).sort().reverse();
+              var _anoAtualDash = String(new Date().getFullYear());
+              var _anoCicDash = _anosDash.includes(_anoAtualDash) ? _anoAtualDash : _anosDash[0];
+              if (_anoCicDash && _custosDash[_anoCicDash] && _custosDash[_anoCicDash].alertas) {
+                var _alDash = _custosDash[_anoCicDash].alertas;
+                var _hojeDash = new Date(); _hojeDash.setHours(0,0,0,0);
+                if (_alDash.cva && _alDash.cva.data) {
+                  var _dcvaDash = new Date(_alDash.cva.data + "T00:00:00");
+                  var _diasCvaDash = Math.floor((_dcvaDash - _hojeDash) / 86400000);
+                  var _corCva = _diasCvaDash < 0 ? "#ff5a5f" : (_diasCvaDash <= 30 ? "#f2c94c" : "var(--muted)");
+                  var _icoCva = _diasCvaDash <= 30 ? "\u26a0\ufe0f " : "";
+                  alertasInfo += '<div style="font-size:11px;color:' + _corCva + ';margin-top:4px">' + _icoCva + 'CVA: ' + (_diasCvaDash < 0 ? "vencido" : _diasCvaDash + " dias") + '</div>';
+                }
+                if (_alDash.horas && !_alDash.horas.limite && _alDash.horas.marco_zero) {
+                alertasInfo += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Horas: definir limite no ciclo</div>';
+              }
+              if (_alDash.horas && _alDash.horas.limite && _alDash.horas.marco_zero) {
+                  var _horasVoadasDash = 0;
+                  (Agenda.getEventos() || []).forEach(function(ev) {
+                    if (ev.aeronave_tail !== a.tail) return;
+                    (ev.trechos || []).forEach(function(tr) {
+                      if (!tr.revisao || tr.revisao.status !== "concluido") return;
+                      if (!tr.data || tr.data < _alDash.horas.marco_zero) return;
+                      var durDash = tr.revisao.tempo_voo || tr.duracao;
+                      if (durDash && /^\d{1,2}:\d{2}/.test(durDash)) {
+                        var partsDash = durDash.split(":");
+                        _horasVoadasDash += (parseInt(partsDash[0], 10) || 0) + (parseInt(partsDash[1], 10) || 0) / 60;
+                      }
+                    });
+                  });
+                  var _restantesDash = _alDash.horas.limite - _horasVoadasDash;
+                  var _corH = _restantesDash <= 0 ? "#ff5a5f" : (_restantesDash <= 20 ? "#f2c94c" : "var(--muted)");
+                  var _icoH = _restantesDash <= 20 ? "\u26a0\ufe0f " : "";
+                  alertasInfo += '<div style="font-size:11px;color:' + _corH + ';margin-top:2px">' + _icoH + 'Horas: ' + Math.round(_restantesDash) + 'h restantes</div>';
+                }
+              }
+            } catch(e) {}
+            
+            return '<div class="inicio-aero-card">' + foto + '<div class="inicio-aero-card__body"><div><div class="inicio-aero-card__model">' + _e(a.model || "\u2014") + '</div><div class="inicio-aero-card__tail">' + _e(a.tail || "\u2014") + '</div></div><span class="inicio-aero-card__status" style="background:' + cor + '22;color:' + cor + '">' + _e(st) + '</span></div>' + (alertasInfo ? '<div style="padding:0 14px 10px">' + alertasInfo + '</div>' : '') + '</div>';
         }).join("");
     }
+
+    // Helpers locais (usados por renderVoos/renderRevisoes/renderAeronaves)
+    var _esc = function(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) {
+            return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
+        });
+    };
+    var _ymd = function(d) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, "0");
+        var dd = String(d.getDate()).padStart(2, "0");
+        return y + "-" + m + "-" + dd;
+    };
+    var _fmtDDMM = function(iso) {
+        if (!iso) return "";
+        var p = String(iso).split("-");
+        return p[2] + "/" + p[1];
+    };
 
     // Única definição de window.InicioPage
     window.InicioPage = {
@@ -23454,15 +23944,28 @@ document.addEventListener("DOMContentLoaded", function() {
             try { renderRevisoes(); } catch(e) { console.warn("[InicioPage.revisoes]", e); }
             try { renderVoos(); } catch(e) { console.warn("[InicioPage.voos]", e); }
             try { renderAeronaves(); } catch(e) { console.warn("[InicioPage.aero]", e); }
+            try { if (typeof Alertas !== "undefined" && Alertas.render) Alertas.render(); } catch(e) { console.warn("[InicioPage.alertas]", e); }
         }
     };
 
     console.log("[Home] InicioPage definido (versão única, sem duplicação).");
 
-    // Força renderização inicial
-    setTimeout(function() {
+    // Renderização inicial com retry (espera dados carregarem do Supabase)
+    function _tryRender(retries) {
+        if (!window.InicioPage) return;
+        var _aeros = (typeof Aircraft !== "undefined" && Aircraft.getAtivos) ? Aircraft.getAtivos() : (typeof Aircraft !== "undefined" && Aircraft.get ? Aircraft.get() : []);
+        if ((!_aeros || _aeros.length === 0) && retries > 0) {
+            setTimeout(function() { _tryRender(retries - 1); }, 500);
+            return;
+        }
+        window.InicioPage.render();
+    }
+    setTimeout(function() { _tryRender(20); }, 500);
+
+    // Re-render quando os dados da agenda/agenda carregarem
+    window.addEventListener("agendaCarregada", function() {
         if (window.InicioPage && window.InicioPage.render) window.InicioPage.render();
-    }, 1000);
+    });
 })();
 </script>
 <style>
