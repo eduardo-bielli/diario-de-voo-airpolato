@@ -14929,11 +14929,11 @@ const Manutencao = (() => {
       const t = String(tipo || "").toLowerCase();
       if (t.includes("preventiva") || t.includes("preventivo")) return "Preventiva";
       if (t.includes("corretiva") || t.includes("corretivo")) return "Corretiva";
-      if (t.includes("translado") || t.includes("teste")) return "Troca de Hr";
+      if (t.includes("translado") || t.includes("teste")) return "Voo de Manutenção";
       return "Outros";
     };
     if (criterio === "categoria") {
-      const ORDEM = ["Preventiva", "Corretiva", "Troca de Hr", "Outros"];
+      const ORDEM = ["Preventiva", "Corretiva", "Voo de Manutenção", "Outros"];
       const map = {};
       itens.forEach(it => {
         const c = categoriaDe(it.tipo);
@@ -14987,7 +14987,7 @@ const Manutencao = (() => {
       const t = String(tipo || "").toLowerCase();
       if (t.includes("preventiva") || t.includes("preventivo")) return "Preventiva";
       if (t.includes("corretiva") || t.includes("corretivo")) return "Corretiva";
-      if (t.includes("translado") || t.includes("teste")) return "Troca de Hr";
+      if (t.includes("translado") || t.includes("teste")) return "Voo de Manutenção";
       return "Outros";
     };
     /* Verifica se deve incluir pendentes */
@@ -15096,7 +15096,7 @@ const Manutencao = (() => {
         
         body.push([
           { content: H.fmtData(it.data), styles: st },
-          { content: isPendente ? "Pendente" : (String(it.tipo || "").toLowerCase() === "translado" ? "Manutenção" : categoriaDe(it.tipo)), styles: st },
+          { content: isPendente ? "Pendente" : (String(it.tipo || "").toLowerCase() === "translado" ? "Voo de Manutenção" : categoriaDe(it.tipo)), styles: st },
           { content: it.tipo ? it.tipo.charAt(0).toUpperCase() + it.tipo.slice(1) : "", styles: st },
           { content: it.descricao || it.obs || "", styles: st },
           { content: c > 0 ? H.fmtBR(c) : "", styles: st }
