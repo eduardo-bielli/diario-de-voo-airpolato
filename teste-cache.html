@@ -7276,15 +7276,10 @@ const Aircraft = (() => {
     let posCls = "";
     let posTitle = "";
     if (pos) {
-      /* Formata ICAO (Cidade - Nome do aeroporto) */
+      /* Formata usando a preferência do usuário (ICAO ou Nome) */
       const fmtLocal = (icao) => {
         if (!icao) return "";
-        const a = (typeof Aero !== "undefined" && Aero.byIcao) ? Aero.byIcao(icao) : null;
-        if (!a) return icao;
-        const partes = [];
-        if (a.cidade) partes.push(a.cidade);
-        if (a.nome) partes.push(a.nome);
-        return icao + (partes.length ? " (" + partes.join(" - ") + ")" : "");
+        return (typeof window._fmtLocalRota === "function") ? window._fmtLocalRota(icao) : icao;
       };
       /* Em voo: origem → destino com nomes */
       if (pos.status === "em-voo" && pos.local && pos.destino) {
@@ -11360,6 +11355,7 @@ const Agenda = (() => {
     posicaoAtualAeronave, buscarPilotosAuto,
     totalAbastecimentos, totalCustoOperacional, horasVoadasAeronave, horasVoadasAeronave,
     conflitoAeronave, calcularSpanEvento, intervaloVoo, trechoMinutosRange, trechoMinutosRangeLocal,
+    render,
     getEventos: () => events };
 })();
 
@@ -11575,8 +11571,10 @@ const Users = (() => {
           })()
         }).eq("id", editingId).select("*").single();
         if (error) { alert("Erro ao salvar: " + error.message); return; }
-        if (window.Auth && Auth.getUser() && Auth.getUser().id === editingId) {
-          const u = Auth.getUser();
+        /* (debug removido) */
+        const _auth = (typeof Auth !== "undefined" && Auth && Auth.getUser) ? Auth.getUser() : null;
+        if (_auth && String(_auth.id) === String(editingId)) {
+          const u = _auth;
           u.exibicaoAeroporto = p.exibicaoAeroporto;
           u.nome = p.nome;
           u.email = p.email;
@@ -11584,6 +11582,7 @@ const Users = (() => {
           u.tambem_e_piloto = p.tambem_e_piloto;
           u.extras = atualizado.extras;
           if (typeof Session !== "undefined" && Session.load) Session.load();
+          window.dispatchEvent(new CustomEvent("sessionUpdated", { detail: { origem: "submitForm" } }));
         }
         g("userModal").classList.remove("is-open");
         /* Sincroniza papéis (cria passageiro/solicitante) — usa dados do BANCO */
@@ -16113,6 +16112,62 @@ const Alertas = (() => {
 
   return { render, calcular, dispensar };
 })();
+
+/* Helper global: re-renderiza a página ativa (usado pelo event system) */
+window.renderCurrentPage = function() {
+  try {
+    var _pg = document.querySelector(".page:not([hidden])")?.id || "";
+    /* Re-renderiza em background */
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Sempre re-renderiza TODOS os componentes que dependem de sessão
+    // (Início mobile + Dashboard desktop + Agenda + Alertas)
+    // ═══════════════════════════════════════════════════════════════
+    
+    // 1. Início (mobile) — usa InicioPage.render()
+    if (typeof InicioPage !== "undefined" && InicioPage.render) {
+      try { InicioPage.render(); } catch(e) { console.warn("[renderCurrentPage] InicioPage erro:", e); }
+    }
+    
+    // 2. Agenda — renderiza missionList e calendário
+    if (typeof Agenda !== "undefined" && Agenda.render) {
+      try { Agenda.render(); } catch(e) { console.warn("[renderCurrentPage] Agenda erro:", e); }
+    }
+    
+    // 3. Alertas — renderiza o card "Atenção" do Dashboard Desktop
+    if (typeof Alertas !== "undefined" && Alertas.render) {
+      try { Alertas.render(); } catch(e) { console.warn("[renderCurrentPage] Alertas erro:", e); }
+    }
+    
+    // 4. Aircraft.render() — renderiza o #aircraftCards do Dashboard Desktop
+    // (usa try/catch porque o módulo pode não estar inicializado ainda)
+    if (typeof Aircraft !== "undefined" && Aircraft.render) {
+      try { Aircraft.render(); } catch(e) { /* silencioso */ }
+    }
+    
+    // 5. Se estiver no Dashboard Desktop, força re-render completo
+    if (_pg === "page-dashboard") {
+      try { if (typeof Dashboard !== "undefined" && Dashboard.render) { Dashboard.render(); } } catch(e) {}
+    }
+    
+    // 6. Páginas específicas
+    if (_pg === "page-flights" && typeof Executados !== "undefined" && Executados.render) {
+      try { Executados.render(); } catch(e) {}
+    }
+    if (_pg === "page-troca-horas" && typeof TrocaHoras !== "undefined" && TrocaHoras.render) {
+      try { TrocaHoras.render(); } catch(e) {}
+    }
+    
+    /* concluído */
+  } catch(e) {
+    console.warn("[renderCurrentPage] erro geral:", e);
+  }
+};
+
+/* Listener global: quando o usuário salva algo (sessão atualizada), re-renderiza */
+window.addEventListener("sessionUpdated", function(ev) {
+  setTimeout(function() { window.renderCurrentPage(); }, 50);
+});
 
 const Router = (() => {
   const PAGES = ["dashboard","inicio","config","agenda","piloto","ciclos","troca-horas","backup","users","passageiros","solicitantes","registros","airports","flights","map","maintenance","comprovantes"];
