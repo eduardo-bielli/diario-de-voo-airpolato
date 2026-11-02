@@ -25276,7 +25276,15 @@ document.addEventListener("DOMContentLoaded", function() {
     ];
     const customs = ext.custom_licencas || [];
     const hidden = ext.hidden_licencas || [];
-    const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key));
+    
+    // Mostra apenas as licenças que NÃO estão ocultas E que JÁ TÊM uma data de validade
+    const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key) && ext['validade_' + l.key]);
+
+    // Se a lista ficar vazia (ex: nenhum PDF importado ainda)
+    if (licencas.length === 0) {
+      box.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><span style="font-size:32px;display:block;margin-bottom:12px">📄</span><span class="hint">Nenhuma licença cadastrada.<br>Importe o PDF da ANAC para começar.</span></div>';
+      return;
+    }
     
     let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px">';
     licencas.forEach(l => {
