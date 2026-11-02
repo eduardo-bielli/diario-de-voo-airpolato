@@ -24824,47 +24824,54 @@ document.addEventListener("DOMContentLoaded", function() {
 
   async function extrairTextoPdf(file) {
     await carregarPdfJs();
+    if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
     let textoCompleto = '';
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
       textoCompleto += content.items.map(item => item.str).join(' ') + '\n';
     }
+    
     return textoCompleto;
   }
 
   function extrairDatas(texto) {
-    const res = { cma: null, ifr: null, mnte: null, mlte: null, inva: null, icao: null, simulador: null };
+    const res = { cma: null, cma_obs: null, ifr: null, mnte: null, mlte: null, inva: null, icao: null, simulador: null, icao_level: null };
     const t = texto.replace(/\s+/g, ' ').toUpperCase();
     
-    const fmtDate = (d) => d ? d.split('/').reverse().join('-') : null;
+    const buscarData = (regexStr) => {
+      const regex = new RegExp(regexStr + '.*?(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{4})', 'i');
+      const m = t.match(regex);
+      if (m) return m[3] + '-' + m[2] + '-' + m[1];
+      return null;
+    };
 
-    // Procura 'CMA' e pega a primeira data que vier depois (ignora espaços ou o sinal de >)
-    const mCma = t.match(/CMA.*?(\d{2}\/\d{2}\/\d{4})/i);
-    if (mCma) res.cma = fmtDate(mCma[1]);
+    res.cma = buscarData('CMA');
+    
+    const mCmaObs = t.match(/OBSERVA.*?CMA[>\s]*(.*?)(OBSERVA|CLASSE|ORGAO|HABILIT)/i);
+    if (mCmaObs && mCmaObs[1].trim().length > 2) res.cma_obs = mCmaObs[1].trim();
 
-    const mIfr = t.match(/IFR.*?(\d{2}\/\d{2}\/\d{4})/i);
-    if (mIfr) res.ifr = fmtDate(mIfr[1]);
+    res.ifr = buscarData('IFR');
+    res.mlte = buscarData('MLTE');
+    
+    // A TRAVA DEFINITIVA: O robô aceita MNTE, MATE, M1TE, mas o que vier depois do M NÃO PODE SER L.
+    // Ou seja, se for MLTE, ele ignora e não preenche.
+    res.mnte = buscarData('M\\s*(?!L)[A-Z0-9]\\s*T\\s*[EF]');
+    
+    res.inva = buscarData('INVA');
 
-    const mMnte = t.match(/MNTE\s*(\d{2}\/\d{2}\/\d{4})/i);
-    if (mMnte) res.mnte = fmtDate(mMnte[1]);
-
-    const mMlte = t.match(/MLTE\s*(\d{2}\/\d{2}\/\d{4})/i);
-    if (mMlte) res.mlte = fmtDate(mMlte[1]);
-
-    const mInva = t.match(/INVA\s*(\d{2}\/\d{2}\/\d{4})/i);
-    if (mInva) res.inva = fmtDate(mInva[1]);
-
-    // ICAO puxa do texto "ENGLISH LEVEL X UNTIL MM/YYYY"
-    const mIcao = t.match(/ENGLISH\s+LEVEL\s*(\d).*?UNTIL\s*(\d{2})\/(\d{4})/i);
+    // ICAO
+    const mIcao = t.match(/L\\s*E\\s*V\\s*E\\s*L.*?(\\d).*?(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{4})/i);
     if (mIcao) {
       const level = parseInt(mIcao[1]);
       res.icao_level = level;
-      if (level >= 4) {
-        res.icao = mIcao[3] + '-' + mIcao[2] + '-01'; // Converte para YYYY-MM-DD
-      }
+      if (level >= 4) res.icao = mIcao[3] + '-' + mIcao[2] + '-01'; 
     }
 
     return res;
@@ -25339,6 +25346,8 @@ document.addEventListener("DOMContentLoaded", function() {
         else { status = 'Válido'; cor = 'var(--green)'; }
       }
       
+      const obs = (l.key === 'cma' && ext['cma_obs']) ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.2">Obs: ${esc(ext['cma_obs'])}</div>` : '';
+
       html += `<div style="background:var(--card);border:1px solid var(--line);border-left:3px solid ${cor};border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <span style="font-size:10px;font-weight:800;color:${cor};text-transform:uppercase">${l.nome}</span>
@@ -25350,6 +25359,7 @@ document.addEventListener("DOMContentLoaded", function() {
           </div>
         </div>
         <div style="font-size:13px;font-weight:700">${l.label}</div>
+        ${obs}
         <input type="date" value="${dataValidade}" onchange="window.__pilSalvarData('${l.key}', this.value)" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:6px;border-radius:6px;font-size:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
           <span style="font-size:11px;color:${cor};font-weight:700">${status}</span>
@@ -25617,6 +25627,17 @@ document.addEventListener("DOMContentLoaded", function() {
     resultadoBox.innerHTML = '<p class="hint">Lendo PDF...</p>';
     try {
       const texto = await extrairTextoPdf(file);
+      // Se o texto for muito curto, o PDF é uma imagem
+      if (!texto || texto.trim().length < 50) {
+        document.getElementById('pilPdfResultado').innerHTML = `
+          <div style="background:rgba(255,90,95,.1);border-left:3px solid var(--red);padding:12px;border-radius:6px;margin-top:12px">
+            <p style="margin:0;font-size:12px;color:var(--red);font-weight:700">⚠️ Este PDF foi salvo como imagem.</p>
+            <p style="margin:4px 0 0;font-size:11px;color:var(--text)">Não foi possível ler o texto.<br>Por favor, baixe novamente pelo Google Chrome (<b>Ctrl+P → Salvar como PDF</b>) ou preencha as datas manualmente clicando em <b>"+ Adicionar Manual"</b>.</p>
+          </div>
+        `;
+        return;
+      }
+
       const datas = extrairDatas(texto);
       console.log("=== TEXTO EXTRAÍDO DO PDF ===");
       console.log(texto);
@@ -25628,17 +25649,26 @@ document.addEventListener("DOMContentLoaded", function() {
       const labels = { cma: 'CMA', ifr: 'IFR', mnte: 'MNTE', mlte: 'MLTE', inva: 'INVA', icao: 'ICAO', simulador: 'Simulador' };
       let achou = false;
       for (const [k, v] of Object.entries(datas)) {
-        if (k.endsWith('_level')) continue; // Ignora o level no loop de datas
+        if (k.endsWith('_level') || k === 'cma_obs') continue; // Ignora o level e a obs no loop
         if (v) {
           achou = true;
           let extra = '';
           if (k === 'icao' && datas.icao_level) extra = ` <b style="color:var(--green)">(LEVEL ${datas.icao_level})</b>`;
-          html += `<p style="margin:4px 0;font-size:12px">✅ ${labels[k]}: <b>${v.split('-').reverse().join('/')}</b>${extra}</p>`;
+          
+          let obsText = '';
+          if (k === 'cma' && datas.cma_obs) {
+            obsText = ` <span style="color:var(--muted);font-size:11px">(Obs: ${esc(datas.cma_obs)})</span>`;
+          }
+          
+          html += `<p style="margin:4px 0;font-size:12px">✅ ${labels[k]}: <b>${v.split('-').reverse().join('/')}</b>${extra}${obsText}</p>`;
         }
       }
-      if (datas.icao_level !== undefined && datas.icao_level < 4) {
+      if (datas.icao_level !== undefined && datas.icao_level !== null && datas.icao_level < 4) {
         achou = true;
         html += `<p style="margin:4px 0;font-size:12px;color:var(--red);font-weight:700">❌ ICAO: Nível ${datas.icao_level} (Abaixo de 4) — Não será monitorado.</p>`;
+      }
+      if (!datas.mnte) {
+        html += `<p style="margin:6px 0 0;font-size:11px;color:var(--yellow);font-weight:700">⚠️ O MNTE não foi encontrado no PDF (a IA pode ter pulado a linha). Adicione manualmente se necessário.</p>`;
       }
       if (!achou) html += '<p class="hint">Nenhuma data reconhecida. Verifique o PDF ou adicione manualmente.</p>';
       html += '</div>';
@@ -25680,6 +25710,11 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     }
     
+    // Salva a observação do CMA
+    if (dadosExtraidos.cma_obs) {
+      ext['cma_obs'] = dadosExtraidos.cma_obs;
+    }
+
     // Regra especial para o ICAO
     if (dadosExtraidos.icao_level !== undefined) {
       ext['icao_level'] = dadosExtraidos.icao_level;
