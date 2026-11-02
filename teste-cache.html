@@ -22,6 +22,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{--bg:#06101b;--panel:#091b2c;--sidebar-bg:#030c15;--line:#173651;--text:#f1f7ff;--muted:#8fa7bc;--accent:#1687ff;--icon-color:#38a8ff;--nav-title-color:#3e83bd;--nav-active-bg:#123252;--green:#30cf8a;--yellow:#f2c94c;--red:#ff5a5f;--card-exec-bg:#0a2219;--card-maint-bg:#2a1518;--card-extra-bg:#2a1f10;--shadow:0 18px 50px rgba(0,0,0,.28);--radius:12px;--radius-lg:16px;--gap:14px}
 *,*::before,*::after{box-sizing:border-box}
@@ -3673,12 +3674,109 @@ body.is-booting .app {
       <div id="agendaPilotos" hidden>
         <!-- Abas internas -->
         <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="btn btn--secondary" id="pilTabVisao" style="padding:8px 16px;font-size:13px">📊 Visão Geral</button>
           <button class="btn btn--secondary" id="pilTabEscala" style="padding:8px 16px;font-size:13px">👥 Escala de pilotos</button>
           <button class="btn btn--secondary" id="pilTabDisp" style="padding:8px 16px;font-size:13px">📅 Minha disponibilidade</button>
+          <button class="btn btn--secondary" id="pilTabLicencas" style="padding:8px 16px;font-size:13px">📋 Minhas Habilitações</button>
+        </div>
+
+        <!-- Aba: Visão Geral (Mini-Dashboard) -->
+        <div id="pilViewVisaoGeral">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px">
+            
+            <!-- Card 1: Compliance -->
+            <div class="panel">
+              <header class="panel__head"><h3>🛡️ Status de Licenças</h3></header>
+              <div style="padding:16px" id="vgCompliance"></div>
+            </div>
+
+            <!-- Card 2: Próximo Voo -->
+            <div class="panel">
+              <header class="panel__head"><h3>✈️ Próximo Voo</h3><a href="#/agenda" class="btn btn--secondary" style="font-size:11px;padding:4px 8px;text-decoration:none">Ver Agenda</a></header>
+              <div style="padding:16px" id="vgProximoVoo"></div>
+            </div>
+
+            <!-- Card 3: Disponibilidade -->
+            <div class="panel">
+              <header class="panel__head">
+                <div style="display:flex;align-items:center;gap:8px;position:relative">
+                  <h3>📅 Próximos Dias</h3>
+                  
+                  <!-- Botão de Filtro -->
+                  <button id="vgFiltroBtn" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0;margin-left:4px;" title="Filtrar Eventos">⚙️</button>
+                  
+                  <!-- Menu Dropdown Flutuante -->
+                  <div id="vgFiltroMenu" style="display:none; position:absolute; top:24px; left:120px; background:var(--card); border:1px solid var(--line); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:100; min-width:130px; overflow:hidden;">
+                    <div id="vgFiltroTodos" style="padding:8px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid var(--line); hover:background:var(--bg);">Todos os Pilotos</div>
+                    <div id="vgFiltroMeus" style="padding:8px 12px; font-size:12px; cursor:pointer; hover:background:var(--bg);">Meus Dias</div>
+                  </div>
+                </div>
+                
+                <a href="#/piloto" onclick="setTimeout(()=>document.getElementById('pilTabDisp').click(), 100)" class="btn btn--secondary" style="font-size:11px;padding:4px 8px;text-decoration:none">Calendário</a>
+              </header>
+              <div style="padding:16px" id="vgDisponibilidade"></div>
+            </div>
+          </div>
+
+          <!-- Card 4: Documentos (Ocupa a linha inteira) -->
+          <div class="panel">
+            <header class="panel__head">
+              <h3>📁 Meus Documentos e Pastas</h3>
+              <button class="btn btn--secondary" style="font-size:12px" id="vgBtnNovaPasta">+ Nova Pasta</button>
+            </header>
+            <div style="padding:16px; display:flex; flex-direction:column; gap:16px" id="vgDocumentos">
+              <p class="hint" style="text-align:center;padding:20px">Carregando pastas...</p>
+              <!-- Exemplo de Pasta de Viagem -->
+              <div style="border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--bg)">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                  <div>
+                    <h4 style="margin:0 0 4px;font-size:14px">Simulador EUA 2026</h4>
+                    <span style="font-size:11px;background:var(--nav-active-bg);color:var(--accent);padding:2px 6px;border-radius:4px">Compartilhado com Piloto X</span>
+                  </div>
+                  <div style="font-size:11px;color:var(--muted)">Criado em 02/11/2026</div>
+                </div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap">
+                  <!-- Arquivos -->
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer" title="Clique para visualizar">
+                    <span style="font-size:20px">📄</span>
+                    <span style="font-size:12px;font-weight:600">Passagem.pdf</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer" title="Clique para visualizar">
+                    <span style="font-size:20px">📄</span>
+                    <span style="font-size:12px;font-weight:600">Hotel.pdf</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer" title="Clique para visualizar">
+                    <span style="font-size:20px">📄</span>
+                    <span style="font-size:12px;font-weight:600">Aluguel_Carro.pdf</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Exemplo de Pasta Compartilhada Geral -->
+              <div style="border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--bg)">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                  <div>
+                    <h4 style="margin:0 0 4px;font-size:14px">Manuais da Frota</h4>
+                    <span style="font-size:11px;background:var(--nav-active-bg);color:var(--green);padding:2px 6px;border-radius:4px">Todos os Pilotos</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap">
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer">
+                    <span style="font-size:20px">📘</span>
+                    <span style="font-size:12px;font-weight:600">Manual Pilatus PC-12.pdf</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer">
+                    <span style="font-size:20px">📘</span>
+                    <span style="font-size:12px;font-weight:600">Manual King Air 360.pdf</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Aba: Escala -->
-        <div id="pilViewEscala">
+        <div id="pilViewEscala" hidden>
           <div class="panel">
             <header class="panel__head">
               <h3>Escala de pilotos <span id="pilCount" style="color:var(--muted);font-weight:500;font-size:12px"></span></h3>
@@ -3694,11 +3792,27 @@ body.is-booting .app {
             <header class="panel__head">
               <h3 id="dispTitle">Minha disponibilidade</h3>
               <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-                <div id="dispLegend" style="font-size:11px;color:var(--muted)">🟡 Folga · 🔵 Treino</div>
+                <div id="dispLegend" style="font-size:11px;color:var(--muted)">🟡 Folga · 🔵 Treinamento · 🟣 Revalidação</div>
               </div>
             </header>
             <div style="padding:14px 16px">
               <div id="dispCalendario"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aba: Habilitações e Licenças -->
+        <div id="pilViewLicencas" hidden>
+          <div class="panel">
+            <header class="panel__head">
+              <h3>📋 Minhas Habilitações e Licenças</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn" id="pilImportarPdfBtn">📄 Importar PDF ANAC</button>
+                <button class="btn btn--secondary" id="pilAddManualBtn" style="margin-left:8px">+ Adicionar Manual</button>
+              </div>
+            </header>
+            <div style="padding:16px">
+              <div id="pilLicencasResumo"></div>
             </div>
           </div>
         </div>
@@ -15567,6 +15681,8 @@ const Disponibilidade = (() => {
     } catch(e) { dados = { folgas: {}, locks: {} }; }
     if (!dados.folgas) dados.folgas = {};
     if (!dados.locks) dados.locks = {};
+    if (!dados.treinamentos) dados.treinamentos = {};
+    if (!dados.revalidacao) dados.revalidacao = {};
   }
 
   async function salvarDados() {
@@ -15738,6 +15854,14 @@ const Disponibilidade = (() => {
         return u ? u.nome.split(" ")[0] : "?";
       });
 
+      const revalNesteDia = dados.revalidacao ? Object.keys(dados.revalidacao).filter(k => k.endsWith("::" + data)) : [];
+      const nomesReval = revalNesteDia.map(k => {
+        const uid = k.split("::")[0];
+        const u = todosUsers.find(x => x.id === uid);
+        return u ? u.nome.split(" ")[0] : "?";
+      });
+
+
       /* Locks neste dia — todos veem todos */
       const locksNesteDia = Object.keys(dados.locks).filter(k => k.endsWith("::" + data));
       const infoLocks = locksNesteDia.map(k => {
@@ -15755,12 +15879,14 @@ const Disponibilidade = (() => {
       if (c.other) cls.push("is-other");
       if (data === hoje) cls.push("is-today");
       if (temFolga) cls.push("is-folga");
-      if (temTreino) cls.push("is-treinamento");
+      if (nomesTreino && nomesTreino.length > 0) cls.push("is-treinamento");
+      if (nomesReval && nomesReval.length > 0) cls.push("is-revalidacao");
 
       html += '<div class="' + cls.join(" ") + '" data-disp-date="' + data + '">'
         + '<span class="calendar__num">' + c.d.getDate() + '</span>'
         + (temFolga ? '<span class="calendar__tag">🟡 ' + nomesFolga.join(", ") + '</span>' : '')
         + (nomesTreino && nomesTreino.length ? '<span class="calendar__tag calendar__tag--treinamento">🔵 ' + nomesTreino.join(", ") + '</span>' : '')
+        + (nomesReval && nomesReval.length ? '<span class="calendar__tag" style="background:#a855f7;color:#fff;">🟣 ' + nomesReval.join(", ") + '</span>' : '')
         + '</div>';
     });
 
@@ -15787,7 +15913,8 @@ const Disponibilidade = (() => {
     const temAlgo = (d) => {
       const temFolga = dados.folgas && Object.keys(dados.folgas).some(k => k.endsWith("::" + d));
       const temTrein = dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + d));
-      return temFolga || temTrein;
+      const temReval = dados.revalidacao && Object.keys(dados.revalidacao).some(k => k.endsWith("::" + d));
+      return temFolga || temTrein || temReval;
     };
     const addDia = (iso, n) => {
       const [y, m, dd] = iso.split("-").map(Number);
@@ -15861,15 +15988,19 @@ const Disponibilidade = (() => {
 
     const temFolga = !!dados.folgas[me.id + "::" + data];
     const temTrein = dados.treinamentos && !!dados.treinamentos[me.id + "::" + data];
-    g("folgaTipo").checked = temFolga || !temTrein;
+    const temReval = dados.revalidacao && !!dados.revalidacao[me.id + "::" + data];
+    
+    g("folgaTipo").checked = temFolga;
     g("treinamentoTipo").checked = temTrein;
+    if (g("revalidacaoTipo")) g("revalidacaoTipo").checked = temReval;
 
     let temAlgo = false;
     if (ehAdmin) {
       temAlgo = Object.keys(dados.folgas).some(k => k.endsWith("::" + data))
-        || (dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + data)));
+        || (dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + data)))
+        || (dados.revalidacao && Object.keys(dados.revalidacao).some(k => k.endsWith("::" + data)));
     } else {
-      temAlgo = temFolga || temTrein;
+      temAlgo = temFolga || temTrein || temReval;
     }
     g("folgaDeleteBtn").hidden = !temAlgo;
 
@@ -15908,11 +16039,12 @@ const Disponibilidade = (() => {
       const fim = g("folgaDataFim").value;
       const ehFolga = g("folgaTipo").checked;
       const ehTrein = g("treinamentoTipo").checked;
+      const ehReval = g("revalidacaoTipo")?.checked;
       const obs = g("folgaObs").value.trim();
 
       if (!ini || !fim) { alert("Preencha as datas."); return; }
       if (ini > fim) { alert("Data inicio depois da data fim."); return; }
-      if (!ehFolga && !ehTrein) { alert("Marque folga ou treinamento."); return; }
+      if (!ehFolga && !ehTrein && !ehReval) { alert("Marque pelo menos uma opção (Folga, Treinamento ou Revalidação)."); return; }
 
       const dias = Math.floor((new Date(fim + "T00:00:00") - new Date(ini + "T00:00:00")) / 86400000);
       if (dias > 365) { alert("Periodo maximo: 1 ano."); return; }
@@ -15926,6 +16058,7 @@ const Disponibilidade = (() => {
       }
 
       if (!dados.treinamentos) dados.treinamentos = {};
+      if (!dados.revalidacao) dados.revalidacao = {};
 
       const temAlgoNoPeriodo = (uid) => {
         const d1 = new Date(ini + "T00:00:00");
@@ -15949,6 +16082,7 @@ const Disponibilidade = (() => {
             const data = ymd(d);
             delete dados.folgas[uid + "::" + data];
             delete dados.treinamentos[uid + "::" + data];
+            delete dados.revalidacao[uid + "::" + data];
           }
         }
         /* 2) Grava o novo range */
@@ -15958,8 +16092,10 @@ const Disponibilidade = (() => {
           const data = ymd(d);
           delete dados.folgas[uid + "::" + data];
           delete dados.treinamentos[uid + "::" + data];
+          delete dados.revalidacao[uid + "::" + data];
           if (ehFolga) dados.folgas[uid + "::" + data] = { obs };
-          else dados.treinamentos[uid + "::" + data] = { obs };
+          if (ehTrein) dados.treinamentos[uid + "::" + data] = { obs };
+          if (ehReval) dados.revalidacao[uid + "::" + data] = { obs };
         }
       }
 
@@ -15991,6 +16127,7 @@ const Disponibilidade = (() => {
         const data = ymd(d);
         Object.keys(dados.folgas).forEach(k => { if (k.endsWith("::" + data)) delete dados.folgas[k]; });
         if (dados.treinamentos) Object.keys(dados.treinamentos).forEach(k => { if (k.endsWith("::" + data)) delete dados.treinamentos[k]; });
+        if (dados.revalidacao) Object.keys(dados.revalidacao).forEach(k => { if (k.endsWith("::" + data)) delete dados.revalidacao[k]; });
       }
     } else {
       await removerFolga(me.id, ini, fim);
@@ -16000,6 +16137,7 @@ const Disponibilidade = (() => {
         for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
           const data = ymd(d);
           delete dados.treinamentos[me.id + "::" + data];
+          if (dados.revalidacao) delete dados.revalidacao[me.id + "::" + data];
         }
       }
     }
@@ -16093,6 +16231,58 @@ const Alertas = (() => {
     /* 0. Alertas de aeronaves (CVA, Horas, Custom) */
     const _aerosDash = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
     const _hojeDate = new Date(hojeStr + "T00:00:00");
+
+    /* 1.5 ALERTAS DE LICENÇAS (PILOTOS) */
+    const _sessaoDash = (typeof Session !== "undefined" && Session.get) ? Session.get() : null;
+    const _isAdminDash = _sessaoDash && _sessaoDash.perfil === "admin";
+    
+    const _usersDash = JSON.parse(localStorage.getItem("dv.users.v1") || "[]");
+    _usersDash.forEach(function(u) {
+      if (u.ativo === false) return;
+      if (u.perfil !== "piloto" && u.tambem_e_piloto !== true) return;
+      
+      /* Privacidade: Admin vê todos. Piloto vê só os seus. */
+      if (!_isAdminDash && (!_sessaoDash || String(_sessaoDash.id) !== String(u.id))) return;
+      
+      const ext = u.extras || {};
+      const hidden = ext.hidden_licencas || [];
+      const customs = ext.custom_licencas || [];
+      
+      const defaults = [
+        { key: 'cma', nome: 'CMA' },
+        { key: 'ifr', nome: 'IFR' },
+        { key: 'mnte', nome: 'MNTE' },
+        { key: 'mlte', nome: 'MLTE' },
+        { key: 'inva', nome: 'INVA' },
+        { key: 'icao', nome: 'ICAO' },
+        { key: 'simulador', nome: 'Simulador' }
+      ];
+      
+      const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key));
+      
+      licencas.forEach(function(l) {
+        if (ext['notif_' + l.key] === false) return; // Alerta desativado no card
+        const dataStr = ext['validade_' + l.key];
+        if (!dataStr) return;
+        
+        const dataLic = new Date(dataStr + "T00:00:00");
+        if (isNaN(dataLic.getTime())) return;
+        
+        const dias = Math.floor((dataLic - _hojeDate) / 86400000);
+        const aviso = ext['aviso_' + l.key] || 30;
+        
+        if (dias <= aviso) {
+          alertas.push({
+            tipo: "licenca",
+            aeronave: l.nome,
+            severidade: dias <= 7 ? "danger" : "warning",
+            titulo: "👨‍✈️ " + u.nome + " — " + l.nome + " " + (dias < 0 ? "vencido" : "vence em " + dias + " dia" + (dias !== 1 ? "s" : "")),
+            sub: "Validade: " + fmtData(dataStr)
+          });
+        }
+      });
+    });
+
     _aerosDash.forEach(function(aero) {
       if (aero.ativo === false) return;
       const _custos = aero.custos_por_ano || {};
@@ -22077,12 +22267,16 @@ Router.init();
 <div class="revisao-sec">
   <h4>O que lançar?</h4>
   <label class="perm-item" style="width:100%;padding:12px;margin-bottom:10px">
-    <input type="radio" name="folgaTipoRadio" id="folgaTipo" value="folga" checked>
+    <input type="checkbox" id="folgaTipo" value="folga" style="width:auto;margin-right:8px">
     <span>🟡 Folga (piloto indisponível)</span>
   </label>
   <label class="perm-item" style="width:100%;padding:12px;margin-bottom:10px">
-    <input type="radio" name="folgaTipoRadio" id="treinamentoTipo" value="treinamento">
+    <input type="checkbox" id="treinamentoTipo" value="treinamento" style="width:auto;margin-right:8px">
     <span>🔵 Treinamento (piloto em treinamento)</span>
+  </label>
+  <label class="perm-item" style="width:100%;padding:12px;margin-bottom:10px">
+    <input type="checkbox" id="revalidacaoTipo" value="revalidacao" style="width:auto;margin-right:8px">
+    <span>🟣 Revalidação (piloto em revalidação)</span>
   </label>
 </div>
 
@@ -24501,6 +24695,1075 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 </style>
+
+<!-- Modal: Adicionar Licença Manual -->
+<div class="modal" id="pilAddModal"><div class="dialog">
+  <h2>+ Adicionar Habilitação</h2>
+  <p class="hint" style="margin-top:-14px;margin-bottom:18px">Adicione cursos ou licenças que não aparecem no extrato da ANAC (ex: RVSM).</p>
+  <div class="formgrid">
+    <label class="field"><span>Nome (ex: RVSM)</span><input id="pilAddName" placeholder="Nome da habilitação" style="text-transform:uppercase"></label>
+    <label class="field"><span>Data de Validade (opcional)</span><input type="date" id="pilAddDate"></label>
+  </div>
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilAddModal">Cancelar</button>
+    <button type="button" class="btn" id="pilAddSalvar">Adicionar</button>
+  </div>
+</div></div>
+
+<!-- Modal: Criar Nova Pasta de Documentos -->
+<div class="modal" id="pilPastaModal"><div class="dialog">
+  <h2>📁 Nova Pasta de Documentos</h2>
+  <p class="hint" style="margin-top:-14px;margin-bottom:18px">Crie um card para organizar os arquivos (ex: Viagem EUA, Meus Documentos).</p>
+  
+  <label class="field"><span>Nome da Pasta *</span><input id="pilPastaNome" placeholder="Ex: Simulador EUA 2026"></label>
+  
+  <label class="field" style="margin-top:12px"><span>Privacidade</span>
+    <select id="pilPastaPrivacidade" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;">
+      <option value="privado">🔒 Privado (Só eu e Admins)</option>
+      <option value="todos">🌐 Compartilhado (Todos os Pilotos)</option>
+      <option value="custom">👥 Compartilhar com Pilotos Específicos</option>
+    </select>
+  </label>
+
+  <div id="pilPastaCustomWrap" style="display:none; margin-top:12px; max-height:150px; overflow-y:auto; padding:10px; background:var(--bg); border-radius:8px;">
+    <p style="margin:0 0 8px; font-size:11px; font-weight:700; color:var(--muted)">Selecione os pilotos:</p>
+    <div id="pilPastaPilotosLista" style="display:flex; flex-direction:column; gap:6px;"></div>
+  </div>
+
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilPastaModal">Cancelar</button>
+    <button type="button" class="btn" id="pilPastaSalvar">Criar Pasta</button>
+  </div>
+</div></div>
+
+<!-- Modal: Visualizador de Documentos -->
+<div class="modal" id="pilPreviewModal"><div class="dialog dialog--wide" style="max-width:900px;width:95%">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h2 id="pilPreviewTitle" style="margin:0;font-size:16px">Documento</h2>
+    <div style="display:flex;gap:8px">
+      <a id="pilPreviewDownload" href="#" download target="_blank" class="btn btn--secondary" style="text-decoration:none">⬇️ Baixar</a>
+      <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilPreviewModal">Fechar</button>
+    </div>
+  </div>
+  <div id="pilPreviewContent" style="width:100%;height:75vh;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--line)">
+    <!-- Iframe ou Imagem injetados aqui -->
+  </div>
+</div></div>
+
+<!-- Modal: Upload de Arquivo com Nome Customizado -->
+<div class="modal" id="pilUploadModal"><div class="dialog">
+  <h2>📎 Anexar Arquivo</h2>
+  <p class="hint" style="margin-top:-14px;margin-bottom:18px">Escolha o arquivo e dê um nome curto para facilitar a visualização.</p>
+  
+  <label class="field"><span>Selecionar Arquivo (PDF ou Imagem) *</span>
+    <input type="file" id="pilUploadFile" accept=".pdf, image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);">
+  </label>
+  
+  <label class="field" style="margin-top:12px"><span>Nome no Card (ex: Hotel, Passagem, RG) *</span>
+    <input id="pilUploadNome" placeholder="Digite um nome curto">
+  </label>
+
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilUploadModal">Cancelar</button>
+    <button type="button" class="btn" id="pilUploadSalvar">Enviar Arquivo</button>
+  </div>
+</div></div>
+
+<!-- Modal: Importar PDF de Licenças -->
+<div class="modal" id="pilPdfModal"><div class="dialog">
+  <h2>📄 Importar Extrato ANAC</h2>
+  
+  <div style="margin-top:-14px;margin-bottom:18px;font-size:13px;line-height:1.6;color:var(--muted)">
+    1. Acesse o site da <a href="https://consultadelicencas.anac.gov.br/consultadelicencas/" target="_blank" style="color:var(--accent);font-weight:800;text-decoration:underline;">ANAC</a><br>
+    2. Clique em <b>Impressão do extrato de pesquisa de habilitações</b><br>
+    3. Baixe o arquivo em PDF e anexe abaixo.
+  </div>
+
+  <div style="margin-bottom:18px">
+    <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Arquivo PDF</div>
+    <!-- Esconde o input feio e cria um botão de Procurar -->
+    <input type="file" id="pilPdfFile" accept=".pdf" style="display:none;">
+    <label for="pilPdfFile" class="btn btn--secondary" style="cursor:pointer; padding:10px 16px; font-size:12px; display:inline-flex; align-items:center; gap:8px;">
+      📁 Procurar Arquivo
+    </label>
+    <span id="pilPdfFileName" style="font-size:12px; color:var(--text); margin-left:12px; font-weight:600;">Nenhum arquivo selecionado</span>
+  </div>
+
+  <div id="pilPdfResultado" style="margin-top:12px"></div>
+  
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilPdfModal">Cancelar</button>
+    <button type="button" class="btn" id="pilPdfSalvar" disabled>Salvar Datas</button>
+  </div>
+</div></div>
+
+<script>
+// ============================================================
+// MÓDULO: HABILITAÇÕES E LICENÇAS DO PILOTO
+// ============================================================
+(function() {
+  const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+  let dadosExtraidos = null;
+
+  async function carregarPdfJs() {
+    if (window.pdfjsLib) return;
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve();
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  async function extrairTextoPdf(file) {
+    await carregarPdfJs();
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let textoCompleto = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      textoCompleto += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    return textoCompleto;
+  }
+
+  function extrairDatas(texto) {
+    const res = { cma: null, ifr: null, mnte: null, mlte: null, inva: null, icao: null, simulador: null };
+    const t = texto.replace(/\s+/g, ' ').toUpperCase();
+    
+    const fmtDate = (d) => d ? d.split('/').reverse().join('-') : null;
+
+    // Procura 'CMA' e pega a primeira data que vier depois (ignora espaços ou o sinal de >)
+    const mCma = t.match(/CMA.*?(\d{2}\/\d{2}\/\d{4})/i);
+    if (mCma) res.cma = fmtDate(mCma[1]);
+
+    const mIfr = t.match(/IFR.*?(\d{2}\/\d{2}\/\d{4})/i);
+    if (mIfr) res.ifr = fmtDate(mIfr[1]);
+
+    const mMnte = t.match(/MNTE\s*(\d{2}\/\d{2}\/\d{4})/i);
+    if (mMnte) res.mnte = fmtDate(mMnte[1]);
+
+    const mMlte = t.match(/MLTE\s*(\d{2}\/\d{2}\/\d{4})/i);
+    if (mMlte) res.mlte = fmtDate(mMlte[1]);
+
+    const mInva = t.match(/INVA\s*(\d{2}\/\d{2}\/\d{4})/i);
+    if (mInva) res.inva = fmtDate(mInva[1]);
+
+    // ICAO puxa do texto "ENGLISH LEVEL X UNTIL MM/YYYY"
+    const mIcao = t.match(/ENGLISH\s+LEVEL\s*(\d).*?UNTIL\s*(\d{2})\/(\d{4})/i);
+    if (mIcao) {
+      const level = parseInt(mIcao[1]);
+      res.icao_level = level;
+      if (level >= 4) {
+        res.icao = mIcao[3] + '-' + mIcao[2] + '-01'; // Converte para YYYY-MM-DD
+      }
+    }
+
+    return res;
+  }
+
+  function renderVisaoGeral() {
+    // Usa a mesma lógica do calendário para lidar com admin/piloto
+    const sessao = (typeof Disponibilidade !== 'undefined' && Disponibilidade.usuarioAtual) 
+      ? Disponibilidade.usuarioAtual() 
+      : ((typeof Session !== 'undefined' && Session.get) ? Session.get() : null);
+    if (!sessao) return;
+
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const user = users.find(u => u.id === sessao.id) || sessao;
+    const ext = user.extras || {};
+    const hojeStr = (() => { const n = new Date(); return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0"); })();
+
+    // ----- 1. COMPLIANCE -----
+    const boxComp = document.getElementById('vgCompliance');
+    if (boxComp) {
+      const defaults = [{ key: 'cma' }, { key: 'ifr' }, { key: 'mnte' }, { key: 'mlte' }, { key: 'inva' }, { key: 'icao' }, { key: 'simulador' }];
+      const customs = ext.custom_licencas || [];
+      const hidden = ext.hidden_licencas || [];
+      const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key));
+
+      let valid = 0, warning = 0, expired = 0;
+      licencas.forEach(l => {
+        if (ext['notif_' + l.key] === false) return;
+        const dataStr = ext['validade_' + l.key];
+        if (!dataStr) return;
+        const dias = Math.floor((new Date(dataStr + "T00:00:00") - new Date()) / 86400000);
+        const aviso = ext['aviso_' + l.key] || 30;
+        if (dias < 0) expired++;
+        else if (dias <= aviso) warning++;
+        else valid++;
+      });
+
+      const total = valid + warning + expired;
+      if (total === 0) {
+        boxComp.innerHTML = '<p class="hint" style="margin:0">Nenhuma licença monitorada.</p>';
+      } else {
+        const pV = (valid / total) * 100, pW = (warning / total) * 100, pE = (expired / total) * 100;
+        boxComp.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:12px">
+            <span style="color:var(--green);font-weight:700;opacity:${valid === 0 ? '0.3' : '1'}">✅ ${valid} Válidas</span>
+            <span style="color:var(--yellow);font-weight:700;opacity:${warning === 0 ? '0.3' : '1'}">⚠️ ${warning} Vencendo</span>
+            <span style="color:var(--red);font-weight:700;opacity:${expired === 0 ? '0.3' : '1'}">❌ ${expired} Vencidas</span>
+          </div>
+          <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;display:flex">
+            <div style="width:${pV}%;background:var(--green)"></div>
+            <div style="width:${pW}%;background:var(--yellow)"></div>
+            <div style="width:${pE}%;background:var(--red)"></div>
+          </div>
+          ${expired > 0 ? '<p style="color:var(--red);font-size:11px;margin:12px 0 0;text-align:center;font-weight:700">Atenção: Você possui licenças vencidas!</p>' : ''}
+        `;
+      }
+    }
+
+    // ----- 2. PRÓXIMO VOO -----
+    const boxVoo = document.getElementById('vgProximoVoo');
+    if (boxVoo) {
+      const eventos = (typeof Agenda !== 'undefined' && Agenda.getEventos) ? Agenda.getEventos() : [];
+      const minhaAgenda = eventos.filter(ev => String(ev.piloto_p1) === String(sessao.id) || String(ev.piloto_p2) === String(sessao.id));
+      const futuros = minhaAgenda.filter(ev => {
+        const trs = ev.trechos || [];
+        if (!trs.length) return false;
+        return trs[trs.length - 1].data >= hojeStr;
+      }).sort((a, b) => (a.trechos[0].data + a.trechos[0].hora).localeCompare(b.trechos[0].data + b.trechos[0].hora));
+
+      if (futuros.length > 0) {
+        const ev = futuros[0];
+        const trs = ev.trechos;
+        const dataIni = trs[0].data, dataFim = trs[trs.length - 1].data;
+        const fmt = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+        const periodo = (dataIni === dataFim) ? fmt(dataIni) : fmt(dataIni) + ' até ' + fmt(dataFim);
+        const rota = trs[0].origem + trs.map(t => ' → ' + t.destino).join('');
+        
+        // Puxa a cor real da aeronave (se não achar, usa o fallback do sistema)
+        const corAero = (typeof window.corDaAeronave === 'function') ? window.corDaAeronave(ev.aeronave_tail) : 'var(--muted)';
+        
+        boxVoo.innerHTML = `
+          <div style="font-size:14px;font-weight:700;margin-bottom:4px">${periodo}</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.4">${rota}</div>
+          <div style="font-size:12px;background:var(--bg);border-left:3px solid ${corAero};padding:6px 10px;border-radius:4px;display:inline-block;font-weight:600">
+            ✈️ Aeronave: <b style="color:${corAero}">${ev.aeronave_tail}</b>
+          </div>
+        `;
+      } else {
+        boxVoo.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">🌴</span><span class="hint">Nenhum voo agendado no momento.</span></div>';
+      }
+    }
+
+    // ----- 3. PRÓXIMOS EVENTOS (TREINAMENTO / REVALIDAÇÃO) -----
+    const boxDisp = document.getElementById('vgDisponibilidade');
+    if (boxDisp) {
+      const disp = JSON.parse(localStorage.getItem('dv.disponibilidade.v1') || '{}');
+      const hojeDate = new Date(); hojeDate.setHours(0,0,0,0);
+      
+      const eventosBrutos = [];
+      const isAdmin = sessao.perfil === 'admin';
+      // Puxa a seleção salva no navegador (ou usa 'todos' como padrão)
+      if (!window.__vgFiltroEventos) {
+        window.__vgFiltroEventos = localStorage.getItem('dv.pilotos.filtroEventos') || 'todos';
+      }
+      const filtroEventos = window.__vgFiltroEventos;
+      
+      // Controla a lógica do Menu Dropdown
+      const btnFiltro = document.getElementById('vgFiltroBtn');
+      const menuFiltro = document.getElementById('vgFiltroMenu');
+      const optTodos = document.getElementById('vgFiltroTodos');
+      const optMeus = document.getElementById('vgFiltroMeus');
+
+      if (btnFiltro && menuFiltro) {
+        // Mostra o botão apenas para Admin
+        btnFiltro.style.display = isAdmin ? 'inline-block' : 'none';
+        
+        // Vincula eventos apenas uma vez
+        if (!btnFiltro.dataset.bound) {
+          btnFiltro.dataset.bound = '1';
+          
+          // Abre/Fecha o menu
+          btnFiltro.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menuFiltro.style.display = menuFiltro.style.display === 'none' ? 'block' : 'none';
+          });
+          
+          // Fecha ao clicar fora
+          document.addEventListener('click', (e) => {
+            if (menuFiltro.style.display === 'block' && !menuFiltro.contains(e.target)) {
+              menuFiltro.style.display = 'none';
+            }
+          });
+          
+          // Ações das opções
+          optTodos.addEventListener('click', () => {
+            window.__vgFiltroEventos = 'todos';
+            localStorage.setItem('dv.pilotos.filtroEventos', 'todos'); // <-- Salva
+            menuFiltro.style.display = 'none';
+            renderVisaoGeral();
+          });
+          
+          optMeus.addEventListener('click', () => {
+            window.__vgFiltroEventos = 'meus';
+            localStorage.setItem('dv.pilotos.filtroEventos', 'meus'); // <-- Salva
+            menuFiltro.style.display = 'none';
+            renderVisaoGeral();
+          });
+        }
+        
+        // Marca visualmente qual opção está ativa no menu
+        if (filtroEventos === 'todos') {
+          optTodos.style.fontWeight = '800';
+          optTodos.style.color = 'var(--accent)';
+          optMeus.style.fontWeight = 'normal';
+          optMeus.style.color = 'var(--text)';
+        } else {
+          optMeus.style.fontWeight = '800';
+          optMeus.style.color = 'var(--accent)';
+          optTodos.style.fontWeight = 'normal';
+          optTodos.style.color = 'var(--text)';
+        }
+      }
+      
+      const processarDados = (obj, label, cor) => {
+        if (!obj) return;
+        Object.keys(obj).forEach(k => {
+          const parts = k.split("::");
+          if (parts.length < 2) return;
+          const uid = parts[0];
+          const data = parts[1];
+          
+          if (isAdmin) {
+             if (filtroEventos === 'meus' && uid !== String(sessao.id)) return;
+          } else {
+             if (uid !== String(sessao.id)) return;
+          }
+          
+          if (data >= hojeStr) {
+            const u = users.find(x => String(x.id) === String(uid));
+            const nomePiloto = u ? u.nome.split(" ")[0] : "";
+            eventosBrutos.push({ data, label, cor, uid, nomePiloto });
+          }
+        });
+      };
+      
+      processarDados(disp.folgas, "Folga", "var(--yellow)");
+      processarDados(disp.treinamentos, "Treinamento", "var(--accent)");
+      processarDados(disp.revalidacao, "Revalidação", "#a855f7");
+      
+      eventosBrutos.sort((a,b) => a.data.localeCompare(b.data));
+      
+      // Agrupar dias consecutivos do mesmo evento e mesmo piloto
+      const blocos = [];
+      eventosBrutos.forEach(ev => {
+        const ultimo = blocos[blocos.length - 1];
+        if (ultimo && ultimo.label === ev.label && ultimo.uid === ev.uid) {
+          const d1 = new Date(ultimo.fim + "T00:00:00");
+          const d2 = new Date(ev.data + "T00:00:00");
+          if (d2 - d1 === 86400000) {
+            ultimo.fim = ev.data;
+            return;
+          }
+        }
+        blocos.push({ label: ev.label, cor: ev.cor, inicio: ev.data, fim: ev.data, uid: ev.uid, nomePiloto: ev.nomePiloto });
+      });
+      
+      const futuros = blocos.slice(0, 4); // Mostra até 4 eventos
+      
+      if (!futuros.length) {
+        boxDisp.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">☕</span><span class="hint">Nenhum evento futuro.</span></div>';
+      } else {
+        const fmtD = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+        let htmlDisp = '';
+        
+        futuros.forEach(b => {
+          const bStart = new Date(b.inicio + "T00:00:00");
+          const diffDays = Math.round((bStart - hojeDate) / 86400000);
+          
+          let quando = "";
+          if (diffDays === 0) quando = "Hoje";
+          else if (diffDays === 1) quando = "Amanhã";
+          else quando = `Em ${diffDays} dias`;
+          
+          let periodo = "";
+          if (b.inicio !== b.fim) {
+            periodo = ` <span style="color:var(--muted);font-size:11px">(${fmtD(b.inicio)} a ${fmtD(b.fim)})</span>`;
+          } else {
+            periodo = ` <span style="color:var(--muted);font-size:11px">(${fmtD(b.inicio)})</span>`;
+          }
+
+          let labelText = b.label;
+          if (isAdmin && filtroEventos === 'todos' && b.nomePiloto) {
+            labelText += ` - ${b.nomePiloto}`;
+          }
+
+          htmlDisp += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-bottom:4px;border-bottom:1px dashed var(--line)">
+            <span style="font-size:12px;color:${b.cor};font-weight:700">${labelText}${periodo}</span>
+            <span style="font-size:11px;font-weight:800;background:var(--bg);padding:2px 6px;border-radius:4px">${quando}</span>
+          </div>`;
+        });
+        
+        boxDisp.innerHTML = htmlDisp;
+      }
+    }
+  }
+
+  function renderPastasDocumentos() {
+    const container = document.getElementById('vgDocumentos');
+    if (!container) return;
+    
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    const isAdmin = sessao.perfil === 'admin';
+    
+    const todasPastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+    
+    // Filtro de privacidade
+    const pastasVisiveis = todasPastas.filter(p => {
+      if (isAdmin) return true; // Admin vê tudo
+      if (String(p.dono_id) === String(sessao.id)) return true; // Dono vê a sua
+      if (p.privacidade === 'todos') return true; // Todos veem
+      if (p.privacidade === 'custom' && p.compartilhado_com.includes(sessao.id)) return true; // Compartilhado com ele
+      return false;
+    });
+
+    if (!pastasVisiveis.length) {
+      container.innerHTML = '<p class="hint" style="text-align:center;padding:20px">Nenhuma pasta encontrada. Clique em "+ Nova Pasta" para começar.</p>';
+      return;
+    }
+
+    container.innerHTML = pastasVisiveis.map(p => {
+      const tagPriv = p.privacidade === 'privado' ? '<span style="font-size:11px;background:var(--bg);border:1px solid var(--line);padding:2px 6px;border-radius:4px;color:var(--muted)">🔒 Privado</span>' 
+                    : p.privacidade === 'todos' ? '<span style="font-size:11px;background:var(--nav-active-bg);padding:2px 6px;border-radius:4px;color:var(--green)">🌐 Compartilhado</span>'
+                    : '<span style="font-size:11px;background:var(--nav-active-bg);padding:2px 6px;border-radius:4px;color:var(--accent)">👥 Compartilhado com ' + p.compartilhado_com.length + ' piloto(s)</span>';
+
+      return `<div style="border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--bg)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div>
+            <h4 style="margin:0 0 4px;font-size:14px">${esc(p.titulo)}</h4>
+            <div style="display:flex;gap:8px;align-items:center">
+              ${tagPriv}
+              <span style="font-size:11px;color:var(--muted)">Dono: ${esc(p.dono_nome)}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="font-size:11px;color:var(--muted)">${new Date(p.criado_em).toLocaleDateString()}</div>
+            ${(String(p.dono_id) === String(sessao.id) || isAdmin) ? `
+              <button onclick="window.__pilEditarPasta('${p.id}')" style="background:none;border:none;cursor:pointer;font-size:14px" title="Editar Permissões">✏️</button>
+              <button onclick="window.__pilExcluirPasta('${p.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--red)" title="Excluir Pasta">🗑️</button>
+            ` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          ${p.arquivos.map(a => `<div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:6px 10px;border-radius:6px;border:1px solid var(--line);">
+            <span onclick="window.__pilAbrirPreview('${a.url}', '${esc(a.nome)}', '${a.tipo}')" style="font-size:20px;cursor:pointer" title="Clique para visualizar">${a.tipo === 'pdf' ? '📄' : '🖼️'}</span>
+            <span onclick="window.__pilAbrirPreview('${a.url}', '${esc(a.nome)}', '${a.tipo}')" style="font-size:12px;font-weight:600;cursor:pointer">${esc(a.nome)}</span>
+            ${(String(p.dono_id) === String(sessao.id) || isAdmin) ? `<button onclick="window.__pilExcluirArquivo('${p.id}', '${a.url}', '${a.path}')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0 4px;font-size:14px" title="Apagar arquivo">✕</button>` : ''}
+          </div>`).join('')}
+          
+          <button onclick="window.__pilAbrirUpload('${p.id}')" class="btn btn--secondary" style="font-size:11px;padding:6px 12px;border-style:dashed">+ Anexar Arquivo</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  let __editPastaId = null;
+
+  window.__pilEditarPasta = function(pastaId) {
+    __editPastaId = pastaId;
+    const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+    const p = pastas.find(x => x.id === pastaId);
+    if(!p) return;
+    
+    abrirModalPasta(pastaId);
+    document.getElementById('pilPastaNome').value = p.titulo;
+    document.getElementById('pilPastaPrivacidade').value = p.privacidade;
+    document.getElementById('pilPastaCustomWrap').style.display = (p.privacidade === 'custom') ? '' : 'none';
+    
+    document.querySelectorAll('.pilPastaCheckPiloto').forEach(cb => {
+       cb.checked = p.compartilhado_com.includes(cb.value);
+    });
+  };
+
+  function abrirModalPasta(pastaId = null) {
+    if (!pastaId) __editPastaId = null;
+    document.getElementById('pilPastaNome').value = '';
+    document.getElementById('pilPastaPrivacidade').value = 'privado';
+    document.getElementById('pilPastaCustomWrap').style.display = 'none';
+    
+    // Popula a lista de pilotos para o compartilhamento customizado
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const pilotos = users.filter(u => (u.perfil === 'piloto' || u.tambem_e_piloto) && u.id !== sessao.id && u.ativo !== false);
+    
+    const lista = document.getElementById('pilPastaPilotosLista');
+    lista.innerHTML = pilotos.map(p => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="${p.id}" class="pilPastaCheckPiloto"> ${esc(p.nome)}</label>`).join('');
+    if(!pilotos.length) lista.innerHTML = '<p class="hint" style="margin:0">Nenhum outro piloto cadastrado.</p>';
+
+    document.getElementById('pilPastaModal').classList.add('is-open');
+  }
+
+  function salvarPasta() {
+    const titulo = document.getElementById('pilPastaNome').value.trim();
+    if (!titulo) { alert('Digite um nome para a pasta.'); return; }
+    
+    const privacidade = document.getElementById('pilPastaPrivacidade').value;
+    let compartilhado_com = [];
+    
+    if (privacidade === 'custom') {
+      document.querySelectorAll('.pilPastaCheckPiloto:checked').forEach(cb => compartilhado_com.push(cb.value));
+      if (!compartilhado_com.length) { alert('Selecione pelo menos um piloto ou mude a privacidade.'); return; }
+    }
+
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+
+    const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+    
+    if (__editPastaId) {
+      const idx = pastas.findIndex(p => p.id === __editPastaId);
+      if (idx >= 0) {
+        pastas[idx].titulo = titulo;
+        pastas[idx].privacidade = privacidade;
+        pastas[idx].compartilhado_com = compartilhado_com;
+      }
+    } else {
+      pastas.push({
+        id: 'pasta-' + Date.now(),
+        dono_id: sessao.id,
+        dono_nome: sessao.nome,
+        titulo: titulo,
+        privacidade: privacidade,
+        compartilhado_com: compartilhado_com,
+        arquivos: [],
+        criado_em: new Date().toISOString()
+      });
+    }
+    
+    localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+    
+    document.getElementById('pilPastaModal').classList.remove('is-open');
+    renderPastasDocumentos();
+    
+    // Sincroniza com Supabase em background
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: pastas }).then();
+    } catch(e) {}
+  }
+
+  function renderResumo() {
+    const box = document.getElementById('pilLicencasResumo');
+    if (!box) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) { box.innerHTML = '<p class="hint">Faça login para ver suas licenças.</p>'; return; }
+    
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const user = users.find(u => u.id === sessao.id) || sessao;
+    const ext = user.extras || {};
+    
+    const levelIcao = ext['icao_level'];
+    const labelIcao = levelIcao ? `Habilitação ICAO (LEVEL ${levelIcao})` : 'Habilitação ICAO';
+    
+    const defaults = [
+      { key: 'cma', nome: 'CMA', label: 'Certificado Médico Aeronáutico' },
+      { key: 'ifr', nome: 'IFR', label: 'Habilitação IFR' },
+      { key: 'mnte', nome: 'MNTE', label: 'Habilitação MNTE' },
+      { key: 'mlte', nome: 'MLTE', label: 'Habilitação MLTE' },
+      { key: 'inva', nome: 'INVA', label: 'Habilitação INVA' },
+      { key: 'icao', nome: 'ICAO', label: labelIcao },
+      { key: 'simulador', nome: 'Simulador', label: 'Simulador de Voo' }
+    ];
+    const customs = ext.custom_licencas || [];
+    const hidden = ext.hidden_licencas || [];
+    const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key));
+    
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px">';
+    licencas.forEach(l => {
+      const dataValidade = ext['validade_' + l.key] || '';
+      const aviso = ext['aviso_' + l.key] || 30;
+      const notif = ext['notif_' + l.key] !== false;
+      
+      let status = 'Não informado';
+      let cor = 'var(--muted)';
+      if (dataValidade) {
+        const dias = Math.floor((new Date(dataValidade + 'T00:00:00') - new Date()) / 86400000);
+        if (dias < 0) { status = 'VENCIDO'; cor = 'var(--red)'; }
+        else if (dias <= aviso) { status = dias + ' dias restantes'; cor = 'var(--yellow)'; }
+        else { status = 'Válido'; cor = 'var(--green)'; }
+      }
+      
+      html += `<div style="background:var(--card);border:1px solid var(--line);border-left:3px solid ${cor};border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <span style="font-size:10px;font-weight:800;color:${cor};text-transform:uppercase">${l.nome}</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer">
+              <input type="checkbox" onchange="window.__pilAlterarNotif('${l.key}', this.checked)" ${notif ? 'checked' : ''}> Alerta
+            </label>
+            <button onclick="window.__pilRemoverLicenca('${l.key}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0" title="Remover do painel">🗑️</button>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:700">${l.label}</div>
+        <input type="date" value="${dataValidade}" onchange="window.__pilSalvarData('${l.key}', this.value)" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:6px;border-radius:6px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span style="font-size:11px;color:${cor};font-weight:700">${status}</span>
+          <select onchange="window.__pilSalvarAviso('${l.key}', this.value)" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:4px;border-radius:4px;font-size:11px">
+            <option value="30" ${aviso === 30 ? 'selected' : ''}>30d</option>
+            <option value="60" ${aviso === 60 ? 'selected' : ''}>60d</option>
+            <option value="90" ${aviso === 90 ? 'selected' : ''}>90d</option>
+            <option value="120" ${aviso === 120 ? 'selected' : ''}>120d</option>
+          </select>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    
+    box.innerHTML = html;
+  }
+
+  // ========== UPLOAD E PREVIEW DE DOCUMENTOS ==========
+
+  window.__pilAbrirPreview = function(url, nome, tipo) {
+    document.getElementById('pilPreviewTitle').textContent = nome;
+    document.getElementById('pilPreviewDownload').href = url;
+    
+    const container = document.getElementById('pilPreviewContent');
+    if (tipo === 'pdf') {
+      container.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`;
+    } else {
+      container.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:auto;"><img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`;
+    }
+    document.getElementById('pilPreviewModal').classList.add('is-open');
+  };
+
+  // ---- UPLOAD ----
+  let __pastaUploadAtual = null;
+
+  window.__pilAbrirUpload = function(pastaId) {
+    __pastaUploadAtual = pastaId;
+    document.getElementById('pilUploadFile').value = '';
+    document.getElementById('pilUploadNome').value = '';
+    document.getElementById('pilUploadModal').classList.add('is-open');
+  };
+
+  window.__pilExecutarUpload = async function() {
+    const file = document.getElementById('pilUploadFile').files[0];
+    let nomeCustom = document.getElementById('pilUploadNome').value.trim();
+    
+    if (!file) { alert('Selecione um arquivo.'); return; }
+    if (!nomeCustom) { nomeCustom = file.name; } // Fallback para o nome original
+    
+    const btn = document.getElementById('pilUploadSalvar');
+    btn.innerHTML = 'Enviando...';
+    btn.disabled = true;
+
+    try {
+      const sb = getSupabase();
+      if (!sb) throw new Error("Supabase indisponível");
+      
+      const ext = file.name.split('.').pop().toLowerCase();
+      const tipo = ext === 'pdf' ? 'pdf' : 'imagem';
+      const filename = __pastaUploadAtual + '/' + Date.now() + '.' + ext;
+      
+      const { error } = await sb.storage.from('documentos').upload(filename, file, { upsert: true });
+      if (error) throw error;
+      
+      const { data: urlData } = sb.storage.from('documentos').getPublicUrl(filename);
+      
+      const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      const idx = pastas.findIndex(p => p.id === __pastaUploadAtual);
+      if (idx >= 0) {
+        pastas[idx].arquivos.push({ nome: nomeCustom, url: urlData.publicUrl, tipo: tipo, path: filename });
+        localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+        await sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: pastas });
+        renderPastasDocumentos();
+      }
+      document.getElementById('pilUploadModal').classList.remove('is-open');
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao enviar arquivo: " + err.message);
+    } finally {
+      btn.innerHTML = 'Enviar Arquivo';
+      btn.disabled = false;
+    }
+  };
+
+  // ---- EXCLUSÃO ----
+  window.__pilExcluirPasta = async function(pastaId) {
+    if (!confirm("Tem certeza que deseja apagar esta pasta inteira e todos os seus arquivos?")) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    
+    try {
+      const sb = getSupabase();
+      const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      const p = pastas.find(x => x.id === pastaId);
+      
+      if (p && p.arquivos.length && sb) {
+         const paths = p.arquivos.map(a => a.path).filter(Boolean);
+         if (paths.length) await sb.storage.from('documentos').remove(paths);
+      }
+      
+      const novasPastas = pastas.filter(x => x.id !== pastaId);
+      localStorage.setItem('dv.documentos.v1', JSON.stringify(novasPastas));
+      if (sb) await sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: novasPastas });
+      renderPastasDocumentos();
+    } catch(e) { console.error(e); alert("Erro ao apagar pasta."); }
+  };
+
+  window.__pilExcluirArquivo = async function(pastaId, url, path) {
+    if (!confirm("Apagar este arquivo?")) return;
+    try {
+      const sb = getSupabase();
+      if (sb && path) await sb.storage.from('documentos').remove([path]);
+      
+      const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      const idx = pastas.findIndex(p => p.id === pastaId);
+      if (idx >= 0) {
+        pastas[idx].arquivos = pastas[idx].arquivos.filter(a => a.url !== url);
+        localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+        if (sb) await sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: pastas });
+        renderPastasDocumentos();
+      }
+    } catch(e) { console.error(e); alert("Erro ao apagar arquivo."); }
+  };
+
+
+  window.__pilRemoverLicenca = function(key) {
+    if (!confirm("Tem certeza que deseja remover esta habilitação do painel? (Se você importar um novo PDF, ela voltará a aparecer).")) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === sessao.id);
+    if (idx < 0) return;
+
+    users[idx].extras = users[idx].extras || {};
+    const ext = users[idx].extras;
+    
+    const isCustom = (ext.custom_licencas || []).some(l => l.key === key);
+    if (isCustom) {
+        ext.custom_licencas = ext.custom_licencas.filter(l => l.key !== key);
+    } else {
+        ext.hidden_licencas = ext.hidden_licencas || [];
+        if (!ext.hidden_licencas.includes(key)) ext.hidden_licencas.push(key);
+    }
+
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('users').update({ extras: ext }).eq('id', sessao.id).then();
+    } catch(e) {}
+    
+    renderResumo();
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  };
+
+  window.__pilAdicionarManual = function() {
+    const nome = document.getElementById('pilAddName').value.trim();
+    const data = document.getElementById('pilAddDate').value;
+    if (!nome) { alert("Digite o nome da habilitação."); return; }
+
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === sessao.id);
+    if (idx < 0) return;
+
+    users[idx].extras = users[idx].extras || {};
+    const ext = users[idx].extras;
+    
+    ext.custom_licencas = ext.custom_licencas || [];
+    const newKey = 'custom_' + Date.now();
+    ext.custom_licencas.push({ key: newKey, nome: nome.toUpperCase(), label: 'Habilitação ' + nome });
+    
+    if (data) ext['validade_' + newKey] = data;
+    ext['aviso_' + newKey] = 30;
+    ext['notif_' + newKey] = true;
+
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('users').update({ extras: ext }).eq('id', sessao.id).then();
+    } catch(e) {}
+
+    document.getElementById('pilAddModal').classList.remove('is-open');
+    document.getElementById('pilAddName').value = '';
+    document.getElementById('pilAddDate').value = '';
+    
+    renderResumo();
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  };
+
+  // Funções globais para os inputs do card
+  window.__pilSalvarData = function(key, val) { 
+    salvarExtra('validade_' + key, val); 
+    renderResumo(); // <-- Atualiza o card na hora!
+  };
+  window.__pilSalvarAviso = function(key, val) { 
+    salvarExtra('aviso_' + key, Number(val)); 
+    renderResumo(); // <-- Atualiza o card na hora!
+  };
+  window.__pilAlterarNotif = function(key, val) { 
+    salvarExtra('notif_' + key, val); 
+    renderResumo(); // <-- Atualiza o card na hora!
+  };
+
+  function salvarExtra(chave, valor) {
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === sessao.id);
+    if (idx < 0) return;
+    users[idx].extras = users[idx].extras || {};
+    users[idx].extras[chave] = valor;
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    
+    // Sync com Supabase em background
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('users').update({ extras: users[idx].extras }).eq('id', sessao.id).then();
+    } catch(e) {}
+    
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  }
+
+  function abrirModalPdf() {
+    const modal = document.getElementById('pilPdfModal');
+    if (modal) modal.classList.add('is-open');
+    if (document.getElementById('pilPdfFile')) document.getElementById('pilPdfFile').value = '';
+    if (document.getElementById('pilPdfResultado')) document.getElementById('pilPdfResultado').innerHTML = '';
+    dadosExtraidos = null;
+    if (document.getElementById('pilPdfSalvar')) document.getElementById('pilPdfSalvar').disabled = true;
+  }
+
+  async function onFileChange(e) {
+    const file = e.target.files?.[0];
+    
+    // Atualiza o nome do arquivo na tela
+    const nomeEl = document.getElementById('pilPdfFileName');
+    if (nomeEl) nomeEl.textContent = file ? file.name : 'Nenhum arquivo selecionado';
+    
+    if (!file) return;
+    const resultadoBox = document.getElementById('pilPdfResultado');
+    resultadoBox.innerHTML = '<p class="hint">Lendo PDF...</p>';
+    try {
+      const texto = await extrairTextoPdf(file);
+      const datas = extrairDatas(texto);
+      console.log("=== TEXTO EXTRAÍDO DO PDF ===");
+      console.log(texto);
+      console.log("=== DATAS ENCONTRADAS ===");
+      console.log(datas);
+      dadosExtraidos = datas;
+      let html = '<div style="background:var(--bg);padding:12px;border-radius:8px;margin-top:12px">';
+      html += '<p style="margin:0 0 8px;font-size:12px;font-weight:700">Datas encontradas:</p>';
+      const labels = { cma: 'CMA', ifr: 'IFR', mnte: 'MNTE', mlte: 'MLTE', inva: 'INVA', icao: 'ICAO', simulador: 'Simulador' };
+      let achou = false;
+      for (const [k, v] of Object.entries(datas)) {
+        if (k.endsWith('_level')) continue; // Ignora o level no loop de datas
+        if (v) {
+          achou = true;
+          let extra = '';
+          if (k === 'icao' && datas.icao_level) extra = ` <b style="color:var(--green)">(LEVEL ${datas.icao_level})</b>`;
+          html += `<p style="margin:4px 0;font-size:12px">✅ ${labels[k]}: <b>${v.split('-').reverse().join('/')}</b>${extra}</p>`;
+        }
+      }
+      if (datas.icao_level !== undefined && datas.icao_level < 4) {
+        achou = true;
+        html += `<p style="margin:4px 0;font-size:12px;color:var(--red);font-weight:700">❌ ICAO: Nível ${datas.icao_level} (Abaixo de 4) — Não será monitorado.</p>`;
+      }
+      if (!achou) html += '<p class="hint">Nenhuma data reconhecida. Verifique o PDF ou adicione manualmente.</p>';
+      html += '</div>';
+      resultadoBox.innerHTML = html;
+      if (achou) document.getElementById('pilPdfSalvar').disabled = false;
+    } catch (err) {
+      console.error(err);
+      resultadoBox.innerHTML = '<p style="color:var(--red)">Erro ao ler PDF: ' + err.message + '</p>';
+    }
+  }
+
+  async function salvarDatas() {
+    if (!dadosExtraidos) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === sessao.id);
+    if (idx < 0) return;
+
+    users[idx].extras = users[idx].extras || {};
+    const ext = users[idx].extras;
+    ext.hidden_licencas = ext.hidden_licencas || [];
+
+    for (const [k, v] of Object.entries(dadosExtraidos)) {
+      if (k.endsWith('_level')) continue; // Tratado separadamente
+      if (v) {
+        ext['validade_' + k] = v;
+        ext['aviso_' + k] = ext['aviso_' + k] || 30;
+        ext['notif_' + k] = true;
+        ext.hidden_licencas = ext.hidden_licencas.filter(key => key !== k);
+      }
+    }
+    
+    // Regra especial para o ICAO
+    if (dadosExtraidos.icao_level !== undefined) {
+      ext['icao_level'] = dadosExtraidos.icao_level;
+      if (dadosExtraidos.icao_level < 4) {
+        if (!ext.hidden_licencas.includes('icao')) ext.hidden_licencas.push('icao');
+      } else {
+        ext.hidden_licencas = ext.hidden_licencas.filter(key => key !== 'icao');
+      }
+    }
+
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    try {
+      const sb = getSupabase();
+      if (sb) await sb.from('users').update({ extras: ext }).eq('id', sessao.id);
+    } catch(e) { console.warn('Erro ao salvar no Supabase', e); }
+
+    alert('Licenças atualizadas com sucesso!');
+    document.getElementById('pilPdfModal').classList.remove('is-open');
+    renderResumo();
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Navegação unificada das abas
+    window.mudarAbaPiloto = function(aba) {
+      const views = {
+        'visao': 'pilViewVisaoGeral',
+        'escala': 'pilViewEscala',
+        'disp': 'pilViewDisp',
+        'licencas': 'pilViewLicencas'
+      };
+      
+      const btns = {
+        'visao': 'pilTabVisao',
+        'escala': 'pilTabEscala',
+        'disp': 'pilTabDisp',
+        'licencas': 'pilTabLicencas'
+      };
+
+      // Esconde todas as views e tira o ativo de todos os botões
+      Object.values(views).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = true;
+      });
+      Object.values(btns).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('is-active');
+      });
+
+      // Mostra a view correta e ativa o botão
+      const viewAtiva = document.getElementById(views[aba]);
+      if (viewAtiva) viewAtiva.hidden = false;
+      const btnAtivo = document.getElementById(btns[aba]);
+      if (btnAtivo) btnAtivo.classList.add('is-active');
+
+      // Lógicas extras de cada aba
+      if (aba === 'visao') {
+        renderVisaoGeral();
+        renderPastasDocumentos();
+      }
+      if (aba === 'licencas') {
+        renderResumo();
+      }
+    };
+
+    // Vincula os botões à função unificada
+    document.getElementById('pilTabVisao').addEventListener('click', () => window.mudarAbaPiloto('visao'));
+    document.getElementById('pilTabEscala').addEventListener('click', () => window.mudarAbaPiloto('escala'));
+    document.getElementById('pilTabDisp').addEventListener('click', () => window.mudarAbaPiloto('disp'));
+    document.getElementById('pilTabLicencas').addEventListener('click', () => window.mudarAbaPiloto('licencas'));
+
+    // Define a aba inicial como Visão Geral
+    window.mudarAbaPiloto('visao');
+
+    // Quando a aba de pilotos for aberta, renderiza o resumo
+
+
+    const btnImportar = document.getElementById('pilImportarPdfBtn');
+    if (btnImportar) btnImportar.addEventListener('click', abrirModalPdf);
+
+    const btnAddManual = document.getElementById('pilAddManualBtn');
+    if (btnAddManual) btnAddManual.addEventListener('click', () => {
+       document.getElementById('pilAddModal').classList.add('is-open');
+    });
+
+    // NOVO: Eventos das Pastas
+    const btnNovaPasta = document.getElementById('vgBtnNovaPasta');
+    if (btnNovaPasta) btnNovaPasta.addEventListener('click', abrirModalPasta);
+    
+    const selPriv = document.getElementById('pilPastaPrivacidade');
+    if (selPriv) selPriv.addEventListener('change', (e) => {
+      document.getElementById('pilPastaCustomWrap').style.display = (e.target.value === 'custom') ? '' : 'none';
+    });
+
+    const btnSalvarPasta = document.getElementById('pilPastaSalvar');
+    if (btnSalvarPasta) btnSalvarPasta.addEventListener('click', salvarPasta);
+
+    const btnExecutarUpload = document.getElementById('pilUploadSalvar');
+    if (btnExecutarUpload) btnExecutarUpload.addEventListener('click', window.__pilExecutarUpload);
+
+    // Renderiza a visão geral e as pastas
+    const btnVisaoInicial = document.getElementById('pilTabVisao');
+    if (btnVisaoInicial) {
+        btnVisaoInicial.addEventListener('click', () => {
+          renderVisaoGeral();
+          renderPastasDocumentos();
+        });
+    }
+
+    // --- Mecanismo de Auto-load (espera os dados do Supabase chegarem) ---
+    window.atualizarTelaPiloto = function() {
+      if (document.getElementById('vgCompliance')) {
+        renderVisaoGeral();
+        renderPastasDocumentos();
+      }
+    };
+
+    // 1. Tenta carregar assim que os dados da nuvem forem atualizados
+    window.addEventListener('sessionUpdated', () => {
+        setTimeout(window.atualizarTelaPiloto, 200);
+    });
+    window.addEventListener('cloudUpdated', () => {
+        setTimeout(window.atualizarTelaPiloto, 200);
+    });
+
+    // 2. Tenta carregar ao navegar para a aba de pilotos
+    window.addEventListener('hashchange', () => {
+        if (location.hash === '#/piloto' || location.hash === '#/agenda') {
+            setTimeout(window.atualizarTelaPiloto, 300);
+        }
+    });
+
+    // 3. Retry Loop: Fica tentando por 15 segundos até o usuário, a sessão E a agenda carregarem
+    let _tentativasLoad = 0;
+    const _loopLoad = setInterval(() => {
+        _tentativasLoad++;
+        const sessaoOk = (typeof Session !== 'undefined' && Session.get);
+        const usersOk = JSON.parse(localStorage.getItem('dv.users.v1') || '[]').length > 0;
+        const agendaOk = (typeof Agenda !== 'undefined' && Agenda.getEventos) ? Agenda.getEventos().length > 0 : false;
+        
+        if (sessaoOk && usersOk) {
+            window.atualizarTelaPiloto();
+            if (agendaOk) {
+                clearInterval(_loopLoad); // Só para o loop se a agenda também já carregou
+            }
+        } else if (_tentativasLoad > 30) {
+            clearInterval(_loopLoad);
+            console.warn("[Pilotos] Desistindo de aguardar dados após 15s");
+        }
+    }, 500);
+    
+    const btnAddSalvar = document.getElementById('pilAddSalvar');
+    if (btnAddSalvar) btnAddSalvar.addEventListener('click', window.__pilAdicionarManual);
+
+    const fileInput = document.getElementById('pilPdfFile');
+    if (fileInput) fileInput.addEventListener('change', onFileChange);
+
+    const btnSalvar = document.getElementById('pilPdfSalvar');
+    if (btnSalvar) btnSalvar.addEventListener('click', salvarDatas);
+  });
+})();
+</script>
 </body>
 
 
