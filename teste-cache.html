@@ -6661,7 +6661,7 @@ const Cloud = (() => {
 
     const kvCh = sb.channel("rt-kv_store")
       .on("postgres_changes",
-          { event: "*", schema: "public", table: "kv_store" },
+          { event: "*", schema: "public", table: "kv_store", filter: "key=like.dv.%" },
           (payload) => { try { processarRealtimeKv(payload); } catch(e){ console.error(e); } })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") console.info("[Realtime] assinando kv_store ✅");
@@ -6974,8 +6974,10 @@ const Db = (() => {
   async function listEvents() {
     if (mode === "supabase") {
       try {
-        const { data, error } = await client.from("agenda").select("*").order("data",{ascending:true}).order("hora",{ascending:true});
+        // OTIMIZAÇÃO DE EGRESS: Limitando aos últimos 2000 voos para não baixar todo o histórico do banco
+        const { data, error } = await client.from("agenda").select("*").order("data",{ascending:false}).order("hora",{ascending:false}).limit(2000);
         if (error) throw error;
+        if (data) data.reverse(); // Reverte para ordem ascendente no cache local
         /* Atualiza cache local (bypass interceptor) */
         try {
           const setter = window.__setItemOriginal || localStorage.setItem.bind(localStorage);
