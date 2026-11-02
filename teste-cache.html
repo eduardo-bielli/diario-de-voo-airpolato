@@ -3804,8 +3804,11 @@ body.is-booting .app {
         <!-- Aba: Habilitações e Licenças -->
         <div id="pilViewLicencas" hidden>
           <div class="panel">
-            <header class="panel__head">
-              <h3>📋 Minhas Habilitações e Licenças</h3>
+            <header class="panel__head" style="flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <h3 id="pilTituloLicencas">📋 Minhas Habilitações e Licenças</h3>
+                <select id="pilSelectPiloto" style="display:none; padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-size:13px; font-weight:600;"></select>
+              </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <button class="btn" id="pilImportarPdfBtn">📄 Importar PDF ANAC</button>
                 <button class="btn btn--secondary" id="pilAddManualBtn" style="margin-left:8px">+ Adicionar Manual</button>
@@ -25258,9 +25261,44 @@ document.addEventListener("DOMContentLoaded", function() {
     const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
     if (!sessao) { box.innerHTML = '<p class="hint">Faça login para ver suas licenças.</p>'; return; }
     
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    let targetUserId = sessao.id;
+
+    if (isAdmin) {
+      if (selPiloto) {
+        if (selPiloto.options.length === 0) {
+          const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+          const pilotos = users.filter(u => u.perfil === 'piloto' || u.tambem_e_piloto);
+          
+          if (!pilotos.find(p => p.id === sessao.id) && pilotos.length > 0) {
+            targetUserId = pilotos[0].id;
+          }
+          selPiloto.innerHTML = pilotos.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+          selPiloto.value = targetUserId;
+          
+          selPiloto.addEventListener('change', () => renderResumo());
+        } else {
+          targetUserId = selPiloto.value;
+        }
+        selPiloto.style.display = 'inline-block';
+      }
+    } else {
+      if (selPiloto) selPiloto.style.display = 'none';
+    }
+
     const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
-    const user = users.find(u => u.id === sessao.id) || sessao;
+    const user = users.find(u => u.id === targetUserId) || sessao;
     const ext = user.extras || {};
+
+    const tituloEl = document.getElementById('pilTituloLicencas');
+    if (tituloEl) {
+      if (isAdmin && user.id !== sessao.id) {
+        tituloEl.textContent = `📋 Habilitações de ${user.nome.split(' ')[0]}`;
+      } else {
+        tituloEl.textContent = '📋 Minhas Habilitações e Licenças';
+      }
+    }
     
     const levelIcao = ext['icao_level'];
     const labelIcao = levelIcao ? `Habilitação ICAO (LEVEL ${levelIcao})` : 'Habilitação ICAO';
@@ -25440,8 +25478,16 @@ document.addEventListener("DOMContentLoaded", function() {
     if (!confirm("Tem certeza que deseja remover esta habilitação do painel? (Se você importar um novo PDF, ela voltará a aparecer).")) return;
     const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
     if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
     const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
-    const idx = users.findIndex(u => u.id === sessao.id);
+    const idx = users.findIndex(u => u.id === targetUserId);
     if (idx < 0) return;
 
     users[idx].extras = users[idx].extras || {};
@@ -25458,7 +25504,7 @@ document.addEventListener("DOMContentLoaded", function() {
     localStorage.setItem('dv.users.v1', JSON.stringify(users));
     try {
       const sb = getSupabase();
-      if (sb) sb.from('users').update({ extras: ext }).eq('id', sessao.id).then();
+      if (sb) sb.from('users').update({ extras: ext }).eq('id', targetUserId).then();
     } catch(e) {}
     
     renderResumo();
@@ -25472,8 +25518,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
     if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
     const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
-    const idx = users.findIndex(u => u.id === sessao.id);
+    const idx = users.findIndex(u => u.id === targetUserId);
     if (idx < 0) return;
 
     users[idx].extras = users[idx].extras || {};
@@ -25490,7 +25544,7 @@ document.addEventListener("DOMContentLoaded", function() {
     localStorage.setItem('dv.users.v1', JSON.stringify(users));
     try {
       const sb = getSupabase();
-      if (sb) sb.from('users').update({ extras: ext }).eq('id', sessao.id).then();
+      if (sb) sb.from('users').update({ extras: ext }).eq('id', targetUserId).then();
     } catch(e) {}
 
     document.getElementById('pilAddModal').classList.remove('is-open');
@@ -25518,8 +25572,16 @@ document.addEventListener("DOMContentLoaded", function() {
   function salvarExtra(chave, valor) {
     const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
     if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
     const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
-    const idx = users.findIndex(u => u.id === sessao.id);
+    const idx = users.findIndex(u => u.id === targetUserId);
     if (idx < 0) return;
     users[idx].extras = users[idx].extras || {};
     users[idx].extras[chave] = valor;
@@ -25528,7 +25590,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Sync com Supabase em background
     try {
       const sb = getSupabase();
-      if (sb) sb.from('users').update({ extras: users[idx].extras }).eq('id', sessao.id).then();
+      if (sb) sb.from('users').update({ extras: users[idx].extras }).eq('id', targetUserId).then();
     } catch(e) {}
     
     if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
@@ -25592,8 +25654,16 @@ document.addEventListener("DOMContentLoaded", function() {
     if (!dadosExtraidos) return;
     const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
     if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
     const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
-    const idx = users.findIndex(u => u.id === sessao.id);
+    const idx = users.findIndex(u => u.id === targetUserId);
     if (idx < 0) return;
 
     users[idx].extras = users[idx].extras || {};
@@ -25623,7 +25693,7 @@ document.addEventListener("DOMContentLoaded", function() {
     localStorage.setItem('dv.users.v1', JSON.stringify(users));
     try {
       const sb = getSupabase();
-      if (sb) await sb.from('users').update({ extras: ext }).eq('id', sessao.id);
+      if (sb) await sb.from('users').update({ extras: ext }).eq('id', targetUserId);
     } catch(e) { console.warn('Erro ao salvar no Supabase', e); }
 
     alert('Licenças atualizadas com sucesso!');
