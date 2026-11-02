@@ -15053,7 +15053,7 @@ const Manutencao = (() => {
     const TOP_MARGIN_TABLE = 5;
     let yCursor = LOGO_Y + LOGO_BOX + 1, logoBox = null;
 
-    if (logo && logo.startsWith("data:image")) {
+    if (logo) {
       try {
         /* Usa a função global que injetamos (não depende do H) */
         const converter = (typeof logoParaCanvasDataURL === "function") ? logoParaCanvasDataURL : H.logoParaCanvasDataURL;
@@ -17523,7 +17523,7 @@ function renderLista() {
     if (!empresaId) { alert("Selecione a empresa que pegou emprestado (obrigatório)."); return; }
     const empresaSel = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
     const empresaNome = empresaSel?.nome || "";
-    const empresaLogo = "";
+    const empresaLogo = empresaSel?.logo || "";
 
     const trs = ev.trechos || [];
     const primeira = trs[0];
@@ -18069,21 +18069,44 @@ function renderLista() {
     const btn = document.getElementById("thEmpresaSalvar");
     if (btn) btn.addEventListener("click", salvarEmpresa);
     const logoFile = document.getElementById("thEmpresaLogoFile");
-    if (logoFile) logoFile.addEventListener("change", (e) => {
+    if (logoFile) logoFile.addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      if (file.size > 100 * 1024) { alert("Logo muito grande (máx 100 KB). Reduza a imagem."); e.target.value = ""; return; }
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = String(reader.result || "");
+      
+      const prev = document.getElementById("thEmpresaLogoPreview");
+      const wrap = document.getElementById("thEmpresaLogoPreviewWrap");
+      const btnSalvar = document.getElementById("thEmpresaSalvar");
+      
+      if (prev) prev.src = URL.createObjectURL(file);
+      if (wrap) wrap.style.display = "flex";
+      
+      if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = "Enviando logo..."; }
+
+      try {
+        const sb = getSupabase();
+        if (!sb) throw new Error("Supabase indisponível");
+        
+        const ext = file.name.split('.').pop() || 'png';
+        const filename = 'logo-emp-' + Date.now() + '.' + ext;
+        
+        const { error } = await sb.storage.from('imagens').upload(filename, file, { upsert: true });
+        if (error) throw error;
+        
+        const { data: urlData } = sb.storage.from('imagens').getPublicUrl(filename);
+        const publicUrl = urlData.publicUrl;
+        
         const hidden = document.getElementById("thEmpresaLogoData");
-        if (hidden) hidden.value = dataUrl;
-        const prev = document.getElementById("thEmpresaLogoPreview");
-        const wrap = document.getElementById("thEmpresaLogoPreviewWrap");
-        if (prev) prev.src = dataUrl;
-        if (wrap) wrap.style.display = "flex";
-      };
-      reader.readAsDataURL(file);
+        if (hidden) hidden.value = publicUrl;
+        if (prev) prev.src = publicUrl;
+      } catch (err) {
+        console.error("[Upload Logo]", err);
+        alert("Erro ao enviar a imagem para o servidor. Verifique a conexão.");
+        e.target.value = "";
+        if (prev) prev.src = "";
+        if (wrap) wrap.style.display = "none";
+      } finally {
+        if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar empresa"; }
+      }
     });
     const logoRemover = document.getElementById("thEmpresaLogoRemover");
     if (logoRemover) logoRemover.addEventListener("click", () => {
@@ -18986,6 +19009,7 @@ function _thRelCity(icao) {
   }
   function _thRelGerarXLS(rel) {
     const { creditos, debitos, resumo, filtros, empresaSel } = rel;
+    /* XLS mantido apenas com texto para evitar problemas de compatibilidade */
     const nossoLogo = "";
     const empresaLogo = "";
     const empNome = empresaSel?.nome || "Todas as empresas";
@@ -19163,21 +19187,40 @@ function _thRelCity(icao) {
       try { const st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); if (st.logo) return st.logo; } catch(e) {}
       return localStorage.getItem("dv_company_logo") || "";
     };
-    const _logoParaCanvas = (src) => new Promise((resolve) => {
+    const _logoParaCanvas = async (src) => {
+      if (!src) return null;
       try {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const c = document.createElement("canvas");
-            c.width = img.width; c.height = img.height;
-            c.getContext("2d").drawImage(img, 0, 0);
-            resolve({ data: c.toDataURL("image/png"), w: c.width, h: c.height });
-          } catch(e) { resolve(null); }
-        };
-        img.onerror = () => resolve(null);
-        img.src = src;
-      } catch(e) { resolve(null); }
-    });
+        let dataUrl = src;
+        // Se for uma URL da Web, baixa via fetch e converte para Base64 para burlar o bloqueio do Canvas
+        if (src.startsWith('http')) {
+          const resp = await fetch(src);
+          if (!resp.ok) throw new Error("Falha no fetch");
+          const blob = await resp.blob();
+          dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        }
+        // Desenha no Canvas (agora com Base64 puro)
+        return await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const c = document.createElement("canvas");
+              c.width = img.width; c.height = img.height;
+              c.getContext("2d").drawImage(img, 0, 0);
+              resolve({ data: c.toDataURL("image/png"), w: c.width, h: c.height });
+            } catch(e) { resolve(null); }
+          };
+          img.onerror = () => resolve(null);
+          img.src = dataUrl;
+        });
+      } catch(e) {
+        console.error("Erro logo PDF:", e);
+        return null;
+      }
+    };
 
 
     const { cor1, cor2 } = _cores();
@@ -19198,13 +19241,14 @@ function _thRelCity(icao) {
 
 
     const nossoLogo = _logoDataURL();
-    const empresaLogo = "";
+    const empresaLogo = empresaSel?.logo || "";
     const empNome = empresaSel?.nome || "Todas as empresas";
     const mostrarSegundo = !!empresaSel;
 
 
     const drawLogoAt = async (src, targetX) => {
-      if (!src || !src.startsWith("data:image")) return null;
+      console.log("DEBUG PDF LOGO - src:", src ? src.substring(0, 100) : "VAZIO");
+      if (!src) return null;
       try {
         const box = await _logoParaCanvas(src);
         if (!box) return null;
@@ -20197,9 +20241,21 @@ const Relatorios = (() => {
   }
 
   /* ============ PDF ============ */
-  function logoParaCanvasDataURL(src) {
-    return new Promise((resolve) => {
-      try {
+  async function logoParaCanvasDataURL(src) {
+    if (!src) return null;
+    try {
+      let dataUrl = src;
+      if (src.startsWith('http')) {
+        const resp = await fetch(src);
+        if (!resp.ok) throw new Error("Falha no fetch");
+        const blob = await resp.blob();
+        dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+      return await new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
           try {
@@ -20225,9 +20281,12 @@ const Relatorios = (() => {
           } catch (e) { console.warn("logoParaCanvasDataURL error:", e); resolve(null); }
         };
         img.onerror = () => resolve(null);
-        img.src = src;
-      } catch (e) { resolve(null); }
-    });
+        img.src = dataUrl;
+      });
+    } catch(e) {
+      console.error("Erro fetch logo:", e);
+      return null;
+    }
   }
 
   async function gerarPDF(camposMarcados) {
@@ -20275,7 +20334,7 @@ const Relatorios = (() => {
 
     /* Cabeçalho com logo */
     const logo = logoDataURL();
-    if (logo && logo.startsWith("data:image")) {
+    if (logo) {
       logoBox = await logoParaCanvasDataURL(logo);
       if (logoBox) {
         const ratio = logoBox.w / logoBox.h;
