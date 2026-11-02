@@ -3673,11 +3673,21 @@ body.is-booting .app {
       <!-- Visão PILOTOS (nova) -->
       <div id="agendaPilotos" hidden>
         <!-- Abas internas -->
-        <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div style="display:flex;gap:8px;margin-bottom:14px; position: relative;">
           <button class="btn btn--secondary" id="pilTabVisao" style="padding:8px 16px;font-size:13px">📊 Visão Geral</button>
           <button class="btn btn--secondary" id="pilTabEscala" style="padding:8px 16px;font-size:13px">👥 Escala de pilotos</button>
           <button class="btn btn--secondary" id="pilTabDisp" style="padding:8px 16px;font-size:13px">📅 Minha disponibilidade</button>
           <button class="btn btn--secondary" id="pilTabLicencas" style="padding:8px 16px;font-size:13px">📋 Minhas Habilitações</button>
+          <button class="btn btn--secondary" id="btnFiltroPilotos" style="display:none; margin-left:auto; padding:8px 16px; font-size:13px;">👥 Filtro</button>
+          <div id="menuFiltroPilotos" style="display:none; position:absolute; right:0; top:40px; background:var(--bg); border:1px solid var(--line); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:9999; width:220px; padding:12px;">
+             <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Visualizar</div>
+             <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--line);">
+                <input type="radio" name="filtroModo" id="filtroModoMeu" value="meu"> Meu Painel
+             </label>
+             <div id="filtroListaPilotos" style="max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                <!-- Checkboxes gerados via JS -->
+             </div>
+          </div>
         </div>
 
         <!-- Aba: Visão Geral (Mini-Dashboard) -->
@@ -15885,11 +15895,38 @@ const Disponibilidade = (() => {
       if (nomesTreino && nomesTreino.length > 0) cls.push("is-treinamento");
       if (nomesReval && nomesReval.length > 0) cls.push("is-revalidacao");
 
+      let tagsHtml = [];
+      if (temFolga) {
+        const nomes = folgasNesteDia.map(k => {
+           const uid = k.split("::")[0];
+           const u = todosUsers.find(x => x.id === uid);
+           const nome = u ? u.nome.split(" ")[0] : "?";
+           return `<span onclick="event.stopPropagation(); window.abrirModal('${data}', '${uid}', 'folga')" style="cursor:pointer; text-decoration:underline;">${nome}</span>`;
+        }).join(", ");
+        tagsHtml.push('<div class="calendar__tag">🟡 ' + nomes + '</div>');
+      }
+      if (nomesTreino && nomesTreino.length) {
+        const nomes = treinosNesteDia.map(k => {
+           const uid = k.split("::")[0];
+           const u = todosUsers.find(x => x.id === uid);
+           const nome = u ? u.nome.split(" ")[0] : "?";
+           return `<span onclick="event.stopPropagation(); window.abrirModal('${data}', '${uid}', 'treinamento')" style="cursor:pointer; text-decoration:underline;">${nome}</span>`;
+        }).join(", ");
+        tagsHtml.push('<div class="calendar__tag calendar__tag--treinamento">🔵 ' + nomes + '</div>');
+      }
+      if (nomesReval && nomesReval.length) {
+        const nomes = revalsNesteDia.map(k => {
+           const uid = k.split("::")[0];
+           const u = todosUsers.find(x => x.id === uid);
+           const nome = u ? u.nome.split(" ")[0] : "?";
+           return `<span onclick="event.stopPropagation(); window.abrirModal('${data}', '${uid}', 'revalidacao')" style="cursor:pointer; text-decoration:underline;">${nome}</span>`;
+        }).join(", ");
+        tagsHtml.push('<div class="calendar__tag" style="background:#a855f7;color:#fff;">🟣 ' + nomes + '</div>');
+      }
+
       html += '<div class="' + cls.join(" ") + '" data-disp-date="' + data + '">'
         + '<span class="calendar__num">' + c.d.getDate() + '</span>'
-        + (temFolga ? '<span class="calendar__tag">🟡 ' + nomesFolga.join(", ") + '</span>' : '')
-        + (nomesTreino && nomesTreino.length ? '<span class="calendar__tag calendar__tag--treinamento">🔵 ' + nomesTreino.join(", ") + '</span>' : '')
-        + (nomesReval && nomesReval.length ? '<span class="calendar__tag" style="background:#a855f7;color:#fff;">🟣 ' + nomesReval.join(", ") + '</span>' : '')
+        + '<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">' + tagsHtml.join('') + '</div>'
         + '</div>';
     });
 
@@ -15942,7 +15979,8 @@ const Disponibilidade = (() => {
     return { ini, fim };
   }
 
-  function abrirModal(data) {
+
+  function abrirModal(data, uid = null, tipo = null) {
     const me = usuarioAtual();
     if (!podeEditar()) { alert("Sem permissao."); return; }
 
@@ -15950,15 +15988,20 @@ const Disponibilidade = (() => {
     const g = (id) => document.getElementById(id);
     const ehAdmin = me.perfil === "admin";
 
-    g("folgaModalTitle").textContent = "Minha disponibilidade \u2014 " + fmtData(data);
-    g("folgaModalSub").textContent = ehAdmin
-      ? "Selecione um ou mais pilotos, o tipo (folga ou treinamento) e o periodo."
-      : "Marque folga ou treinamento para o periodo desejado.";
+    window.__editMode = !!uid;
+    window.__editUid = uid || me.id;
+    window.__editTipo = tipo || null;
+    const isEdit = window.__editMode;
+
+    g("folgaModalTitle").textContent = isEdit ? "Editar Agendamento" : ("Minha disponibilidade \u2014 " + fmtData(data));
+    g("folgaModalSub").textContent = isEdit
+      ? "Edite as datas ou exclua o agendamento."
+      : (ehAdmin ? "Selecione um ou mais pilotos e o tipo de evento." : "Marque folga, treinamento ou revalidação.");
 
     const _dataIni = data || new Date().toISOString().slice(0,10);
-    /* Expande para o range completo do lancamento que contem esse dia */
-    const _range = _rangeLancamentoNoDia(_dataIni);
-    window.__rangeOriginal = { ini: _range.ini, fim: _range.fim };
+    const _range = _rangeLancamentoNoDia(_dataIni, isEdit ? window.__editUid : null, window.__editTipo);
+    window.__rangeOriginal = { ini: _range.ini, fim: _range.fim, uids: isEdit ? [window.__editUid] : [] };
+    
     g("folgaDataIni").value = _range.ini;
     g("folgaDataFim").value = _range.fim;
     g("folgaDataIni").min = "";
@@ -15968,7 +16011,7 @@ const Disponibilidade = (() => {
     const secAdmin = g("folgaPilotoSec");
     const secFixo = g("folgaPilotoFixo");
 
-    if (ehAdmin) {
+    if (ehAdmin && !isEdit) {
       secAdmin.style.display = "";
       secFixo.style.display = "none";
       const pilotos = (Users.pilotos ? Users.pilotos() : Users.get().filter(u => u.ativo !== false && u.perfil === "piloto"));
@@ -15976,8 +16019,9 @@ const Disponibilidade = (() => {
         const uid = u.id;
         const temFolga = !!dados.folgas[uid + "::" + data];
         const temTrein = dados.treinamentos && !!dados.treinamentos[uid + "::" + data];
-        const checked = (temFolga || temTrein) ? "checked" : "";
-        const tag = temFolga ? " \ud83d\udfe1" : (temTrein ? " \ud83d\udd35" : "");
+        const temReval = dados.revalidacao && !!dados.revalidacao[uid + "::" + data];
+        const checked = (temFolga || temTrein || temReval) ? "checked" : "";
+        const tag = temFolga ? " \ud83d\udfe1" : (temTrein ? " \ud83d\udd35" : (temReval ? " \ud83d\udfe3" : ""));
         return '<label style="display:flex;align-items:center;gap:10px;padding:8px;cursor:pointer;border-bottom:1px solid var(--line)">'
           + '<input type="checkbox" class="folgaPilotoChk" value="' + esc(uid) + '" ' + checked + '>'
           + '<span>' + esc(u.nome) + tag + '</span>'
@@ -15986,32 +16030,54 @@ const Disponibilidade = (() => {
     } else {
       secAdmin.style.display = "none";
       secFixo.style.display = "";
-      g("folgaPilotoNome").textContent = me.nome || me.id;
+      const u = (Users.get() || []).find(x => String(x.id) === String(window.__editUid));
+      g("folgaPilotoNome").textContent = u ? u.nome : window.__editUid;
     }
 
-    const temFolga = !!dados.folgas[me.id + "::" + data];
-    const temTrein = dados.treinamentos && !!dados.treinamentos[me.id + "::" + data];
-    const temReval = dados.revalidacao && !!dados.revalidacao[me.id + "::" + data];
-    
-    g("folgaTipo").checked = temFolga;
-    g("treinamentoTipo").checked = temTrein;
-    if (g("revalidacaoTipo")) g("revalidacaoTipo").checked = temReval;
+    const folgaChk = g("folgaTipo");
+    const treinChk = g("treinamentoTipo");
+    const revalChk = g("revalidacaoTipo");
+
+    if (isEdit) {
+        folgaChk.disabled = true;
+        treinChk.disabled = true;
+        if (revalChk) revalChk.disabled = true;
+        
+        folgaChk.checked = (window.__editTipo === 'folga');
+        treinChk.checked = (window.__editTipo === 'treinamento');
+        if (revalChk) revalChk.checked = (window.__editTipo === 'revalidacao');
+        
+        const k = window.__editUid + "::" + data;
+        g("folgaObs").value = (dados.folgas[k]?.obs) || (dados.treinamentos && dados.treinamentos[k]?.obs) || (dados.revalidacao && dados.revalidacao[k]?.obs) || "";
+    } else {
+        folgaChk.disabled = false;
+        treinChk.disabled = false;
+        if (revalChk) revalChk.disabled = false;
+        
+        folgaChk.checked = false;
+        treinChk.checked = false;
+        if (revalChk) revalChk.checked = false;
+        g("folgaObs").value = "";
+    }
 
     let temAlgo = false;
-    if (ehAdmin) {
-      temAlgo = Object.keys(dados.folgas).some(k => k.endsWith("::" + data))
-        || (dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + data)))
-        || (dados.revalidacao && Object.keys(dados.revalidacao).some(k => k.endsWith("::" + data)));
+    if (isEdit) {
+        const k = window.__editUid + "::" + data;
+        temAlgo = (window.__editTipo === 'folga' && dados.folgas[k]) || (window.__editTipo === 'treinamento' && dados.treinamentos && dados.treinamentos[k]) || (window.__editTipo === 'revalidacao' && dados.revalidacao && dados.revalidacao[k]);
     } else {
-      temAlgo = temFolga || temTrein || temReval;
+        if (ehAdmin) {
+          temAlgo = Object.keys(dados.folgas).some(k => k.endsWith("::" + data))
+            || (dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + data)))
+            || (dados.revalidacao && Object.keys(dados.revalidacao).some(k => k.endsWith("::" + data)));
+        } else {
+          const temFolga = !!dados.folgas[me.id + "::" + data];
+          const temTrein = dados.treinamentos && !!dados.treinamentos[me.id + "::" + data];
+          const temReval = dados.revalidacao && !!dados.revalidacao[me.id + "::" + data];
+          temAlgo = temFolga || temTrein || temReval;
+        }
     }
     g("folgaDeleteBtn").hidden = !temAlgo;
 
-    const kFolga = Object.keys(dados.folgas).find(k => k.endsWith("::" + data));
-    const kTrein = dados.treinamentos ? Object.keys(dados.treinamentos).find(k => k.endsWith("::" + data)) : null;
-    g("folgaObs").value = (kFolga && dados.folgas[kFolga]?.obs) || (kTrein && dados.treinamentos[kTrein]?.obs) || "";
-
-    /* Linka Data Inicio <-> Data Fim */
     const iniEl = g("folgaDataIni");
     const fimEl = g("folgaDataFim");
     if (iniEl && fimEl && !iniEl.__linked) {
@@ -16031,6 +16097,7 @@ const Disponibilidade = (() => {
 
     g("folgaModal").classList.add("is-open");
   }
+  window.abrirModal = abrirModal;
 
   async function salvar() {
     try {
@@ -16047,63 +16114,62 @@ const Disponibilidade = (() => {
 
       if (!ini || !fim) { alert("Preencha as datas."); return; }
       if (ini > fim) { alert("Data inicio depois da data fim."); return; }
-      if (!ehFolga && !ehTrein && !ehReval) { alert("Marque pelo menos uma opção (Folga, Treinamento ou Revalidação)."); return; }
-
-      const dias = Math.floor((new Date(fim + "T00:00:00") - new Date(ini + "T00:00:00")) / 86400000);
-      if (dias > 365) { alert("Periodo maximo: 1 ano."); return; }
+      if (!ehFolga && !ehTrein && !ehReval) { alert("Marque pelo menos uma opção."); return; }
 
       let uids = [];
-      if (ehAdmin) {
-        uids = Array.from(document.querySelectorAll(".folgaPilotoChk:checked")).map(el => el.value);
-        if (!uids.length) { alert("Marque pelo menos um piloto."); return; }
+      if (window.__editMode) {
+          uids = [window.__editUid];
       } else {
-        uids = [me.id];
+          if (ehAdmin) {
+            uids = Array.from(document.querySelectorAll(".folgaPilotoChk:checked")).map(el => el.value);
+            if (!uids.length) { alert("Marque pelo menos um piloto."); return; }
+          } else {
+            uids = [me.id];
+          }
       }
 
       if (!dados.treinamentos) dados.treinamentos = {};
       if (!dados.revalidacao) dados.revalidacao = {};
 
-      const temAlgoNoPeriodo = (uid) => {
-        const d1 = new Date(ini + "T00:00:00");
-        const d2 = new Date(fim + "T00:00:00");
-        for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
-          const data = ymd(d);
-          if (dados.folgas[uid + "::" + data]) return "folga";
-          if (dados.treinamentos[uid + "::" + data]) return "treinamento";
-        }
-        return null;
-      };
-
-      /* Apaga o range original (dias que sobraram) + o novo range, e grava */
-      const _orig = window.__rangeOriginal || null;
-      for (const uid of uids) {
-        /* 1) Apaga o range original COMPLETO desse piloto */
-        if (_orig && _orig.ini && _orig.fim) {
-          const o1 = new Date(_orig.ini + "T00:00:00");
-          const o2 = new Date(_orig.fim + "T00:00:00");
+      if (window.__editMode) {
+          const oldRange = window.__rangeOriginal;
+          const o1 = new Date(oldRange.ini + "T00:00:00");
+          const o2 = new Date(oldRange.fim + "T00:00:00");
           for (let d = new Date(o1); d <= o2; d.setDate(d.getDate() + 1)) {
-            const data = ymd(d);
-            delete dados.folgas[uid + "::" + data];
-            delete dados.treinamentos[uid + "::" + data];
-            delete dados.revalidacao[uid + "::" + data];
+              const data = ymd(d);
+              for (const uid of uids) {
+                  if (window.__editTipo === 'folga') delete dados.folgas[uid + "::" + data];
+                  if (window.__editTipo === 'treinamento') delete dados.treinamentos[uid + "::" + data];
+                  if (window.__editTipo === 'revalidacao') delete dados.revalidacao[uid + "::" + data];
+              }
           }
-        }
-        /* 2) Grava o novo range */
-        const d1 = new Date(ini + "T00:00:00");
-        const d2 = new Date(fim + "T00:00:00");
-        for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
+      } else {
+          const d1 = new Date(ini + "T00:00:00");
+          const d2 = new Date(fim + "T00:00:00");
+          for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
+              const data = ymd(d);
+              for (const uid of uids) {
+                  delete dados.folgas[uid + "::" + data];
+                  delete dados.treinamentos[uid + "::" + data];
+                  delete dados.revalidacao[uid + "::" + data];
+              }
+          }
+      }
+
+      const n1 = new Date(ini + "T00:00:00");
+      const n2 = new Date(fim + "T00:00:00");
+      for (let d = new Date(n1); d <= n2; d.setDate(d.getDate() + 1)) {
           const data = ymd(d);
-          delete dados.folgas[uid + "::" + data];
-          delete dados.treinamentos[uid + "::" + data];
-          delete dados.revalidacao[uid + "::" + data];
-          if (ehFolga) dados.folgas[uid + "::" + data] = { obs };
-          if (ehTrein) dados.treinamentos[uid + "::" + data] = { obs };
-          if (ehReval) dados.revalidacao[uid + "::" + data] = { obs };
-        }
+          for (const uid of uids) {
+              if (ehFolga) dados.folgas[uid + "::" + data] = { obs };
+              if (ehTrein) dados.treinamentos[uid + "::" + data] = { obs };
+              if (ehReval) dados.revalidacao[uid + "::" + data] = { obs };
+          }
       }
 
       await salvarDados();
       window.__rangeOriginal = null;
+      window.__editMode = false;
       g("folgaModal").classList.remove("is-open");
       render();
     } catch(err) {
@@ -16112,40 +16178,46 @@ const Disponibilidade = (() => {
     }
   }
 
-  /* Remove locks do pr  /* Remove locks do próprio usuário num intervalo */
   async function excluirDoModal() {
     const me = usuarioAtual();
     const ini = document.getElementById("folgaDataIni").value;
     const fim = document.getElementById("folgaDataFim").value;
     const ehAdmin = me.perfil === "admin";
-    const msg = ehAdmin
-      ? "Remover TODOS os lançamentos deste dia (folgas de todos + locks de todas as aeronaves)?"
-      : "Remover os seus lançamentos deste dia?";
-    if (!confirm(msg)) return;
-
-    if (ehAdmin) {
-      const d1 = new Date(ini + "T00:00:00");
-      const d2 = new Date(fim + "T00:00:00");
-      for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
-        const data = ymd(d);
-        Object.keys(dados.folgas).forEach(k => { if (k.endsWith("::" + data)) delete dados.folgas[k]; });
-        if (dados.treinamentos) Object.keys(dados.treinamentos).forEach(k => { if (k.endsWith("::" + data)) delete dados.treinamentos[k]; });
-        if (dados.revalidacao) Object.keys(dados.revalidacao).forEach(k => { if (k.endsWith("::" + data)) delete dados.revalidacao[k]; });
-      }
+    
+    let uids = [];
+    if (window.__editMode) {
+        uids = [window.__editUid];
     } else {
-      await removerFolga(me.id, ini, fim);
-      if (dados.treinamentos) {
-        const d1 = new Date(ini + "T00:00:00");
-        const d2 = new Date(fim + "T00:00:00");
-        for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
-          const data = ymd(d);
-          delete dados.treinamentos[me.id + "::" + data];
-          if (dados.revalidacao) delete dados.revalidacao[me.id + "::" + data];
+        if (ehAdmin) {
+            uids = Array.from(document.querySelectorAll(".folgaPilotoChk:checked")).map(el => el.value);
+            if (!uids.length) { alert("Marque pelo menos um piloto para remover."); return; }
+        } else {
+            uids = [me.id];
         }
-      }
     }
 
+    const msg = ehAdmin ? "Remover os lançamentos dos PILOTOS SELECIONADOS neste período?" : "Remover os seus lançamentos deste período?";
+    if (!confirm(msg)) return;
+
+    const d1 = new Date(ini + "T00:00:00");
+    const d2 = new Date(fim + "T00:00:00");
+    for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
+        const data = ymd(d);
+        for (const uid of uids) {
+            if (window.__editMode) {
+                if (window.__editTipo === 'folga') delete dados.folgas[uid + "::" + data];
+                if (window.__editTipo === 'treinamento') delete dados.treinamentos[uid + "::" + data];
+                if (window.__editTipo === 'revalidacao') delete dados.revalidacao[uid + "::" + data];
+            } else {
+                delete dados.folgas[uid + "::" + data];
+                if (dados.treinamentos) delete dados.treinamentos[uid + "::" + data];
+                if (dados.revalidacao) delete dados.revalidacao[uid + "::" + data];
+            }
+        }
+    }
+    
     await salvarDados();
+    window.__editMode = false;
     document.getElementById("folgaModal").classList.remove("is-open");
     render();
   }
@@ -16244,8 +16316,11 @@ const Alertas = (() => {
       if (u.ativo === false) return;
       if (u.perfil !== "piloto" && u.tambem_e_piloto !== true) return;
       
-      /* Privacidade: Admin vê todos. Piloto vê só os seus. */
+      /* Privacidade: Piloto vê só os seus. */
       if (!_isAdminDash && (!_sessaoDash || String(_sessaoDash.id) !== String(u.id))) return;
+      
+      /* Filtro do Admin: se selecionou alguém na Visão Geral, aplica aqui também */
+      if (_isAdminDash && window.__filtroPilotosIds && !window.__filtroPilotosIds.includes(String(u.id))) return;
       
       const ext = u.extras || {};
       const hidden = ext.hidden_licencas || [];
@@ -24878,243 +24953,305 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function renderVisaoGeral() {
-    // Usa a mesma lógica do calendário para lidar com admin/piloto
-    const sessao = (typeof Disponibilidade !== 'undefined' && Disponibilidade.usuarioAtual) 
-      ? Disponibilidade.usuarioAtual() 
-      : ((typeof Session !== 'undefined' && Session.get) ? Session.get() : null);
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
     if (!sessao) return;
-
+    
+    const isAdmin = sessao.perfil === 'admin';
     const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
-    const user = users.find(u => u.id === sessao.id) || sessao;
-    const ext = user.extras || {};
+    const pilotos = users.filter(u => (u.perfil === 'piloto' || u.tambem_e_piloto) && u.ativo !== false);
+
+    if (isAdmin && !window.__filtroPilotosIds) {
+        window.__filtroPilotosIds = pilotos.map(p => p.id);
+    }
+    
+    const btnFiltro = document.getElementById('btnFiltroPilotos');
+    const menuFiltro = document.getElementById('menuFiltroPilotos');
+    const listPilotos = document.getElementById('filtroListaPilotos');
+    const radioMeu = document.getElementById('filtroModoMeu');
+
+    if (isAdmin && btnFiltro && menuFiltro) {
+        btnFiltro.style.display = 'inline-block';
+        if (!btnFiltro.dataset.bound) {
+            btnFiltro.dataset.bound = '1';
+            btnFiltro.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menuFiltro.style.display = menuFiltro.style.display === 'none' ? 'block' : 'none';
+            });
+            document.addEventListener('click', (e) => {
+                if (menuFiltro.style.display === 'block' && !menuFiltro.contains(e.target) && e.target !== btnFiltro) {
+                    menuFiltro.style.display = 'none';
+                }
+            });
+            
+            radioMeu.addEventListener('change', () => {
+                window.__filtroPilotosIds = [sessao.id];
+                renderVisaoGeral();
+                if (typeof renderCurrentPage === 'function') renderCurrentPage();
+            });
+
+            listPilotos.innerHTML = pilotos.map(p => `
+                <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                    <input type="checkbox" class="chkFiltroPiloto" value="${p.id}" checked> ${p.nome.split(' ')[0]}
+                </label>
+            `).join('');
+
+            listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const selecionados = Array.from(listPilotos.querySelectorAll('.chkFiltroPiloto:checked')).map(x => x.value);
+                    window.__filtroPilotosIds = selecionados;
+                    radioMeu.checked = false;
+                    renderVisaoGeral();
+                    if (typeof renderCurrentPage === 'function') renderCurrentPage();
+                });
+            });
+        }
+        
+        const soEuChecked = window.__filtroPilotosIds.length === 1 && window.__filtroPilotosIds[0] === sessao.id;
+        radioMeu.checked = soEuChecked;
+        listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
+            cb.checked = window.__filtroPilotosIds.includes(cb.value);
+        });
+    }
+
+    const targetPilotos = isAdmin ? window.__filtroPilotosIds : [sessao.id];
+    const isMeuPainel = targetPilotos.length === 1 && targetPilotos[0] === sessao.id;
     const hojeStr = (() => { const n = new Date(); return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0"); })();
 
     // ----- 1. COMPLIANCE -----
     const boxComp = document.getElementById('vgCompliance');
     if (boxComp) {
-      const defaults = [{ key: 'cma' }, { key: 'ifr' }, { key: 'mnte' }, { key: 'mlte' }, { key: 'inva' }, { key: 'icao' }, { key: 'simulador' }];
-      const customs = ext.custom_licencas || [];
-      const hidden = ext.hidden_licencas || [];
-      const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key));
+        if (isMeuPainel) {
+            const user = users.find(u => u.id === sessao.id) || sessao;
+            const ext = user.extras || {};
+            const defaults = [{ key: 'cma' }, { key: 'ifr' }, { key: 'mnte' }, { key: 'mlte' }, { key: 'inva' }, { key: 'icao' }, { key: 'simulador' }];
+            const licencas = [...defaults, ...(ext.custom_licencas || [])].filter(l => !(ext.hidden_licencas || []).includes(l.key));
 
-      let valid = 0, warning = 0, expired = 0;
-      licencas.forEach(l => {
-        if (ext['notif_' + l.key] === false) return;
-        const dataStr = ext['validade_' + l.key];
-        if (!dataStr) return;
-        const dias = Math.floor((new Date(dataStr + "T00:00:00") - new Date()) / 86400000);
-        const aviso = ext['aviso_' + l.key] || 30;
-        if (dias < 0) expired++;
-        else if (dias <= aviso) warning++;
-        else valid++;
-      });
+            let valid = 0, warning = 0, expired = 0;
+            licencas.forEach(l => {
+                if (ext['notif_' + l.key] === false) return;
+                const dataStr = ext['validade_' + l.key];
+                if (!dataStr) return;
+                const dias = Math.floor((new Date(dataStr + "T00:00:00") - new Date()) / 86400000);
+                const aviso = ext['aviso_' + l.key] || 30;
+                if (dias < 0) expired++;
+                else if (dias <= aviso) warning++;
+                else valid++;
+            });
 
-      const total = valid + warning + expired;
-      if (total === 0) {
-        boxComp.innerHTML = '<p class="hint" style="margin:0">Nenhuma licença monitorada.</p>';
-      } else {
-        const pV = (valid / total) * 100, pW = (warning / total) * 100, pE = (expired / total) * 100;
-        boxComp.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:12px">
-            <span style="color:var(--green);font-weight:700;opacity:${valid === 0 ? '0.3' : '1'}">✅ ${valid} Válidas</span>
-            <span style="color:var(--yellow);font-weight:700;opacity:${warning === 0 ? '0.3' : '1'}">⚠️ ${warning} Vencendo</span>
-            <span style="color:var(--red);font-weight:700;opacity:${expired === 0 ? '0.3' : '1'}">❌ ${expired} Vencidas</span>
-          </div>
-          <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;display:flex">
-            <div style="width:${pV}%;background:var(--green)"></div>
-            <div style="width:${pW}%;background:var(--yellow)"></div>
-            <div style="width:${pE}%;background:var(--red)"></div>
-          </div>
-          ${expired > 0 ? '<p style="color:var(--red);font-size:11px;margin:12px 0 0;text-align:center;font-weight:700">Atenção: Você possui licenças vencidas!</p>' : ''}
-        `;
-      }
+            const total = valid + warning + expired;
+            if (total === 0) {
+                boxComp.innerHTML = '<p class="hint" style="margin:0">Nenhuma licença monitorada.</p>';
+            } else {
+                const pV = (valid / total) * 100, pW = (warning / total) * 100, pE = (expired / total) * 100;
+                boxComp.innerHTML = `
+                  <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:12px">
+                    <span style="color:var(--green);font-weight:700;opacity:${valid === 0 ? '0.3' : '1'}">✅ ${valid} Válidas</span>
+                    <span style="color:var(--yellow);font-weight:700;opacity:${warning === 0 ? '0.3' : '1'}">⚠️ ${warning} Vencendo</span>
+                    <span style="color:var(--red);font-weight:700;opacity:${expired === 0 ? '0.3' : '1'}">❌ ${expired} Vencidas</span>
+                  </div>
+                  <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;display:flex">
+                    <div style="width:${pV}%;background:var(--green)"></div>
+                    <div style="width:${pW}%;background:var(--yellow)"></div>
+                    <div style="width:${pE}%;background:var(--red)"></div>
+                  </div>
+                `;
+            }
+        } else {
+            let html = '<div style="display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; padding-right:4px;">';
+            targetPilotos.forEach(uid => {
+                const u = users.find(x => x.id === uid);
+                if (!u) return;
+                const ext = u.extras || {};
+                const defaults = [{ key: 'cma' }, { key: 'ifr' }, { key: 'mnte' }, { key: 'mlte' }, { key: 'inva' }, { key: 'icao' }, { key: 'simulador' }];
+                const licencas = [...defaults, ...(ext.custom_licencas || [])].filter(l => !(ext.hidden_licencas || []).includes(l.key));
+                
+                let v = 0, w = 0, e = 0;
+                licencas.forEach(l => {
+                    if (ext['notif_' + l.key] === false) return;
+                    const d = ext['validade_' + l.key];
+                    if (!d) return;
+                    const dias = Math.floor((new Date(d + "T00:00:00") - new Date()) / 86400000);
+                    if (dias < 0) e++;
+                    else if (dias <= (ext['aviso_' + l.key] || 30)) w++;
+                    else v++;
+                });
+                
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:4px;">
+                    <span style="font-size:12px; font-weight:700; width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(u.nome)}">${esc(u.nome.split(' ')[0])}</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--green); opacity:${v===0?'0.3':'1'}">✅ ${v}</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--yellow); opacity:${w===0?'0.3':'1'}">⚠️ ${w}</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--red); opacity:${e===0?'0.3':'1'}">❌ ${e}</span>
+                </div>`;
+            });
+            html += '</div>';
+            boxComp.innerHTML = html;
+        }
     }
 
     // ----- 2. PRÓXIMO VOO -----
     const boxVoo = document.getElementById('vgProximoVoo');
     if (boxVoo) {
-      const eventos = (typeof Agenda !== 'undefined' && Agenda.getEventos) ? Agenda.getEventos() : [];
-      const minhaAgenda = eventos.filter(ev => String(ev.piloto_p1) === String(sessao.id) || String(ev.piloto_p2) === String(sessao.id));
-      const futuros = minhaAgenda.filter(ev => {
-        const trs = ev.trechos || [];
-        if (!trs.length) return false;
-        return trs[trs.length - 1].data >= hojeStr;
-      }).sort((a, b) => (a.trechos[0].data + a.trechos[0].hora).localeCompare(b.trechos[0].data + b.trechos[0].hora));
+        const eventos = (typeof Agenda !== 'undefined' && Agenda.getEventos) ? Agenda.getEventos() : [];
+        
+        const voosAgrupados = {}; 
+        targetPilotos.forEach(uid => {
+            const minhaAgenda = eventos.filter(ev => String(ev.piloto_p1) === String(uid) || String(ev.piloto_p2) === String(uid));
+            const futuros = minhaAgenda.filter(ev => {
+                const trs = ev.trechos || [];
+                return trs.length && trs[trs.length - 1].data >= hojeStr;
+            });
+            
+            if (futuros.length > 0) {
+                const prox = futuros.sort((a, b) => (a.trechos[0].data + a.trechos[0].hora).localeCompare(b.trechos[0].data + b.trechos[0].hora))[0];
+                
+                if (!voosAgrupados[prox.id]) voosAgrupados[prox.id] = { ev: prox, pilotosIds: [] };
+                voosAgrupados[prox.id].pilotosIds.push(String(uid));
+            }
+        });
 
-      if (futuros.length > 0) {
-        const ev = futuros[0];
-        const trs = ev.trechos;
-        const dataIni = trs[0].data, dataFim = trs[trs.length - 1].data;
-        const fmt = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
-        const periodo = (dataIni === dataFim) ? fmt(dataIni) : fmt(dataIni) + ' até ' + fmt(dataFim);
-        const rota = trs[0].origem + trs.map(t => ' → ' + t.destino).join('');
-        
-        // Puxa a cor real da aeronave (se não achar, usa o fallback do sistema)
-        const corAero = (typeof window.corDaAeronave === 'function') ? window.corDaAeronave(ev.aeronave_tail) : 'var(--muted)';
-        
-        boxVoo.innerHTML = `
-          <div style="font-size:14px;font-weight:700;margin-bottom:4px">${periodo}</div>
-          <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.4">${rota}</div>
-          <div style="font-size:12px;background:var(--bg);border-left:3px solid ${corAero};padding:6px 10px;border-radius:4px;display:inline-block;font-weight:600">
-            ✈️ Aeronave: <b style="color:${corAero}">${ev.aeronave_tail}</b>
-          </div>
-        `;
-      } else {
-        boxVoo.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">🌴</span><span class="hint">Nenhum voo agendado no momento.</span></div>';
-      }
+        const voosArray = Object.values(voosAgrupados).sort((a,b) => (a.ev.trechos[0].data).localeCompare(b.ev.trechos[0].data));
+
+        if (voosArray.length > 0) {
+            let html = '<div style="display:flex; flex-direction:column; gap:10px; max-height:220px; overflow-y:auto; padding-right:4px;">';
+            voosArray.forEach(item => {
+                const ev = item.ev;
+                const trs = ev.trechos;
+                const dataIni = trs[0].data, dataFim = trs[trs.length - 1].data;
+                const fmt = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+                const periodo = (dataIni === dataFim) ? fmt(dataIni) : fmt(dataIni) + ' a ' + fmt(dataFim);
+                const rota = trs[0].origem + trs.map(t => ' → ' + t.destino).join('');
+                const corAero = (typeof window.corDaAeronave === 'function') ? window.corDaAeronave(ev.aeronave_tail) : 'var(--muted)';
+                
+                let nomePiloto = "";
+                if (!isMeuPainel) {
+                    const nomes = item.pilotosIds.map(uid => {
+                        const u = users.find(x => x.id === uid);
+                        return u ? u.nome.split(' ')[0] : '?';
+                    });
+                    nomePiloto = `<div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">PILOTO: ${nomes.join(' / ')}</div>`;
+                }
+
+                html += `<div style="border-bottom:1px dashed var(--line); padding-bottom:6px;">
+                    ${nomePiloto}
+                    <div style="font-size:13px;font-weight:700;">${periodo}</div>
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${rota}">${rota}</div>
+                    <div style="font-size:11px;background:var(--bg);border-left:2px solid ${corAero};padding:2px 6px;border-radius:4px;display:inline-block;font-weight:600">
+                        ✈️ <b style="color:${corAero}">${ev.aeronave_tail}</b>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            boxVoo.innerHTML = html;
+        } else {
+            boxVoo.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">🌴</span><span class="hint">Nenhum voo agendado no momento.</span></div>';
+        }
     }
 
-    // ----- 3. PRÓXIMOS EVENTOS (TREINAMENTO / REVALIDAÇÃO) -----
+    // ----- 3. PRÓXIMOS DIAS -----
     const boxDisp = document.getElementById('vgDisponibilidade');
     if (boxDisp) {
-      const disp = JSON.parse(localStorage.getItem('dv.disponibilidade.v1') || '{}');
-      const hojeDate = new Date(); hojeDate.setHours(0,0,0,0);
-      
-      const eventosBrutos = [];
-      const isAdmin = sessao.perfil === 'admin';
-      // Puxa a seleção salva no navegador (ou usa 'todos' como padrão)
-      if (!window.__vgFiltroEventos) {
-        window.__vgFiltroEventos = localStorage.getItem('dv.pilotos.filtroEventos') || 'todos';
-      }
-      const filtroEventos = window.__vgFiltroEventos;
-      
-      // Controla a lógica do Menu Dropdown
-      const btnFiltro = document.getElementById('vgFiltroBtn');
-      const menuFiltro = document.getElementById('vgFiltroMenu');
-      const optTodos = document.getElementById('vgFiltroTodos');
-      const optMeus = document.getElementById('vgFiltroMeus');
-
-      if (btnFiltro && menuFiltro) {
-        // Mostra o botão apenas para Admin
-        btnFiltro.style.display = isAdmin ? 'inline-block' : 'none';
+        const disp = JSON.parse(localStorage.getItem('dv.disponibilidade.v1') || '{}');
+        const hojeDate = new Date(); hojeDate.setHours(0,0,0,0);
         
-        // Vincula eventos apenas uma vez
-        if (!btnFiltro.dataset.bound) {
-          btnFiltro.dataset.bound = '1';
-          
-          // Abre/Fecha o menu
-          btnFiltro.addEventListener('click', (e) => {
-            e.stopPropagation();
-            menuFiltro.style.display = menuFiltro.style.display === 'none' ? 'block' : 'none';
-          });
-          
-          // Fecha ao clicar fora
-          document.addEventListener('click', (e) => {
-            if (menuFiltro.style.display === 'block' && !menuFiltro.contains(e.target)) {
-              menuFiltro.style.display = 'none';
+        const eventosBrutos = [];
+        const processarDados = (obj, label, cor) => {
+            if (!obj) return;
+            Object.keys(obj).forEach(k => {
+                const parts = k.split("::");
+                if (parts.length < 2) return;
+                const uid = parts[0];
+                const data = parts[1];
+                
+                if (!targetPilotos.includes(uid)) return;
+                if (data >= hojeStr) {
+                    const u = users.find(x => String(x.id) === String(uid));
+                    eventosBrutos.push({ data, label, cor, uid, nomePiloto: u ? u.nome.split(" ")[0] : "" });
+                }
+            });
+        };
+        
+        processarDados(disp.folgas, "Folga", "var(--yellow)");
+        processarDados(disp.treinamentos, "Treinamento", "var(--accent)");
+        processarDados(disp.revalidacao, "Revalidação", "#a855f7");
+        
+        // 1. Agrupar dias contínuos POR USUÁRIO (para não misturar os dias)
+        const porUsuario = {};
+        eventosBrutos.forEach(ev => {
+            if (!porUsuario[ev.uid]) porUsuario[ev.uid] = [];
+            porUsuario[ev.uid].push(ev);
+        });
+
+        let blocosIndividuais = [];
+        Object.keys(porUsuario).forEach(uid => {
+            const evs = porUsuario[uid].sort((a,b) => a.data.localeCompare(b.data));
+            const blocosU = [];
+            evs.forEach(ev => {
+                const ultimo = blocosU[blocosU.length - 1];
+                if (ultimo && ultimo.label === ev.label) {
+                    // Usando UTC para não errar a virada de dia
+                    const p1 = ultimo.fim.split('-'); const p2 = ev.data.split('-');
+                    const utc1 = Date.UTC(p1[0], p1[1]-1, p1[2]);
+                    const utc2 = Date.UTC(p2[0], p2[1]-1, p2[2]);
+                    if (Math.round((utc2 - utc1) / 86400000) === 1) {
+                        ultimo.fim = ev.data;
+                        return;
+                    }
+                }
+                blocosU.push({ label: ev.label, cor: ev.cor, inicio: ev.data, fim: ev.data, uid: ev.uid, nomePiloto: ev.nomePiloto });
+            });
+            blocosIndividuais = blocosIndividuais.concat(blocosU);
+        });
+
+        // 2. Agrupar blocos que têm o MESMO evento nas MESMAS datas
+        const blocosAgrupados = [];
+        blocosIndividuais.forEach(b => {
+            const match = blocosAgrupados.find(x => x.label === b.label && x.inicio === b.inicio && x.fim === b.fim);
+            if (match) {
+                if (!match.nomes.includes(b.nomePiloto)) match.nomes.push(b.nomePiloto);
+            } else {
+                blocosAgrupados.push({ label: b.label, cor: b.cor, inicio: b.inicio, fim: b.fim, nomes: [b.nomePiloto] });
             }
-          });
-          
-          // Ações das opções
-          optTodos.addEventListener('click', () => {
-            window.__vgFiltroEventos = 'todos';
-            localStorage.setItem('dv.pilotos.filtroEventos', 'todos'); // <-- Salva
-            menuFiltro.style.display = 'none';
-            renderVisaoGeral();
-          });
-          
-          optMeus.addEventListener('click', () => {
-            window.__vgFiltroEventos = 'meus';
-            localStorage.setItem('dv.pilotos.filtroEventos', 'meus'); // <-- Salva
-            menuFiltro.style.display = 'none';
-            renderVisaoGeral();
-          });
-        }
+        });
+
+        // 3. Ordenar e limitar a 4 itens
+        blocosAgrupados.sort((a,b) => a.inicio.localeCompare(b.inicio));
+        const futuros = blocosAgrupados.slice(0, 4); 
         
-        // Marca visualmente qual opção está ativa no menu
-        if (filtroEventos === 'todos') {
-          optTodos.style.fontWeight = '800';
-          optTodos.style.color = 'var(--accent)';
-          optMeus.style.fontWeight = 'normal';
-          optMeus.style.color = 'var(--text)';
+        if (!futuros.length) {
+            boxDisp.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">☕</span><span class="hint">Nenhum evento futuro.</span></div>';
         } else {
-          optMeus.style.fontWeight = '800';
-          optMeus.style.color = 'var(--accent)';
-          optTodos.style.fontWeight = 'normal';
-          optTodos.style.color = 'var(--text)';
-        }
-      }
-      
-      const processarDados = (obj, label, cor) => {
-        if (!obj) return;
-        Object.keys(obj).forEach(k => {
-          const parts = k.split("::");
-          if (parts.length < 2) return;
-          const uid = parts[0];
-          const data = parts[1];
-          
-          if (isAdmin) {
-             if (filtroEventos === 'meus' && uid !== String(sessao.id)) return;
-          } else {
-             if (uid !== String(sessao.id)) return;
-          }
-          
-          if (data >= hojeStr) {
-            const u = users.find(x => String(x.id) === String(uid));
-            const nomePiloto = u ? u.nome.split(" ")[0] : "";
-            eventosBrutos.push({ data, label, cor, uid, nomePiloto });
-          }
-        });
-      };
-      
-      processarDados(disp.folgas, "Folga", "var(--yellow)");
-      processarDados(disp.treinamentos, "Treinamento", "var(--accent)");
-      processarDados(disp.revalidacao, "Revalidação", "#a855f7");
-      
-      eventosBrutos.sort((a,b) => a.data.localeCompare(b.data));
-      
-      // Agrupar dias consecutivos do mesmo evento e mesmo piloto
-      const blocos = [];
-      eventosBrutos.forEach(ev => {
-        const ultimo = blocos[blocos.length - 1];
-        if (ultimo && ultimo.label === ev.label && ultimo.uid === ev.uid) {
-          const d1 = new Date(ultimo.fim + "T00:00:00");
-          const d2 = new Date(ev.data + "T00:00:00");
-          if (d2 - d1 === 86400000) {
-            ultimo.fim = ev.data;
-            return;
-          }
-        }
-        blocos.push({ label: ev.label, cor: ev.cor, inicio: ev.data, fim: ev.data, uid: ev.uid, nomePiloto: ev.nomePiloto });
-      });
-      
-      const futuros = blocos.slice(0, 4); // Mostra até 4 eventos
-      
-      if (!futuros.length) {
-        boxDisp.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">☕</span><span class="hint">Nenhum evento futuro.</span></div>';
-      } else {
-        const fmtD = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
-        let htmlDisp = '';
-        
-        futuros.forEach(b => {
-          const bStart = new Date(b.inicio + "T00:00:00");
-          const diffDays = Math.round((bStart - hojeDate) / 86400000);
-          
-          let quando = "";
-          if (diffDays === 0) quando = "Hoje";
-          else if (diffDays === 1) quando = "Amanhã";
-          else quando = `Em ${diffDays} dias`;
-          
-          let periodo = "";
-          if (b.inicio !== b.fim) {
-            periodo = ` <span style="color:var(--muted);font-size:11px">(${fmtD(b.inicio)} a ${fmtD(b.fim)})</span>`;
-          } else {
-            periodo = ` <span style="color:var(--muted);font-size:11px">(${fmtD(b.inicio)})</span>`;
-          }
+            const fmtD = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+            let htmlDisp = '';
+            
+            futuros.forEach(b => {
+                const bStart = new Date(b.inicio + "T00:00:00");
+                const diffDays = Math.round((bStart - hojeDate) / 86400000);
+                let quando = diffDays === 0 ? "Hoje" : (diffDays === 1 ? "Amanhã" : `Em ${diffDays} dias`);
+                
+                let periodo = (b.inicio !== b.fim) ? ` (${fmtD(b.inicio)} a ${fmtD(b.fim)})` : ` (${fmtD(b.inicio)})`;
+                
+                let periodoTexto = (b.inicio !== b.fim) ? ` (${fmtD(b.inicio)} a ${fmtD(b.fim)})` : ` (${fmtD(b.inicio)})`;
+                let periodoHtml = `<span style="color:var(--muted);font-size:11px">${periodoTexto}</span>`;
+                
+                let nomesTexto = "";
+                let nomesHtml = "";
+                if (!isMeuPainel && b.nomes.length > 0) {
+                    nomesTexto = ` - ${b.nomes.join(" / ")}`;
+                    nomesHtml = ` <span style="color:var(--text); font-weight:normal">- ${b.nomes.join(" / ")}</span>`;
+                }
 
-          let labelText = b.label;
-          if (isAdmin && filtroEventos === 'todos' && b.nomePiloto) {
-            labelText += ` - ${b.nomePiloto}`;
-          }
+                let tituloTexto = esc(`${b.label}${nomesTexto}${periodoTexto}`);
 
-          htmlDisp += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-bottom:4px;border-bottom:1px dashed var(--line)">
-            <span style="font-size:12px;color:${b.cor};font-weight:700">${labelText}${periodo}</span>
-            <span style="font-size:11px;font-weight:800;background:var(--bg);padding:2px 6px;border-radius:4px">${quando}</span>
-          </div>`;
-        });
-        
-        boxDisp.innerHTML = htmlDisp;
-      }
+                htmlDisp += `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--line); gap: 8px;">
+                    <span style="font-size:12px;color:${b.cor};font-weight:700;line-height:1.4;" title="${tituloTexto}">
+                        ${b.label}${nomesHtml}${periodoHtml}
+                    </span>
+                    <span style="font-size:10px;font-weight:800;background:var(--bg);padding:2px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0;">${quando}</span>
+                </div>`;
+            });
+            
+            boxDisp.innerHTML = htmlDisp;
+        }
     }
   }
 
