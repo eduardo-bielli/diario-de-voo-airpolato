@@ -3950,6 +3950,12 @@ body.is-booting .app {
             <p class="hint" style="margin:4px 0 0">Controle de horas emprestadas (crédito) e usadas de terceiros (débito).</p>
           </div>
         </header>
+        <div style="padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700">
+            <span style="color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Empresa:</span>
+            <select id="thFiltroEmpresa" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text);font-family:inherit;font-weight:600;min-width:180px"></select>
+          </label>
+        </div>
         <div id="thDashboard" style="padding:16px 20px;border-bottom:1px solid var(--line)">
           <p class="hint" style="margin:0">Carregando…</p>
         </div>
@@ -4293,8 +4299,6 @@ body.is-booting .app {
 <div class="formgrid">
 <label class="field"><span>Cor primária</span><div class="color-row"><input id="setReportColor1" type="color" value="#1e293b"><code id="reportColor1Value">#1E293B</code></div></label>
 <label class="field"><span>Cor secundária</span><div class="color-row"><input id="setReportColor2" type="color" value="#38a8ff"><code id="reportColor2Value">#38A8FF</code></div></label>
-    <label class="field" style="grid-column: 1 / -1; margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px;"><span>Fundo do Cabeçalho do E-mail (Logo)</span><div class="color-row"><input id="setEmailHeaderColor" type="color" value="#1e293b"><code id="emailHeaderColorValue">#1E293B</code></div></label>
-    <label class="field" style="grid-column: 1 / -1;"><span>Fundo da Barra de Trechos (E-mail)</span><div class="color-row"><input id="setEmailSegmentsColor" type="color" value="#1687ff"><code id="emailSegmentsColorValue">#1687FF</code></div></label>
 </div>
 </div>
 <div class="settings-section"><h3>Cards específicos</h3><p class="hint" style="margin-top:0;margin-bottom:12px">Cor de fundo dos cards de acordo com o tipo</p><div class="formgrid">
@@ -6220,8 +6224,6 @@ window.EmailRoteiro = (() => {
         logo_mime: _logoMime,
         logo_b64: _logoB64,
         cor1: localStorage.getItem("dv_report_color1") || "#1e293b",
-        corHeaderEmail: localStorage.getItem("dv_email_header_color") || "#1e293b",
-        corSegmentosEmail: localStorage.getItem("dv_email_segments_color") || "#1687ff",
         cor2: localStorage.getItem("dv_report_color2") || "#38a8ff"
       };
       const voo = {
@@ -7259,7 +7261,7 @@ const Aircraft = (() => {
       const ciclos = Object.keys(a.custos_por_ano || {});
       const ano = ciclos.includes(anoAtual) ? anoAtual : (ciclos.sort().reverse()[0] || anoAtual);
       try {
-        const total = await Manutencao.totalPreventiva(a.id, ano); /* AIRPOLATO-ONLY: só preventivas */
+        const total = await Manutencao.totalComputado(a.id, ano);
         const txt = Fmt.money(total || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         el.textContent = total > 0 ? txt + " (ciclo " + ano + ")" : "—";
       } catch(e) {
@@ -7404,7 +7406,7 @@ const Aircraft = (() => {
           }
           
           return '<dl class="aircraft-card__costs" style="grid-template-columns:1fr 1fr;margin-top:8px">'
-            + '<div><dt>Manutenção Preventiva</dt><dd id="'+manutId+'">Carregando...</dd></div>'  /* AIRPOLATO-ONLY */
+            + '<div><dt>Manutenção Preventiva</dt><dd id="'+manutId+'">Carregando...</dd></div>'
             + '<div><dt>Preço médio comb.</dt><dd>'+esc(precoCombTxt)+'</dd></div>'
             + '<div style="margin-top:10px"><dt>Vencimento CVA</dt><dd style="'+_cvaCls+'">'+esc(_cvaTxt)+'</dd></div>'
             + '<div style="margin-top:10px"><dt>Horas disponíveis</dt><dd style="'+_horasCls+'">'+esc(_horasTxt)+'</dd></div>'
@@ -14383,8 +14385,7 @@ const Manutencao = (() => {
           const atual = manutencoes.find(t => t.id === x.id);
           if (atual) {
             x.valor = atual.valor;
-            /* AIRPOLATO-ONLY: NÃO sobrescreve se o usuário já definiu manualmente (checkbox) */
-            if (x.computar === undefined) x.computar = atual.computar;
+            x.computar = atual.computar; 
             /* Força tipo translado pra ficar na seção certa */
             x.tipo = "translado";
           }
@@ -14648,19 +14649,6 @@ const Manutencao = (() => {
     let total = 0;
     lanc.forEach(x => {
       if (x.computar !== false) total += Number(x.valor) || 0;
-    });
-    return total;
-  }
-
-  /* AIRPOLATO-ONLY: soma apenas manutenções preventivas (usada no card do Dashboard) */
-  async function totalPreventiva(aeroId, ano) {
-    const lanc = await getLancamentos(aeroId, ano);
-    let total = 0;
-    lanc.forEach(x => {
-      if (x.ignorado === true) return;
-      if (x.tipo !== "preventiva") return;
-      if (x.computar === false) return;
-      total += Number(x.valor) || 0;
     });
     return total;
   }
@@ -15168,7 +15156,7 @@ const Manutencao = (() => {
     if (m) m.classList.add("is-open");
   }
 
-  return { render, carregar, popularSelects, popularCiclos, exportarRelatorio, exportarPDFManut, abrirModalRelatorio, agruparManut, abrirNovo, salvar, excluirDoModal, totalComputado, totalPreventiva /* AIRPOLATO-ONLY */, getLista: () => lista };
+  return { render, carregar, popularSelects, popularCiclos, exportarRelatorio, exportarPDFManut, abrirModalRelatorio, agruparManut, abrirNovo, salvar, excluirDoModal, totalComputado, getLista: () => lista };
 })();
 
 const Tripulacao = (() => {
@@ -16887,6 +16875,26 @@ async function renderCustosPorAeronave() {
    Crédito (emprestamos) x Débito (usamos de terceiros)
    ============================================================ */
 const TrocaHoras = (() => {
+  /* Filtro por empresa (persistido) */
+  let __thFiltroEmpresa = localStorage.getItem("dv.trocaHoras.filtroEmpresa") || "";
+  function _thEmpresaFiltroId() { return __thFiltroEmpresa || null; }
+  function _thEmpresaMatch(l) {
+    const empId = _thEmpresaFiltroId();
+    if (!empId) return true;
+    if (l.tipo === "credito") return l.empresa_emprestada_id === empId;
+    if (l.tipo === "debito")  return l.empresa_id === empId;
+    return true;
+  }
+  function popularSelectFiltroEmpresa() {
+    const sel = document.getElementById("thFiltroEmpresa");
+    if (!sel) return;
+    const empresas = lerEmpresas();
+    let html = '<option value="">Todas as empresas</option>';
+    html += empresas.map(e =>
+      '<option value="' + esc(e.id) + '"' + (e.id === __thFiltroEmpresa ? " selected" : "") + '>' + esc(e.nome) + '</option>'
+    ).join("");
+    sel.innerHTML = html;
+  }
   let __linkEditandoId = null;
   let __linkEmEdicaoBackup = null;
   const KEYS = {
@@ -16944,45 +16952,63 @@ const TrocaHoras = (() => {
   }
 
   /* Calcula saldo por modelo, aplicando links manuais */
-  function calcularSaldo() {
-    const lancamentos = lerLancamentos();
+  function calcularSaldo(empresaId) {
+    let _lancs = lerLancamentos();
+    if (empresaId) {
+      _lancs = _lancs.filter(l => {
+        if (l.tipo === "credito") return l.empresa_emprestada_id === empresaId;
+        if (l.tipo === "debito")  return l.empresa_id === empresaId;
+        return true;
+      });
+    }
+    const lancamentos = _lancs;
     const links = lerLinks();
     const modeloMap = {};
     const criarEntry = (modelo) => ({ modelo, credito_min: 0, debito_min: 0, itens: [] });
 
-    const consumoCred = {};
-    const consumoDeb  = {};
-
-    links.forEach(link => {
-      /* Ignora o link em edição (pra mostrar o saldo PRÉ-link no modal) */
-      if (link.id === __linkEditandoId) return;
-      const cred = lancamentos.find(l => l.id === link.credito_id);
-      const deb = lancamentos.find(l => l.id === link.debito_id);
-      if (!cred || !deb) return;
-      const minC = Number(link.minutos_credito) || Number(link.minutos) || 0;
-      const minD = Number(link.minutos_debito)  || Number(link.minutos) || 0;
-      consumoCred[link.credito_id] = (consumoCred[link.credito_id] || 0) + minC;
-      consumoDeb[link.debito_id]   = (consumoDeb[link.debito_id]   || 0) + minD;
-    });
-
+    /* Soma bruta por modelo (sem consumo por lançamento) */
     lancamentos.forEach(l => {
       if (l.tipo === "credito") {
         const mod = l.modelo || "—";
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = tempoParaMinutos(l.tempo_voo);
-        const minConsumido = consumoCred[l.id] || 0;
-        const minRestante = Math.max(0, minTotal - minConsumido);
-        modeloMap[mod].credito_min += minRestante;
-        modeloMap[mod].itens.push({ id: l.id, tipo: "credito", minutos: minRestante, total: minTotal, consumido: minConsumido });
+        modeloMap[mod].credito_min += minTotal;
+        modeloMap[mod].itens.push({ id: l.id, tipo: "credito", total: minTotal });
       } else if (l.tipo === "debito") {
         const mod = l.modelo_linkado || l.modelo || "—";
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
-        const minPago = consumoDeb[l.id] || 0;
-        const minRestante = Math.max(0, minTotal - minPago);
-        modeloMap[mod].debito_min += minRestante;
-        modeloMap[mod].itens.push({ id: l.id, tipo: "debito", minutos: minRestante, total: minTotal, pago: minPago });
+        modeloMap[mod].debito_min += minTotal;
+        modeloMap[mod].itens.push({ id: l.id, tipo: "debito", total: minTotal });
       }
+    });
+
+    /* Aplica links por modelo (novo schema) ou por lançamento (schema antigo) */
+    links.forEach(link => {
+      if (link.id === __linkEditandoId) return;
+      if (empresaId && link.empresa_id && link.empresa_id !== empresaId) return;
+
+      /* Novo schema (modelo_credito / modelo_debito) */
+      if (link.modelo_credito && link.modelo_debito) {
+        const mc = link.modelo_credito;
+        const md = link.modelo_debito;
+        if (!modeloMap[mc]) modeloMap[mc] = criarEntry(mc);
+        if (!modeloMap[md]) modeloMap[md] = criarEntry(md);
+        modeloMap[mc].credito_min -= Number(link.minutos_consumidos) || 0;
+        modeloMap[md].debito_min  -= Number(link.minutos_abatidos)   || 0;
+        return;
+      }
+
+      /* Schema antigo (compat) */
+      const cred = lancamentos.find(l => l.id === link.credito_id);
+      const deb  = lancamentos.find(l => l.id === link.debito_id);
+      if (!cred || !deb) return;
+      const mc = cred.modelo || "—";
+      const md = deb.modelo_linkado || deb.modelo || "—";
+      if (!modeloMap[mc]) modeloMap[mc] = criarEntry(mc);
+      if (!modeloMap[md]) modeloMap[md] = criarEntry(md);
+      modeloMap[mc].credito_min -= Number(link.minutos_credito) || Number(link.minutos) || 0;
+      modeloMap[md].debito_min  -= Number(link.minutos_debito)  || Number(link.minutos) || 0;
     });
 
     return Object.values(modeloMap).map(e => ({ ...e, total_min: e.credito_min - e.debito_min }))
@@ -16993,46 +17019,26 @@ const TrocaHoras = (() => {
   function saldoCredito(id) {
     const cred = lerLancamentos().find(l => l.id === id);
     if (!cred) return 0;
-    const total = tempoParaMinutos(cred.tempo_voo);
-    const consumido = lerLinks()
-      .filter(lk => lk.credito_id === id)
-      .filter(lk => lk.id !== __linkEditandoId)  /* ignora o link em edição */
-      .reduce((s, lk) => s + (Number(lk.minutos_credito) || Number(lk.minutos) || 0), 0);
-    const saldoIndividual = Math.max(0, total - consumido);
-
-    /* Aplica teto do modelo: débitos do mesmo modelo abatem automaticamente */
-    const saldoModelo = calcularSaldo().find(e => e.modelo === cred.modelo);
-    if (!saldoModelo) return saldoIndividual;
-    const tetoModelo = Math.max(0, saldoModelo.total_min);
-
-    return Math.min(saldoIndividual, tetoModelo);
+    return tempoParaMinutos(cred.tempo_voo);
   }
 
-  /* Saldo bruto do crédito (sem teto) */
+  /* Saldo bruto do crédito (retorna total — consumo agora é por modelo) */
   function saldoCreditoBruto(id) {
     const cred = lerLancamentos().find(l => l.id === id);
     if (!cred) return 0;
-    const total = tempoParaMinutos(cred.tempo_voo);
-    const consumido = lerLinks().filter(lk => lk.credito_id === id)
-      .reduce((s, lk) => s + (Number(lk.minutos_credito) || Number(lk.minutos) || 0), 0);
-    return Math.max(0, total - consumido);
+    return tempoParaMinutos(cred.tempo_voo);
   }
 
   function saldoDebito(id) {
     const deb = lerLancamentos().find(l => l.id === id);
     if (!deb) return 0;
-    const total = (deb.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
-    const pago = lerLinks()
-      .filter(lk => lk.debito_id === id)
-      .filter(lk => lk.id !== __linkEditandoId)
-      .reduce((s, lk) => s + (Number(lk.minutos_debito) || Number(lk.minutos) || 0), 0);
-    return Math.max(0, total - pago);
+    return (deb.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
   }
 
   function renderDashboard() {
     const box = document.getElementById("thDashboard");
     if (!box) return;
-    const saldo = calcularSaldo().filter(e => e.credito_min > 0 || e.debito_min > 0);
+    const saldo = calcularSaldo(_thEmpresaFiltroId()).filter(e => e.credito_min > 0 || e.debito_min > 0);
     if (!saldo.length) {
       box.innerHTML = '<p class="hint" style="margin:0">Sem lançamentos. Cadastre créditos e débitos para ver o saldo por modelo.</p>';
       return;
@@ -17169,12 +17175,13 @@ function renderLista() {
     const links = lerLinks();
 
     const filtro = window.__thFiltro || "todos";
-    const qtdCred = lancamentos.filter(l => l.tipo === "credito").length;
-    const qtdDeb = lancamentos.filter(l => l.tipo === "debito").length;
+    const lancamentosFiltrados = lancamentos.filter(_thEmpresaMatch);
+    const qtdCred = lancamentosFiltrados.filter(l => l.tipo === "credito").length;
+    const qtdDeb = lancamentosFiltrados.filter(l => l.tipo === "debito").length;
     const qtdLinks = links.length;
 
     const headerHtml = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">'
-      + '<button type="button" data-th-filtro="todos" style="padding:6px 12px;border-radius:8px;border:1px solid ' + (filtro === "todos" ? "var(--accent)" : "var(--line)") + ';background:' + (filtro === "todos" ? "var(--nav-active-bg)" : "transparent") + ';color:' + (filtro === "todos" ? "var(--accent)" : "var(--muted)") + ';font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Todos (' + lancamentos.length + ')</button>'
+      + '<button type="button" data-th-filtro="todos" style="padding:6px 12px;border-radius:8px;border:1px solid ' + (filtro === "todos" ? "var(--accent)" : "var(--line)") + ';background:' + (filtro === "todos" ? "var(--nav-active-bg)" : "transparent") + ';color:' + (filtro === "todos" ? "var(--accent)" : "var(--muted)") + ';font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Todos (' + lancamentosFiltrados.length + ')</button>'
       + '<button type="button" data-th-filtro="credito" style="padding:6px 12px;border-radius:8px;border:1px solid ' + (filtro === "credito" ? "var(--green)" : "var(--line)") + ';background:' + (filtro === "credito" ? "rgba(48,207,138,.12)" : "transparent") + ';color:' + (filtro === "credito" ? "var(--green)" : "var(--muted)") + ';font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">↑ Créditos (' + qtdCred + ')</button>'
       + '<button type="button" data-th-filtro="debito" style="padding:6px 12px;border-radius:8px;border:1px solid ' + (filtro === "debito" ? "var(--red)" : "var(--line)") + ';background:' + (filtro === "debito" ? "rgba(255,90,95,.12)" : "transparent") + ';color:' + (filtro === "debito" ? "var(--red)" : "var(--muted)") + ';font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">↓ Débitos (' + qtdDeb + ')</button>'
       + '<button type="button" data-th-filtro="links" style="padding:6px 12px;border-radius:8px;border:1px solid ' + (filtro === "links" ? "var(--accent)" : "var(--line)") + ';background:' + (filtro === "links" ? "rgba(56,168,255,.12)" : "transparent") + ';color:' + (filtro === "links" ? "var(--accent)" : "var(--muted)") + ';font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔗 Voos Linkados (' + qtdLinks + ')</button>'
@@ -17190,7 +17197,7 @@ function renderLista() {
         conteudo += renderListaLinks();
       }
 
-      let listaFiltrada = lancamentos.slice();
+      let listaFiltrada = lancamentosFiltrados.slice();
       if (filtro === "credito") listaFiltrada = listaFiltrada.filter(l => l.tipo === "credito");
       else if (filtro === "debito") listaFiltrada = listaFiltrada.filter(l => l.tipo === "debito");
 
@@ -17210,14 +17217,8 @@ function renderLista() {
 
               if (l.tipo === "credito") {
                 const totalMin = tempoParaMinutos(l.tempo_voo);
-                const consumido = lerLinks().filter(lk => lk.credito_id === l.id).reduce((s, lk) => s + (Number(lk.minutos_credito) || Number(lk.minutos) || 0), 0);
-                const restante = Math.max(0, totalMin - consumido);
-                const temLink = consumido > 0;
-                const infoConsumo = temLink
-                  ? '<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)">'
-                    + '<span style="color:var(--green)">🔗 consumido ' + minutosParaHHMM(consumido) + '</span> · resta <b style="color:var(--green)">' + minutosParaHHMM(restante) + '</b>'
-                    + '</div>'
-                  : '';
+                const temLink = false;
+                const infoConsumo = '';
                 return '<div style="background:var(--card);border-left:3px solid var(--green);border-radius:8px;padding:12px 14px">'
                   + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">'
                   +   '<span style="font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.05em">↑ Crédito' + (temLink ? ' <span style="color:var(--accent);font-size:9px">LINKADO</span>' : '') + '</span>'
@@ -17242,14 +17243,8 @@ function renderLista() {
                   + '</div>';
               } else {
                 const totalMin = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
-                const pago = lerLinks().filter(lk => lk.debito_id === l.id).reduce((s, lk) => s + (Number(lk.minutos_debito) || Number(lk.minutos) || 0), 0);
-                const restante = Math.max(0, totalMin - pago);
-                const temLink = pago > 0;
-                const infoConsumo = temLink
-                  ? '<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)">'
-                    + '<span style="color:var(--accent)">🔗 pago ' + minutosParaHHMM(pago) + '</span> · resta <b style="color:var(--red)">' + minutosParaHHMM(restante) + '</b>'
-                    + '</div>'
-                  : '';
+                const temLink = false;
+                const infoConsumo = '';
                 return '<div style="background:var(--card);border-left:3px solid var(--red);border-radius:8px;padding:12px 14px">'
                   + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">'
                   +   '<span style="font-size:11px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.05em">↓ Débito' + (temLink ? ' <span style="color:var(--accent);font-size:9px">LINKADO</span>' : '') + '</span>'
@@ -17314,6 +17309,9 @@ function renderLista() {
     const links = lerLinks();
     const lanc = lerLancamentos();
     const limpou = links.filter(lk => {
+      /* Novo schema (modelo-based) — não apaga */
+      if (lk.modelo_credito && lk.modelo_debito) return true;
+      /* Schema antigo (lançamento-based) — valida ambos */
       const cred = lanc.some(l => l.id === lk.credito_id);
       const deb = lanc.some(l => l.id === lk.debito_id);
       return cred && deb;
@@ -17325,7 +17323,7 @@ function renderLista() {
   }
 
 
-  function render() { limparLinksOrfaos(); renderDashboard(); renderLista(); }
+  function render() { popularSelectFiltroEmpresa(); limparLinksOrfaos(); renderDashboard(); renderLista(); }
 
   /* ---------- Ações (placeholder Fase 2-5) ---------- */
   /* ============ FASE 2: CRÉDITO ============ */
@@ -17380,9 +17378,11 @@ function renderLista() {
     const sel = document.getElementById("thCredEmpresa");
     if (!sel) return;
     const lista = lerEmpresas();
-    let html = '<option value="">— sem empresa (pessoa física) —</option>';
+    /* Pré-seleciona: selectedId > filtro ativo > vazio */
+    const prefSel = selectedId || _thEmpresaFiltroId() || "";
+    let html = '<option value="">— selecionar empresa —</option>';
     html += lista.map(e =>
-      '<option value="' + esc(e.id) + '"' + (e.id === selectedId ? " selected" : "") + ">" + esc(e.nome) + "</option>"
+      '<option value="' + esc(e.id) + '"' + (e.id === prefSel ? " selected" : "") + ">" + esc(e.nome) + "</option>"
     ).join("");
     sel.innerHTML = html;
   }
@@ -17521,7 +17521,7 @@ function renderLista() {
     if (!empresaId) { alert("Selecione a empresa que pegou emprestado (obrigatório)."); return; }
     const empresaSel = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
     const empresaNome = empresaSel?.nome || "";
-    const empresaLogo = empresaSel?.logo || "";
+    const empresaLogo = "";
 
     const trs = ev.trechos || [];
     const primeira = trs[0];
@@ -18274,6 +18274,11 @@ function renderLista() {
       + '<h2>🔗 Linkar horas — aeronaves diferentes</h2>'
       + '<p class="hint" style="margin-top:-14px;margin-bottom:18px">Abata horas de um crédito para quitar horas de um débito (de qualquer modelo).</p>'
       + '<div class="settings-section">'
+      +   '<h3>Empresa *</h3>'
+      +   '<select id="thLinkEmpresa"><option value="">— selecionar empresa —</option></select>'
+      +   '<p class="hint" id="thLinkEmpresaHint" style="margin-top:6px;font-size:11px">Selecione a empresa para ver créditos e débitos.</p>'
+      + '</div>'
+      + '<div class="settings-section">'
       +   '<h3>1. Crédito (horas disponíveis)</h3>'
       +   '<select id="thLinkCredito"><option value="">— selecionar crédito —</option></select>'
       +   '<div id="thLinkCredInfo" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>'
@@ -18301,27 +18306,11 @@ function renderLista() {
       +   '</div>'
       + '</div>'
       + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)"></div>'
-      + '</div>'      + '<h3>3. Conversão entre modelos</h3>'
-      + '<div id="thLinkConvSection" style="display:none">'
-      + '<p class="hint" style="margin:-4px 0 10px;font-size:11px">Defina quanto vale 1h de cada modelo (ex: 2h de King Air = 4h de Pilatus)</p>'
-      + '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'
-      +   '<div style="flex:1;min-width:120px">'
-      +     '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:4px">Horas do crédito</div>'
-      +     '<input type="number" id="thLinkConvX" min="0.1" step="0.1" placeholder="2" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px">'
-      +     '<div id="thLinkConvXLabel" style="font-size:10px;color:var(--muted);margin-top:3px"></div>'
-      +   '</div>'
-      +   '<div style="padding:8px 0;font-weight:700;color:var(--accent)">=</div>'
-      +   '<div style="flex:1;min-width:120px">'
-      +     '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:4px">Horas do débito</div>'
-      +     '<input type="number" id="thLinkConvY" min="0.1" step="0.1" placeholder="4" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px">'
-      +     '<div id="thLinkConvYLabel" style="font-size:10px;color:var(--muted);margin-top:3px"></div>'
-      +   '</div>'
       + '</div>'
-      + '<div id="thLinkConvTaxa" style="margin-top:10px;padding:8px 12px;background:rgba(56,168,255,.08);border-radius:6px;font-size:11px;color:var(--text)"></div>'
-      + '</div>'
-      + '<h3 style="margin-top:14px">4. Horas a linkar</h3>'
-      +   '<label class="field"><span>Horas do crédito a consumir</span>'
-      +     '<input type="number" id="thLinkMinutos" min="0.1" step="0.1" placeholder="0">'
+      + '<h3 style="margin-top:14px">4. Quanto abater do débito</h3>'
+      + '<p class="hint" style="margin:-4px 0 10px;font-size:11px">Aceita 7 (7h), 7.5 (7h30), 07:00 (7h), 7:30 (7h30) ou 90 (1h30 = 90min)</p>'
+      +   '<label class="field"><span>Horas do débito a abater</span>'
+      +     '<input type="text" id="thLinkMinutos" inputmode="decimal" placeholder="1:30 ou 1.5" autocomplete="off">'
       +   '</label>'
       +   '<div id="thLinkPreview" style="margin-top:10px;padding:12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7;color:var(--muted)"></div>'
       + '</div>'
@@ -18378,33 +18367,48 @@ function renderLista() {
     const lk = links.find(l => l.id === lkId);
     if (!lk) { alert("Link não encontrado."); return; }
 
-    const cred = lerLancamentos().find(l => l.id === lk.credito_id);
-    const deb = lerLancamentos().find(l => l.id === lk.debito_id);
-    if (!cred || !deb) { alert("Crédito ou débito do link não existe mais."); return; }
+    if (!lk.modelo_credito || !lk.modelo_debito) {
+      alert("Link no formato antigo (descontinuado). Delete e crie um novo.");
+      return;
+    }
 
     __linkEditandoId = lkId;
-    __linkEmEdicaoBackup = null;  /* não precisa mais de backup */
+    __linkEmEdicaoBackup = null;
 
-    /* Popula selects */
+    const empId = lk.empresa_id || "";
+    popularSelectEmpresaLink(empId);
     popularSelectCreditosLink();
+
+    const selCred = g("thLinkCredito");
+    if (selCred && !selCred.querySelector('option[value="' + lk.modelo_credito + '"]')) {
+      const opt = document.createElement("option");
+      opt.value = lk.modelo_credito;
+      opt.textContent = lk.modelo_credito + " · (modelo do link)";
+      selCred.appendChild(opt);
+    }
+    if (selCred) selCred.value = lk.modelo_credito;
+
     popularSelectDebitosLink();
-    if (g("thLinkCredito")) g("thLinkCredito").value = lk.credito_id;
-    if (g("thLinkDebito")) g("thLinkDebito").value = lk.debito_id;
+    const selDeb = g("thLinkDebito");
+    if (selDeb && !selDeb.querySelector('option[value="' + lk.modelo_debito + '"]')) {
+      const opt = document.createElement("option");
+      opt.value = lk.modelo_debito;
+      opt.textContent = lk.modelo_debito + " · (modelo do link)";
+      selDeb.appendChild(opt);
+    }
+    if (selDeb) selDeb.value = lk.modelo_debito;
 
-    /* Popula horas (usa minutos_credito ou o legado) */
-    const minCred = lk.minutos_credito || lk.minutos || 0;
-    if (g("thLinkMinutos")) g("thLinkMinutos").value = (minCred / 60).toFixed(2).replace(/\.?0+$/, "");
+    if (g("thLinkMinutos")) g("thLinkMinutos").value = minutosParaHHMM(lk.minutos_abatidos || 0);
 
-    /* Popula conversão se houver */
-    if (lk.taxa_aplicada && lk.taxa_aplicada !== 1) {
+    const taxa = Number(lk.taxa) || 1;
+    if (taxa !== 1) {
       if (g("thLinkConvX")) g("thLinkConvX").value = "1";
-      if (g("thLinkConvY")) g("thLinkConvY").value = String(lk.taxa_aplicada);
+      if (g("thLinkConvY")) g("thLinkConvY").value = String(taxa);
     } else {
       if (g("thLinkConvX")) g("thLinkConvX").value = "";
       if (g("thLinkConvY")) g("thLinkConvY").value = "";
     }
 
-    /* Textos de edição */
     const h2 = document.querySelector("#thLinkModal h2");
     if (h2) h2.textContent = "✏️ Editar link";
     const btnSalvar = g("thLinkSalvar");
@@ -18427,6 +18431,18 @@ function renderLista() {
     if (g("thLinkMinutos")) g("thLinkMinutos").value = "";
     if (g("thLinkConvX")) g("thLinkConvX").value = "";
     if (g("thLinkConvY")) g("thLinkConvY").value = "";
+    popularSelectEmpresaLink(_thEmpresaFiltroId() || "");
+    const selEmp = g("thLinkEmpresa");
+    if (selEmp && !selEmp.dataset.bound) {
+      selEmp.dataset.bound = "1";
+      selEmp.addEventListener("change", () => {
+        if (g("thLinkCredito")) g("thLinkCredito").value = "";
+        if (g("thLinkDebito")) g("thLinkDebito").value = "";
+        popularSelectCreditosLink();
+        popularSelectDebitosLink();
+        atualizarPreviewLink();
+      });
+    }
     popularSelectCreditosLink();
     popularSelectDebitosLink();
     atualizarPreviewLink();
@@ -18434,29 +18450,85 @@ function renderLista() {
     if (modal) modal.classList.add("is-open");
   }
 
+  /* Converte texto de horas em minutos. Formatos:
+       "7"     → 420 min (7h)
+       "7.5"   → 450 min (7h30)
+       "07:00" → 420 min (7h)
+       "7:30"  → 450 min (7h30)
+       "90"    → 90 min (1h30)
+     Regra: inteiro > 24 = minutos, ≤ 24 = horas. Decimal = horas. ":" = HH:MM. */
+  function parseHoras(str) {
+    if (str == null) return 0;
+    const s = String(str).trim().replace(",", ".");
+    if (!s) return 0;
+    if (s.indexOf(":") !== -1) {
+      const p = s.split(":");
+      const h = parseInt(p[0], 10) || 0;
+      const m = parseInt(p[1], 10) || 0;
+      return h * 60 + m;
+    }
+    const n = parseFloat(s);
+    if (isNaN(n) || n <= 0) return 0;
+    if (s.indexOf(".") !== -1) return Math.round(n * 60);
+    return n > 24 ? Math.round(n) : Math.round(n * 60);
+  }
+
+  function popularSelectEmpresaLink(selectedId) {
+    const sel = document.getElementById("thLinkEmpresa");
+    if (!sel) return;
+    const empresas = lerEmpresas();
+    const lancs = lerLancamentos();
+    const comRelacao = empresas.filter(e =>
+      lancs.some(l => l.tipo === "credito" && l.empresa_emprestada_id === e.id) ||
+      lancs.some(l => l.tipo === "debito"  && l.empresa_id === e.id)
+    );
+    let html = '<option value="">— selecionar empresa —</option>';
+    html += comRelacao.map(e =>
+      '<option value="' + esc(e.id) + '"' + (e.id === selectedId ? " selected" : "") + '>' + esc(e.nome) + '</option>'
+    ).join("");
+    sel.innerHTML = html;
+  }
+
   function popularSelectCreditosLink() {
     const sel = document.getElementById("thLinkCredito");
     if (!sel) return;
-    const creds = lerLancamentos().filter(l => l.tipo === "credito" && saldoCredito(l.id) > 0);
-    sel.innerHTML = '<option value="">— selecionar crédito —</option>'
-      + creds.map(l => '<option value="' + esc(l.id) + '">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_tail || "—") + ' · disp ' + minutosParaHHMM(saldoCredito(l.id)) + '</option>').join("");
+    const empId = document.getElementById("thLinkEmpresa")?.value || "";
+    sel.innerHTML = '<option value="">— selecionar modelo —</option>';
+    if (!empId) return;
+    const saldoArr = calcularSaldo(empId);
+    const comCredito = saldoArr.filter(e => e.total_min > 0);
+    if (!comCredito.length) {
+      sel.innerHTML += '<option value="" disabled>— sem crédito disponível —</option>';
+      return;
+    }
+    sel.innerHTML += comCredito.map(e =>
+      '<option value="' + esc(e.modelo) + '">' + esc(e.modelo) + ' · disp ' + minutosParaHHMM(e.total_min) + '</option>'
+    ).join("");
   }
 
   function popularSelectDebitosLink() {
     const sel = document.getElementById("thLinkDebito");
     if (!sel) return;
-    const debs = lerLancamentos().filter(l =>
-      l.tipo === "debito" && saldoDebito(l.id) > 0 &&
-      (!l.modelo_linkado || l.modelo_linkado === l.modelo)
-    );
-    sel.innerHTML = '<option value="">— selecionar débito —</option>'
-      + debs.map(l => '<option value="' + esc(l.id) + '">' + esc(l.modelo || "—") + ' · ' + esc(l.aeronave_prefixo || "—") + ' · deve ' + minutosParaHHMM(saldoDebito(l.id)) + '</option>').join("");
+    const empId = document.getElementById("thLinkEmpresa")?.value || "";
+    const modeloCred = document.getElementById("thLinkCredito")?.value || "";
+    sel.innerHTML = '<option value="">— selecionar modelo —</option>';
+    if (!empId) return;
+    const saldoArr = calcularSaldo(empId);
+    const comDebito = saldoArr.filter(e => e.total_min < 0 && e.modelo !== modeloCred);
+    if (!comDebito.length) {
+      sel.innerHTML += '<option value="" disabled>— sem débito a abater —</option>';
+      return;
+    }
+    sel.innerHTML += comDebito.map(e =>
+      '<option value="' + esc(e.modelo) + '">' + esc(e.modelo) + ' · deve ' + minutosParaHHMM(Math.abs(e.total_min)) + '</option>'
+    ).join("");
   }
 
   function atualizarPreviewLink() {
     const g = (id) => document.getElementById(id);
-    const credId = g("thLinkCredito")?.value || "";
-    const debId = g("thLinkDebito")?.value || "";
+    const empId = g("thLinkEmpresa")?.value || "";
+    const modeloCred = g("thLinkCredito")?.value || "";
+    const modeloDeb = g("thLinkDebito")?.value || "";
     const inpX = g("thLinkConvX");
     const inpY = g("thLinkConvY");
     const inpMin = g("thLinkMinutos");
@@ -18466,27 +18538,42 @@ function renderLista() {
     const prev = g("thLinkPreview");
     const taxaEl = g("thLinkConvTaxa");
 
-    if (!credId) { if (infoCred) infoCred.textContent = ""; if (prev) prev.textContent = "Selecione um crédito para começar."; if (secConv) secConv.style.display = "none"; return; }
-    const cred = lerLancamentos().find(l => l.id === credId);
-    const saldoC = saldoCredito(credId);
-    if (infoCred) {
-      const saldoBruto = (typeof saldoCreditoBruto === "function") ? saldoCreditoBruto(credId) : saldoC;
-      if (saldoBruto > saldoC) {
-        infoCred.innerHTML = 'Disponível: <b style="color:var(--green)">' + minutosParaHHMM(saldoC) + '</b> <span style="color:var(--muted);font-size:11px">(bruto ' + minutosParaHHMM(saldoBruto) + ' − débitos mesmo modelo)</span>';
-      } else {
-        infoCred.innerHTML = 'Disponível: <b style="color:var(--green)">' + minutosParaHHMM(saldoC) + '</b>';
-      }
+    if (!empId) {
+      if (infoCred) infoCred.textContent = "";
+      if (infoDeb) infoDeb.textContent = "";
+      if (secConv) secConv.style.display = "none";
+      if (prev) prev.textContent = "Selecione a empresa para começar.";
+      return;
     }
 
-    if (!debId) { if (infoDeb) infoDeb.textContent = ""; if (prev) prev.textContent = "Selecione um débito para continuar."; if (secConv) secConv.style.display = "none"; return; }
-    const deb = lerLancamentos().find(l => l.id === debId);
-    const saldoD = saldoDebito(debId);
-    if (infoDeb) infoDeb.innerHTML = 'A pagar: <b style="color:var(--red)">' + minutosParaHHMM(saldoD) + '</b>';
+    const saldoArr = calcularSaldo(empId);
+    const entryCred = saldoArr.find(e => e.modelo === modeloCred);
+    const entryDeb  = saldoArr.find(e => e.modelo === modeloDeb);
+    const saldoC = entryCred ? Math.max(0, entryCred.total_min) : 0;
+    const saldoD = entryDeb  ? Math.max(0, -entryDeb.total_min) : 0;
 
-    const modeloCred = cred?.modelo || "";
-    const modeloDeb  = deb?.modelo || "";
-    const mesmaModelo = modeloCred && modeloCred === modeloDeb;
+    if (infoCred) {
+      if (modeloCred) infoCred.innerHTML = 'Disponível: <b style="color:var(--green)">' + minutosParaHHMM(saldoC) + '</b>';
+      else infoCred.textContent = "";
+    }
+    if (!modeloCred) {
+      if (infoDeb) infoDeb.textContent = "";
+      if (secConv) secConv.style.display = "none";
+      if (prev) prev.textContent = "Selecione um modelo de crédito para começar.";
+      return;
+    }
 
+    if (infoDeb) {
+      if (modeloDeb) infoDeb.innerHTML = 'A pagar: <b style="color:var(--red)">' + minutosParaHHMM(saldoD) + '</b>';
+      else infoDeb.textContent = "";
+    }
+    if (!modeloDeb) {
+      if (secConv) secConv.style.display = "none";
+      if (prev) prev.textContent = "Selecione um modelo de débito para continuar.";
+      return;
+    }
+
+    const mesmaModelo = modeloCred === modeloDeb;
     let taxa = 1.0;
     if (mesmaModelo) {
       if (secConv) secConv.style.display = "none";
@@ -18497,9 +18584,8 @@ function renderLista() {
       const y = parseFloat(inpY?.value) || 0;
       const lblX = g("thLinkConvXLabel");
       const lblY = g("thLinkConvYLabel");
-      if (lblX) lblX.textContent = modeloCred || "—";
-      if (lblY) lblY.textContent = modeloDeb || "—";
-
+      if (lblX) lblX.textContent = modeloCred;
+      if (lblY) lblY.textContent = modeloDeb;
       if (x > 0 && y > 0) {
         taxa = y / x;
         if (taxaEl) taxaEl.innerHTML = '💱 <b>1h</b> de <b>' + esc(modeloCred) + '</b> vale <b>' + taxa.toFixed(2) + 'h</b> de <b>' + esc(modeloDeb) + '</b>';
@@ -18509,95 +18595,77 @@ function renderLista() {
       }
     }
 
-    if (taxa <= 0) { if (prev) prev.textContent = "Defina a taxa de conversão para continuar."; return; }
-
-    const maxCredito = Math.min(saldoC, Math.floor(saldoD / taxa));
-    if (inpMin) inpMin.max = String(Math.floor(maxCredito));
-
-    const minDigit = Math.round((parseFloat(inpMin?.value) || 0) * 60);
-    if (minDigit <= 0) {
-      if (prev) prev.innerHTML = 'Máximo possível: <b style="color:var(--accent)">' + minutosParaHHMM(maxCredito) + '</b> de crédito<br>(paga ' + minutosParaHHMM(Math.round(maxCredito * taxa)) + ' do débito)';
+    if (taxa <= 0) {
+      if (prev) prev.textContent = "Defina a taxa de conversão para continuar.";
       return;
     }
 
-    const credConsumir = Math.min(minDigit, maxCredito);
-    const debPagar = Math.round(credConsumir * taxa);
+    /* Preview em tempo real com parseHoras (aceita 7 / 7.5 / 07:00 / 7:30 / 90) */
+    const minDigit = parseHoras(inpMin?.value);
+
+    if (minDigit <= 0) {
+      if (prev) {
+        const maxAbate = saldoD;
+        const maxConsome = Math.ceil(maxAbate / taxa);
+        prev.innerHTML = 'Você pode abater até <b style="color:var(--accent)">' + minutosParaHHMM(maxAbate) + '</b> do débito.<br>'
+          + 'Isso consumiria <b>' + minutosParaHHMM(maxConsome) + '</b> do crédito (taxa ' + taxa.toFixed(2) + '×).';
+      }
+      return;
+    }
+
+    const debPagar = minDigit;
+    const credConsumir = Math.round(debPagar / taxa);
     const sobraCred = saldoC - credConsumir;
     const sobraDeb = saldoD - debPagar;
+    const restCredTxt = (sobraCred < 0 ? '−' : '') + minutosParaHHMM(Math.abs(sobraCred));
+    const restDebTxt  = (sobraDeb  < 0 ? '−' : '') + minutosParaHHMM(Math.abs(sobraDeb));
 
     if (prev) prev.innerHTML = ''
-      + '🔵 Consome <b>' + minutosParaHHMM(credConsumir) + '</b> do crédito <b>' + esc(modeloCred || "—") + '</b><br>'
-      + '🔴 Paga <b>' + minutosParaHHMM(debPagar) + '</b> do débito <b>' + esc(modeloDeb || "—") + '</b><br>'
+      + '🔴 Abate <b>' + minutosParaHHMM(debPagar) + '</b> do débito <b>' + esc(modeloDeb) + '</b><br>'
+      + '🔵 Consome <b>' + minutosParaHHMM(credConsumir) + '</b> do crédito <b>' + esc(modeloCred) + '</b><br>'
       + '<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--line)">'
-      + 'Crédito restará: <b style="color:var(--green)">' + minutosParaHHMM(sobraCred) + '</b> · '
-      + 'Débito restará: <b style="color:var(--red)">' + minutosParaHHMM(sobraDeb) + '</b>'
+      + 'Crédito restará: <b style="color:var(--green)">' + restCredTxt + '</b> · '
+      + 'Débito restará: <b style="color:var(--red)">' + restDebTxt + '</b>'
       + '</div>';
   }
 
   function salvarLink() {
     const g = (id) => document.getElementById(id);
-    const credId = g("thLinkCredito")?.value || "";
-    const debId = g("thLinkDebito")?.value || "";
-    const minDigit = Math.round((parseFloat(g("thLinkMinutos")?.value) || 0) * 60);
+    const empId = g("thLinkEmpresa")?.value || "";
+    const modeloCred = g("thLinkCredito")?.value || "";
+    const modeloDeb = g("thLinkDebito")?.value || "";
 
-    if (!credId) { alert("Selecione um crédito."); return; }
-    if (!debId) { alert("Selecione um débito."); return; }
-    if (minDigit <= 0) { alert("Informe as horas a linkar."); return; }
+    if (!empId) { alert("Selecione a empresa."); return; }
+    if (!modeloCred) { alert("Selecione o modelo de crédito."); return; }
+    if (!modeloDeb) { alert("Selecione o modelo de débito."); return; }
+    if (modeloCred === modeloDeb) { alert("Crédito e débito não podem ser do mesmo modelo (use o auto-abate)."); return; }
 
-    const cred = lerLancamentos().find(l => l.id === credId);
-    const deb = lerLancamentos().find(l => l.id === debId);
-    const modeloCred = cred?.modelo || "";
-    const modeloDeb  = deb?.modelo || "";
-    const mesmaModelo = modeloCred && modeloCred === modeloDeb;
+    const minAbatidos = parseHoras(g("thLinkMinutos")?.value);
+    if (minAbatidos <= 0) { alert("Informe as horas a abater do débito (ex: 7, 7.5, 07:00, 7:30, 90)."); return; }
 
-    let taxa = 1.0;
-    if (!mesmaModelo) {
-      const x = parseFloat(g("thLinkConvX")?.value) || 0;
-      const y = parseFloat(g("thLinkConvY")?.value) || 0;
-      if (x <= 0 || y <= 0) {
-        alert("Defina as horas de conversão (X h de crédito = Y h de débito).");
-        return;
-      }
-      taxa = y / x;
-    }
+    const x = parseFloat(g("thLinkConvX")?.value) || 0;
+    const y = parseFloat(g("thLinkConvY")?.value) || 0;
+    if (x <= 0 || y <= 0) { alert("Defina a conversão (X h de crédito = Y h de débito)."); return; }
+    const taxa = y / x;
 
-    const saldoC = saldoCredito(credId);
-    const saldoD = saldoDebito(debId);
-
-    const credConsumir = Math.min(minDigit, saldoC, Math.floor(saldoD / taxa));
-    const debPagar = Math.round(credConsumir * taxa);
-
-    if (credConsumir <= 0) { alert("Nada a linkar com os valores atuais."); return; }
+    const minConsumidos = Math.round(minAbatidos / taxa);
 
     const links = lerLinks();
+    const base = {
+      empresa_id: empId,
+      modelo_credito: modeloCred,
+      modelo_debito: modeloDeb,
+      taxa: taxa,
+      minutos_abatidos: minAbatidos,
+      minutos_consumidos: minConsumidos
+    };
+
     if (__linkEditandoId) {
-      /* Modo edição: atualiza o link existente */
       const i = links.findIndex(l => l.id === __linkEditandoId);
-      if (i >= 0) {
-        links[i] = {
-          ...links[i],
-          credito_id: credId,
-          debito_id: debId,
-          minutos_credito: credConsumir,
-          minutos_debito: debPagar,
-          taxa_aplicada: taxa,
-          minutos: credConsumir,
-          atualizado_em: new Date().toISOString()
-        };
-      }
+      if (i >= 0) links[i] = Object.assign({}, links[i], base, { atualizado_em: new Date().toISOString() });
       __linkEditandoId = null;
     } else {
-      /* Modo criação: adiciona novo link */
-      links.push({
-        id: "th-l-" + Date.now(),
-        credito_id: credId,
-        debito_id: debId,
-        minutos_credito: credConsumir,
-        minutos_debito: debPagar,
-        taxa_aplicada: taxa,
-        minutos: credConsumir,
-        criado_em: new Date().toISOString()
-      });
+      links.push(Object.assign({ id: "th-l-" + Date.now() }, base, { criado_em: new Date().toISOString() }));
     }
     salvarLinks(links);
 
@@ -18611,20 +18679,18 @@ function renderLista() {
     popularSelectCreditosLink();
     popularSelectDebitosLink();
     atualizarPreviewLink();
-    /* Fecha o modal */
     const modal = document.getElementById("thLinkModal");
     if (modal) modal.classList.remove("is-open");
     render();
   }
 
   function renderListaLinks() {
-    const links = lerLinks();
+    let links = lerLinks();
+    const empFiltro = _thEmpresaFiltroId();
+    if (empFiltro) links = links.filter(lk => lk.empresa_id === empFiltro);
     if (!links.length) return "";
-    const lancamentos = lerLancamentos();
     return links.slice().reverse().map(lk => {
-      const cred = lancamentos.find(x => x.id === lk.credito_id);
-      const deb = lancamentos.find(x => x.id === lk.debito_id);
-      if (!cred || !deb) return '';
+      if (!lk.modelo_credito || !lk.modelo_debito) return '';
 
       let dataLink = "";
       try {
@@ -18632,9 +18698,13 @@ function renderLista() {
         dataLink = d.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric" }) + " " + d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
       } catch(e) { dataLink = lk.criado_em || ""; }
 
+      const taxa = Number(lk.taxa) || 1;
+      const abatidos = Number(lk.minutos_abatidos) || 0;
+      const consumidos = Number(lk.minutos_consumidos) || 0;
+
       return '<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)">'
-        +   '<span style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em">🔗 Voo Linkado</span>'
+        +   '<span style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em">🔗 Troca entre modelos</span>'
         +   '<div style="display:flex;gap:8px;align-items:center">'
         +     '<span style="font-size:10px;color:var(--muted)">' + esc(dataLink) + '</span>'
         +     '<button type="button" class="event__btn" data-th-link-edit="' + esc(lk.id) + '" title="Editar link" style="width:26px;height:26px;font-size:11px">✏️</button>'
@@ -18643,26 +18713,19 @@ function renderLista() {
         + '</div>'
         + '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:10px">'
         +   '<div style="background:rgba(48,207,138,.08);border-left:3px solid var(--green);border-radius:6px;padding:8px 10px">'
-        +     '<div style="font-size:9px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">↑ Crédito</div>'
-        +     '<div style="font-size:12px;font-weight:700">' + esc(cred.modelo || "—") + '</div>'
-        +     '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + esc(cred.aeronave_tail || "—") + ' · ' + esc(cred.data || "—") + '</div>'
+        +     '<div style="font-size:9px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">↑ Crédito (consome)</div>'
+        +     '<div style="font-size:12px;font-weight:700">' + esc(lk.modelo_credito) + '</div>'
         +   '</div>'
         +   '<div style="text-align:center;color:var(--accent);font-size:16px;font-weight:800">→</div>'
         +   '<div style="background:rgba(255,90,95,.08);border-left:3px solid var(--red);border-radius:6px;padding:8px 10px">'
-        +     '<div style="font-size:9px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">↓ Débito</div>'
-        +     '<div style="font-size:12px;font-weight:700">' + esc(deb.modelo || "—") + '</div>'
-        +     '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + esc(deb.aeronave_prefixo || "—") + ' · ' + esc((deb.trechos?.[0]?.data) || "—") + '</div>'
+        +     '<div style="font-size:9px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">↓ Débito (abate)</div>'
+        +     '<div style="font-size:12px;font-weight:700">' + esc(lk.modelo_debito) + '</div>'
         +   '</div>'
         + '</div>'
-        + '<div style="background:var(--bg);border-radius:6px;padding:8px 10px;font-size:11px">'
-        +   '<div style="display:flex;justify-content:space-between;align-items:center">'
-        +     '<span style="color:var(--muted)">' + (lk.taxa_aplicada && lk.taxa_aplicada !== 1 ? 'Conversão' : 'Horas linkadas') + ':</span>'
-        +     '<b style="color:var(--accent);font-family:ui-monospace,monospace;font-size:13px">'
-        +       minutosParaHHMM(lk.minutos_credito || lk.minutos)
-        +       + (lk.minutos_debito && lk.minutos_debito !== (lk.minutos_credito || lk.minutos) ? ' → ' + minutosParaHHMM(lk.minutos_debito) : '')
-        +     '</b>'
-        +   '</div>'
-        +   (lk.taxa_aplicada && lk.taxa_aplicada !== 1 ? '<div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right">taxa: ' + Number(lk.taxa_aplicada).toFixed(2) + '×</div>' : '')
+        + '<div style="background:var(--bg);border-radius:6px;padding:8px 10px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        +   '<div><span style="color:var(--muted)">Taxa:</span> <b style="color:var(--accent)">1h = ' + taxa.toFixed(2) + 'h</b></div>'
+        +   '<div style="text-align:right"><span style="color:var(--muted)">Abateu:</span> <b style="color:var(--red)">' + minutosParaHHMM(abatidos) + '</b></div>'
+        +   '<div style="grid-column:1/-1;padding-top:6px;border-top:1px dashed var(--line)"><span style="color:var(--muted)">Consumiu do crédito:</span> <b style="color:var(--green)">' + minutosParaHHMM(consumidos) + '</b></div>'
         + '</div>'
         + '</div>';
     }).filter(Boolean).join("");
@@ -18782,7 +18845,7 @@ function _thRelCity(icao) {
         const trs = trechos.length ? trechos : [{ data: l.data, origem: "-", destino: "-", duracao: l.tempo_voo || "00:00", passageiros_ids: [] }];
 
 
-        trs.forEach(t => {
+        trs.forEach((t, i) => {
           const dataL = t.data || l.data || "";
           if (de && dataL && dataL < de) return;
           if (ate && dataL && dataL > ate) return;
@@ -18799,7 +18862,11 @@ function _thRelCity(icao) {
             empresa: l.empresa_emprestada || "",
             obs: l.observacoes || ""
           });
-          addResumo(l.modelo || "-", "credito", tempoParaMinutos(t.duracao || "00:00"));
+          /* Resumo usa tempo_voo do crédito (consistente com dashboard).
+             Conta 1x por crédito, no primeiro trecho, pra não duplicar. */
+          if (i === 0) {
+            addResumo(l.modelo || "-", "credito", tempoParaMinutos(l.tempo_voo || "00:00"));
+          }
         });
       } else if (l.tipo === "debito") {
         if (empresaId && l.empresa_id !== empresaId) return;
@@ -18829,21 +18896,46 @@ function _thRelCity(icao) {
     });
 
 
+    /* Aplica links (novo schema) ao resumo — desconta consumo do crédito e abatimento do débito */
+    const empresaNomeMap = {};
+    lerEmpresas().forEach(e => { empresaNomeMap[e.id] = e.nome; });
+    const linksAplicaveis = lerLinks().filter(lk => {
+      if (!lk.modelo_credito || !lk.modelo_debito) return false;
+      if (empresaId && lk.empresa_id !== empresaId) return false;
+      return true;
+    });
+    linksAplicaveis.forEach(lk => {
+      if (resumoMap[lk.modelo_credito]) {
+        resumoMap[lk.modelo_credito].credito_min -= Number(lk.minutos_consumidos) || 0;
+      }
+      if (resumoMap[lk.modelo_debito]) {
+        resumoMap[lk.modelo_debito].debito_min -= Number(lk.minutos_abatidos) || 0;
+      }
+    });
+
+    const fmtMinRel = (m) => (m < 0 ? "-" : "") + minutosParaHHMM(Math.abs(m));
     const resumo = Object.values(resumoMap).map(e => {
       const total = e.credito_min - e.debito_min;
-      const absT = Math.abs(total);
-      const sinal = total > 0 ? "+" : (total < 0 ? "-" : "");
       return {
         aeronave: e.aeronave,
-        credito: minutosParaHHMM(e.credito_min),
-        debito: minutosParaHHMM(e.debito_min),
-        saldo: sinal + minutosParaHHMM(absT),
+        credito: fmtMinRel(e.credito_min),
+        debito: fmtMinRel(e.debito_min),
+        saldo: (total > 0 ? "+" : (total < 0 ? "-" : "")) + minutosParaHHMM(Math.abs(total)),
         _cred: e.credito_min, _deb: e.debito_min, _total: total
       };
     }).sort((a, b) => a.aeronave.localeCompare(b.aeronave, "pt-BR"));
 
+    const trocas = linksAplicaveis.map(lk => ({
+      data: (lk.criado_em || "").slice(0, 10),
+      modelo_credito: lk.modelo_credito,
+      modelo_debito: lk.modelo_debito,
+      taxa: Number(lk.taxa) || 1,
+      minutos_abatidos: Number(lk.minutos_abatidos) || 0,
+      minutos_consumidos: Number(lk.minutos_consumidos) || 0,
+      empresa_nome: empresaNomeMap[lk.empresa_id] || ""
+    })).sort((a, b) => (a.data || "").localeCompare(b.data || ""));
 
-    return { creditos, debitos, resumo, filtros, empresaSel };
+    return { creditos, debitos, trocas, resumo, filtros, empresaSel };
   }  function _thRelGerarCSV(rel) {
     const { creditos, debitos, resumo, filtros, empresaSel } = rel;
     const limpar = (v) => String(v ?? "").replace(/;/g, ",").replace(/[\r\n]+/g, " ");
@@ -18867,23 +18959,33 @@ function _thRelCity(icao) {
       linhas.push([_thRelYMDToBR(d.data), limpar(d.origem), limpar(d.destino), d.tempo, d.prefixo, d.passageiros, limpar(d.solicitante), limpar(d.empresa), limpar(d.obs)].join(";"));
     });
     linhas.push("");
+    linhas.push("TROCAS ENTRE AERONAVES DIFERENTES");
+    linhas.push("Data;Crédito (consome);Débito (abate);Taxa;Abateu;Consumiu");
+    (rel.trocas || []).forEach(t => {
+      linhas.push([
+        _thRelYMDToBR(t.data),
+        limpar(t.modelo_credito),
+        limpar(t.modelo_debito),
+        "1h = " + Number(t.taxa).toFixed(2) + "h",
+        minutosParaHHMM(t.minutos_abatidos),
+        minutosParaHHMM(t.minutos_consumidos)
+      ].join(";"));
+    });
+    linhas.push("");
     linhas.push("RESUMO POR AERONAVE");
     linhas.push("Aeronave;Crédito;Débito;Saldo");
     resumo.forEach(r => linhas.push([limpar(r.aeronave), r.credito, r.debito, r.saldo].join(";")));
     const totC = resumo.reduce((s, r) => s + r._cred, 0);
     const totD = resumo.reduce((s, r) => s + r._deb, 0);
     const totT = totC - totD;
-    const sinalT = totT > 0 ? "+" : (totT < 0 ? "−" : "");
+    const sinalT = totT > 0 ? "+" : (totT < 0 ? "-" : "");
     linhas.push(["TOTAL", minutosParaHHMM(totC), minutosParaHHMM(totD), sinalT + minutosParaHHMM(Math.abs(totT))].join(";"));
     return linhas.join("\r\n");
   }
   function _thRelGerarXLS(rel) {
     const { creditos, debitos, resumo, filtros, empresaSel } = rel;
-    const nossoLogo = (() => {
-      try { const st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); if (st.logo) return st.logo; } catch(e) {}
-      return localStorage.getItem("dv_company_logo") || "";
-    })();
-    const empresaLogo = empresaSel?.logo || "";
+    const nossoLogo = "";
+    const empresaLogo = "";
     const empNome = empresaSel?.nome || "Todas as empresas";
     const periodo = (_thRelYMDToBR(filtros.data_de) || "-") + " a " + (_thRelYMDToBR(filtros.data_ate) || "-");
     const dtH = new Date().toLocaleString("pt-BR");
@@ -18895,6 +18997,7 @@ function _thRelCity(icao) {
 
     const BS = "border:1px solid #CBD5E1;padding:4px;font-size:10px;";
     const BSC = BS + "text-align:center;";
+    const BST = BS + "text-align:center;mso-number-format:'\\@';";
     const TH = "border:1px solid #CBD5E1;padding:5px;background:#1e293b;color:#fff;font-size:10px;font-weight:bold;text-align:center;";
     const SEC = "border:1px solid #1e293b;padding:6px;background:#1e293b;color:#fff;font-size:11px;font-weight:bold;text-align:left;";
 
@@ -18932,9 +19035,9 @@ function _thRelCity(icao) {
           const cor = r._total > 0 ? '#080' : (r._total < 0 ? '#c00' : '#555');
           return '<tr style="' + bg + '">'
             + '<td style="' + BS + '">' + esc(r.aeronave) + '</td>'
-            + '<td style="' + BSC + '">' + esc(r.credito) + '</td>'
-            + '<td style="' + BSC + '">' + esc(r.debito) + '</td>'
-            + '<td style="' + BSC + 'color:' + cor + ';font-weight:bold;">' + esc(r.saldo) + '</td>'
+            + '<td style="' + BST + '">' + esc(r.credito) + '</td>'
+            + '<td style="' + BST + '">' + esc(r.debito) + '</td>'
+            + '<td style="' + BST + 'color:' + cor + ';font-weight:bold;">' + (r._total < 0 ? '(' + esc(r.saldo.replace(/^-/, '')) + ')' : esc(r.saldo)) + '</td>'
             + '</tr>';
         }).join('')
       : '<tr><td colspan="4" style="' + BSC + 'padding:10px;font-style:italic;color:#999">- sem lancamentos -</td></tr>';
@@ -18992,6 +19095,26 @@ function _thRelCity(icao) {
       + '<tr><th colspan="9" style="' + SEC + '">DEBITOS (horas usadas de terceiros)</th></tr>'
       + '<tr>' + theadCols + '</tr>'
       + '</thead><tbody>' + debitosHtml + '</tbody></table>'
+      + ((rel.trocas || []).length ? '<br>'
+        + '<table><thead>'
+        + '<tr><th colspan="6" style="' + SEC + '">TROCAS ENTRE AERONAVES DIFERENTES</th></tr>'
+        + '<tr>'
+        + '<th style="' + TH + '">Data</th>'
+        + '<th style="' + TH + '">Crédito (consome)</th>'
+        + '<th style="' + TH + '">Débito (abate)</th>'
+        + '<th style="' + TH + '">Taxa</th>'
+        + '<th style="' + TH + '">Abateu</th>'
+        + '<th style="' + TH + '">Consumiu</th>'
+        + '</tr></thead><tbody>'
+        + (rel.trocas || []).map(t => '<tr>'
+            + '<td style="' + BS + '">' + esc(_thRelYMDToBR(t.data)) + '</td>'
+            + '<td style="' + BS + '">' + esc(t.modelo_credito) + '</td>'
+            + '<td style="' + BS + '">' + esc(t.modelo_debito) + '</td>'
+            + '<td style="' + BSC + '">1h = ' + Number(t.taxa).toFixed(2) + 'h</td>'
+            + '<td style="' + BSC + '">' + esc(minutosParaHHMM(t.minutos_abatidos)) + '</td>'
+            + '<td style="' + BSC + '">' + esc(minutosParaHHMM(t.minutos_consumidos)) + '</td>'
+          + '</tr>').join('')
+        + '</tbody></table>' : '')
       + '<br>'
       + '<table><thead>'
       + '<tr><th colspan="4" style="' + SEC + '">RESUMO POR AERONAVE</th></tr>'
@@ -19003,9 +19126,9 @@ function _thRelCity(icao) {
       + '</tr></thead><tbody>' + resumoHtml
       + '<tr style="background:#eef2f7;font-weight:bold;">'
       + '<td style="' + BS + 'font-weight:bold;">TOTAL</td>'
-      + '<td style="' + BSC + 'font-weight:bold;">' + minutosParaHHMM(totC) + '</td>'
-      + '<td style="' + BSC + 'font-weight:bold;">' + minutosParaHHMM(totD) + '</td>'
-      + '<td style="' + BSC + 'font-weight:bold;">' + sinalT + minutosParaHHMM(Math.abs(totT)) + '</td>'
+      + '<td style="' + BST + 'font-weight:bold;">' + minutosParaHHMM(totC) + '</td>'
+      + '<td style="' + BST + 'font-weight:bold;">' + minutosParaHHMM(totD) + '</td>'
+      + '<td style="' + BST + 'font-weight:bold;">' + (totT < 0 ? '(' + minutosParaHHMM(Math.abs(totT)) + ')' : sinalT + minutosParaHHMM(Math.abs(totT))) + '</td>'
       + '</tr>'
       + '</tbody></table>'
       + footerHtml
@@ -19073,7 +19196,7 @@ function _thRelCity(icao) {
 
 
     const nossoLogo = _logoDataURL();
-    const empresaLogo = empresaSel?.logo || "";
+    const empresaLogo = "";
     const empNome = empresaSel?.nome || "Todas as empresas";
     const mostrarSegundo = !!empresaSel;
 
@@ -19217,6 +19340,29 @@ function _thRelCity(icao) {
     yCursor = doc.lastAutoTable.finalY + 6;
 
 
+    if ((rel.trocas || []).length) {
+      if (yCursor > 175) { doc.addPage(); yCursor = MARGIN + 5; }
+      yCursor = secao("TROCAS ENTRE AERONAVES DIFERENTES", yCursor);
+      const _bodyT = (rel.trocas || []).map(t => [
+        _thRelYMDToBR(t.data),
+        t.modelo_credito,
+        t.modelo_debito,
+        "1h = " + Number(t.taxa).toFixed(2) + "h",
+        minutosParaHHMM(t.minutos_abatidos),
+        minutosParaHHMM(t.minutos_consumidos)
+      ]);
+      doc.autoTable({
+        startY: yCursor,
+        head: [["Data","Crédito (consome)","Débito (abate)","Taxa","Abateu","Consumiu"]],
+        body: _bodyT,
+        styles: Object.assign({}, baseStyles, { fontSize: 8 }),
+        headStyles: headStyles,
+        alternateRowStyles: altStyles,
+        margin: marg
+      });
+      yCursor = doc.lastAutoTable.finalY + 6;
+    }
+
     if (yCursor > 175) { doc.addPage(); yCursor = MARGIN + 5; }
     yCursor = secao("RESUMO POR AERONAVE", yCursor);
     const totC = resumo.reduce((s, r) => s + r._cred, 0);
@@ -19346,6 +19492,15 @@ function _thRelCity(icao) {
     if (bl && !bl.dataset.bound) { bl.dataset.bound = "1"; bl.addEventListener("click", abrirLink); }
     const br = document.getElementById("thBtnRelatorio");
     if (br && !br.dataset.bound) { br.dataset.bound = "1"; br.addEventListener("click", abrirRelatorio); }
+    const selFiltro = document.getElementById("thFiltroEmpresa");
+    if (selFiltro && !selFiltro.dataset.bound) {
+      selFiltro.dataset.bound = "1";
+      selFiltro.addEventListener("change", (e) => {
+        __thFiltroEmpresa = e.target.value || "";
+        localStorage.setItem("dv.trocaHoras.filtroEmpresa", __thFiltroEmpresa);
+        render();
+      });
+    }
   }
 
   return { render, initListeners, abrirRelatorio, lerLancamentos, salvarLancamentos, lerEmpresas, salvarEmpresas, lerLinks, salvarLinks, calcularSaldo, tempoParaMinutos, minutosParaHHMM, modeloDaAeronave, repopularModeloDebito, toggleOutrosModelosDebito, onModeloDebitoChange };
@@ -19671,7 +19826,7 @@ const Backup = (() => {
     const data = new Date().toISOString().slice(0,10);
     const hora = new Date().toTimeString().slice(0,5).replace(":", "");
     a.href = url;
-    a.download = "backup-airpolato-" + data + "-" + hora + ".json";
+    a.download = "backup-airlocks-" + data + "-" + hora + ".json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -21906,9 +22061,9 @@ Router.init();
 
     <form id="loginForm" style="display:flex;flex-direction:column;gap:14px">
       <label style="display:flex;flex-direction:column;gap:6px">
-        <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted, #94a3b8);font-weight:700">E-mail</span>
+        <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted, #94a3b8);font-weight:700">Usuário ou email</span>
         <input id="loginEmail" type="text" autocomplete="username" required
-               placeholder="seu.email@dominio.com"
+               placeholder="joao.silva ou joao@empresa.com"
                style="background:var(--bg, #0f172a);border:1px solid var(--line, #334155);color:var(--text, #e2e8f0);padding:11px 13px;border-radius:8px;font-size:14px;font-family:inherit">
       </label>
       <label style="display:flex;flex-direction:column;gap:6px">
@@ -24285,24 +24440,6 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 </style>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const loadColor = (inputId, labelId, storageKey, defaultColor) => {
-        const el = document.getElementById(inputId);
-        const lbl = document.getElementById(labelId);
-        if (!el) return;
-        const color = localStorage.getItem(storageKey) || defaultColor;
-        el.value = color;
-        if (lbl) lbl.textContent = color.toUpperCase();
-        el.addEventListener('input', (e) => {
-            localStorage.setItem(storageKey, e.target.value);
-            if (lbl) lbl.textContent = e.target.value.toUpperCase();
-        });
-    };
-    loadColor('setEmailHeaderColor', 'emailHeaderColorValue', 'dv_email_header_color', '#1e293b');
-    loadColor('setEmailSegmentsColor', 'emailSegmentsColorValue', 'dv_email_segments_color', '#1687ff');
-});
-</script>
 </body>
 
 
