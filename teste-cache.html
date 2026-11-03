@@ -25354,6 +25354,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const res = { cma: null, cma_obs: null, ifr: null, mnte: null, mlte: null, inva: null, icao: null, simulador: null, icao_level: null };
     const t = texto.replace(/\s+/g, ' ').toUpperCase();
     
+    // Função de busca tolerante
     const buscarData = (regexStr) => {
       const regex = new RegExp(regexStr + '.*?(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{4})', 'i');
       const m = t.match(regex);
@@ -25361,32 +25362,38 @@ document.addEventListener("DOMContentLoaded", function() {
       return null;
     };
 
-    res.cma = buscarData('CMA');
+    // NOVO: Busca o CMA tanto pela sigla quanto pelo nome por extenso
+    res.cma = buscarData('(?:CMA|CERTIFICADO\\s*M[ÉE]DICO\\s*AERON[ÁA]UTICO)');
     
-    const mCmaObs = t.match(/OBSERVA.*?CMA[>\s]*(.*?)(OBSERVA|CLASSE|ORGAO|HABILIT)/i);
-    if (mCmaObs && mCmaObs[1].trim().length > 2) res.cma_obs = mCmaObs[1].trim();
+    // Extrai a observação do CMA
+    // NOVO: Captura o texto após o código do órgão (ex: CLC008 / ...), ignorando "Sem observações"
+    const mCmaObs = t.match(/[A-Z]{3}[0-9]{3}\s*\/\s*(.*?)\s*(?:FS|\bRH\b|$)/i);
+    if (mCmaObs && mCmaObs[1].trim().length > 2) {
+      let obs = mCmaObs[1].trim();
+      if (obs.toUpperCase() !== "SEM OBSERVAÇÕES" && obs.toUpperCase() !== "SEM OBSERVACOES") {
+        res.cma_obs = obs;
+      }
+    }
 
     res.ifr = buscarData('IFR');
+    res.mnte = buscarData('MNTE');
     res.mlte = buscarData('MLTE');
-    
-    // A TRAVA DEFINITIVA: O robô aceita MNTE, MATE, M1TE, mas o que vier depois do M NÃO PODE SER L.
-    // Ou seja, se for MLTE, ele ignora e não preenche.
-    res.mnte = buscarData('M\\s*(?!L)[A-Z0-9]\\s*T\\s*[EF]');
-    
     res.inva = buscarData('INVA');
 
-    // ICAO
-    const mIcao = t.match(/L\\s*E\\s*V\\s*E\\s*L.*?(\\d).*?(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{4})/i);
+    // ICAO: busca "ENGLISH LEVEL X UNTIL MM/YYYY" ou similar
+    const mIcao = t.match(/(?:ENGLISH|INGL[ÊE]S)\s*LEVEL\s*(\d).*?(?:UNTIL|AT[ÉE])?.*?(\d{2})\s*[\\/\\.\\-]\s*(\d{4})/i);
     if (mIcao) {
       const level = parseInt(mIcao[1]);
       res.icao_level = level;
-      if (level >= 4) res.icao = mIcao[3] + '-' + mIcao[2] + '-01'; 
+      if (level >= 4) {
+        res.icao = mIcao[3] + '-' + mIcao[2] + '-01'; 
+      }
     }
 
     return res;
   }
 
-  function renderVisaoGeral() {
+    function renderVisaoGeral() {
     const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
     if (!sessao) return;
     
