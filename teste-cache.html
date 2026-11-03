@@ -4445,6 +4445,13 @@ body.is-booting .app {
 <label class="field"><span>Cor secundária</span><div class="color-row"><input id="setReportColor2" type="color" value="#38a8ff"><code id="reportColor2Value">#38A8FF</code></div></label>
 </div>
 </div>
+<div class="settings-section"><h3>Cores do E-mail</h3>
+<p class="hint" style="margin-top:0;margin-bottom:12px">Usadas no cabeçalho do e-mail enviado aos passageiros e tripulação.</p>
+<div class="formgrid">
+<label class="field"><span>Cor do Topo (Logo)</span><div class="color-row"><input id="setEmailHeaderColor" type="color" value="#1e293b"><code id="emailHeaderColorValue">#1E293B</code></div></label>
+<label class="field"><span>Cor do Texto "ROTEIRO DO VOO"</span><div class="color-row"><input id="setEmailTextColor" type="color" value="#ffffff"><code id="emailTextColorValue">#FFFFFF</code></div></label>
+</div>
+</div>
 <div class="settings-section"><h3>Cards específicos</h3><p class="hint" style="margin-top:0;margin-bottom:12px">Cor de fundo dos cards de acordo com o tipo</p><div class="formgrid">
 <label class="field"><span>Voo executado</span><div class="color-row"><input id="setExecBgColor" type="color" value="#0a2219"><code id="execBgColorValue">#0A2219</code></div></label>
 <label class="field"><span>Manutenção</span><div class="color-row"><input id="setMaintBgColor" type="color" value="#2a1518"><code id="maintBgColorValue">#2A1518</code></div></label>
@@ -6129,6 +6136,73 @@ window.Log = (() => {
 /* ============================================================
    EmailRoteiro — envia roteiro do voo por email (via Edge Function)
    ============================================================ */
+window._gerarSnapshotVoo = function(ev) {
+  const trechos = (ev.trechos || []).map(t => ({
+    origem: t.origem,
+    destino: t.destino,
+    hora: t.hora,
+    data: t.data,
+    passageiros_ids: [...(t.passageiros_ids || [])]
+  }));
+  return { trechos, aeronave_tail: ev.aeronave_tail };
+};
+
+window._verificarAlteracaoVoo = function(ev) {
+  if (!ev.roteiro_snapshot) return true; // Se não tem snapshot, considera alterado
+  const snap = ev.roteiro_snapshot;
+  if (snap.aeronave_tail !== ev.aeronave_tail) return true;
+  
+  const trechosAtuais = (ev.trechos || []).filter(t => t && t.data);
+  if (snap.trechos.length !== trechosAtuais.length) return true;
+
+  for (let i = 0; i < snap.trechos.length; i++) {
+    if (snap.trechos[i].origem !== trechosAtuais[i].origem) return true;
+    if (snap.trechos[i].destino !== trechosAtuais[i].destino) return true;
+    if (snap.trechos[i].hora !== trechosAtuais[i].hora) return true;
+    
+    const paxSnap = (snap.trechos[i].passageiros_ids || []).sort().join(",");
+    const paxAtual = (trechosAtuais[i].passageiros_ids || []).sort().join(",");
+    if (paxSnap !== paxAtual) return true;
+  }
+  return false;
+};
+
+window._getNovosPassageiros = function(ev) {
+  if (!ev.roteiro_snapshot || !ev.roteiro_snapshot.trechos) return [];
+  const snapPax = new Set();
+  ev.roteiro_snapshot.trechos.forEach(t => (t.passageiros_ids || []).forEach(id => snapPax.add(String(id))));
+  const atuaisPax = new Set();
+  (ev.trechos || []).forEach(t => (t.passageiros_ids || []).forEach(id => atuaisPax.add(String(id))));
+  const novos = [];
+  atuaisPax.forEach(id => { if (!snapPax.has(id)) novos.push(id); });
+  return novos;
+};
+
+window._gerarSnapshotVoo = function(ev) {
+  const trechos = (ev.trechos || []).map(t => ({
+    origem: t.origem, destino: t.destino, hora: t.hora, data: t.data,
+    passageiros_ids: [...(t.passageiros_ids || [])]
+  }));
+  return { trechos, aeronave_tail: ev.aeronave_tail };
+};
+
+window._verificarAlteracaoVoo = function(ev) {
+  if (!ev.roteiro_snapshot) return true; 
+  const snap = ev.roteiro_snapshot;
+  if (snap.aeronave_tail !== ev.aeronave_tail) return true;
+  const trechosAtuais = (ev.trechos || []).filter(t => t && t.data);
+  if (snap.trechos.length !== trechosAtuais.length) return true;
+  for (let i = 0; i < snap.trechos.length; i++) {
+    if (snap.trechos[i].origem !== trechosAtuais[i].origem) return true;
+    if (snap.trechos[i].destino !== trechosAtuais[i].destino) return true;
+    if (snap.trechos[i].hora !== trechosAtuais[i].hora) return true;
+    const paxSnap = (snap.trechos[i].passageiros_ids || []).sort().join(",");
+    const paxAtual = (trechosAtuais[i].passageiros_ids || []).sort().join(",");
+    if (paxSnap !== paxAtual) return true;
+  }
+  return false;
+};
+
 window.EmailRoteiro = (() => {
   let _evId = null;
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -6328,10 +6402,12 @@ window.EmailRoteiro = (() => {
 
   async function enviar() {
     const g = (id) => document.getElementById(id);
-    const ev = Agenda.getEventos().find(x => String(x.id) === String(_evId));
+    // Busca o evento direto do cache local (que é atualizado na hora) para não pegar versão stale em memória
+    const _evsCache = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]");
+    const ev = _evsCache.find(x => String(x.id) === String(_evId)) || Agenda.getEventos().find(x => String(x.id) === String(_evId));
     if (!ev) return;
     const dests = _coletarDestinatarios(ev);
-    const selecionados = [];
+    let selecionados = [];
     document.querySelectorAll("#sendEmailList [data-dest-idx]:checked").forEach(cb => {
       const i = +cb.dataset.destIdx;
       if (dests[i]) selecionados.push(dests[i]);
@@ -6341,6 +6417,45 @@ window.EmailRoteiro = (() => {
       g("sendEmailErro").style.display = "block";
       return;
     }
+
+    // ==== LÓGICA DE TIPO DE ENVIO ====
+    const novosPax = window._getNovosPassageiros(ev);
+    let rotaHoraAeroAlterada = false;
+    
+    if (ev.roteiro_snapshot) {
+        if (ev.roteiro_snapshot.aeronave_tail !== ev.aeronave_tail) rotaHoraAeroAlterada = true;
+        const snapTrs = ev.roteiro_snapshot.trechos || [];
+        const atuaisTrs = (ev.trechos || []).filter(t => t && t.data);
+        if (snapTrs.length !== atuaisTrs.length) rotaHoraAeroAlterada = true;
+        else {
+            for (let i=0; i<snapTrs.length; i++) {
+                if (snapTrs[i].origem !== atuaisTrs[i].origem) rotaHoraAeroAlterada = true;
+                if (snapTrs[i].destino !== atuaisTrs[i].destino) rotaHoraAeroAlterada = true;
+                if (snapTrs[i].hora !== atuaisTrs[i].hora) rotaHoraAeroAlterada = true;
+            }
+        }
+    }
+
+    let tipoEnvio = "novo";
+    if (ev.roteiro_enviado_em) {
+        if (rotaHoraAeroAlterada) {
+            tipoEnvio = "atualizacao";
+        } else if (novosPax.length > 0) {
+            tipoEnvio = "novo_passageiro";
+            // Filtra quem vai receber: Pilotos e Solicitantes (sempre) + os novos passageiros
+            selecionados = selecionados.filter(d => {
+                if (d.tipo === "piloto" || d.tipo === "solicitante") return true;
+                if (d.tipo === "passageiro" && d.passageiro_id && novosPax.includes(String(d.passageiro_id))) return true;
+                return false;
+            });
+            if (!selecionados.length) {
+                g("sendEmailErro").textContent = "Nenhum destinatário válido para o novo passageiro.";
+                g("sendEmailErro").style.display = "block";
+                return;
+            }
+        }
+    }
+    // ==================================
     const btn = g("sendEmailBtn");
     btn.disabled = true;
     const txtAntes = btn.textContent;
@@ -6361,6 +6476,18 @@ window.EmailRoteiro = (() => {
       if (_logoDataUrl.startsWith("data:image")) {
         const m = _logoDataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
         if (m) { _logoMime = m[1]; _logoB64 = m[2]; }
+      } else if (_logoDataUrl.startsWith("http")) {
+        // Se for URL do Supabase Storage, baixa e converte para Base64
+        try {
+          const resp = await fetch(_logoDataUrl);
+          const blob = await resp.blob();
+          _logoB64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(blob);
+          });
+          _logoMime = blob.type;
+        } catch(e) { console.warn("Erro ao baixar logo para o e-mail:", e); }
       }
       const empresa = {
         nome: localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Polato",
@@ -6386,14 +6513,56 @@ window.EmailRoteiro = (() => {
           return Array.from(ids).map(id => (Passengers.get().find(p => String(p.id) === String(id)) || {}).nome).filter(Boolean);
         })()
       };
+      // Cores do E-mail (lidas da Aparência)
+      const corHeaderEmail = localStorage.getItem("dv_email_header_color") || "#1e293b";
+      const corTextoEmail = localStorage.getItem("dv_email_text_color") || "#ffffff";
+
+      // Gerar a lista de mudanças para o e-mail
+      const mudancasTexto = [];
+      if (ev.roteiro_snapshot) {
+          const snap = ev.roteiro_snapshot;
+          const trsAtuais = (ev.trechos || []).filter(t => t && t.data);
+          const trsSnap = snap.trechos || [];
+          
+          trsAtuais.forEach((t, i) => {
+              const s = trsSnap[i];
+              if (s) {
+                  if (s.hora !== t.hora) mudancasTexto.push(`T${i+1} era ${s.hora} passou para ${t.hora}`);
+                  if (s.destino !== t.destino) mudancasTexto.push(`T${i+1} Destino era ${s.destino} passou para ${t.destino}`);
+              }
+          });
+      }
+      if (novosPax.length > 0) {
+          const todosPax = Passengers.get();
+          const nomes = novosPax.map(id => (todosPax.find(x => String(x.id) === String(id)) || {}).nome).filter(Boolean);
+          mudancasTexto.push(`Passageiro(s) ${nomes.join(", ")} adicionado(s) ao voo`);
+      }
+      
+      // Agora envia como Array para o Backend montar a lista
+      const arrayMudancas = mudancasTexto;
+      
+      
       const resp = await sb.functions.invoke("send-flight-email", {
-        body: { tipo: "novo", empresa, voo, destinatarios: selecionados, mudancas: [] }
+        body: { 
+          tipo: tipoEnvio, 
+          empresa, 
+          voo, 
+          destinatarios: selecionados, 
+          mudancas: arrayMudancas,
+          corHeaderEmail: corHeaderEmail,
+          corTextoEmail: corTextoEmail
+        }
       });
       if (resp.error) throw new Error(resp.error.message || "Falha na função");
       if (resp.data && resp.data.ok === false) throw new Error(resp.data.erro || "Erro desconhecido");
 
       const agora = new Date().toISOString();
-      const payload = { ...ev, roteiro_enviado_em: agora, roteiro_enviado_para: selecionados.map(d => d.email) };
+      const payload = { 
+        ...ev, 
+        roteiro_enviado_em: agora, 
+        roteiro_enviado_para: selecionados.map(d => d.email),
+        roteiro_snapshot: window._gerarSnapshotVoo(ev) // Salva a foto do voo enviado
+      };
       await Db.upsertEvent(payload);
       await Agenda.load();
 
@@ -7180,9 +7349,18 @@ const Db = (() => {
       dataFim: ev.dataFim||null, horaFim: ev.horaFim||null,
       roteiro_enviado_em: ev.roteiro_enviado_em||null,
       roteiro_enviado_para: ev.roteiro_enviado_para||null,
+      roteiro_snapshot: ev.roteiro_snapshot||null,
       _tanque_aplicado: ev._tanque_aplicado === true,
       _tanque_aplicado_em: ev._tanque_aplicado_em||null };
     p.id = ev.id || ("ev-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8));
+
+    // Preserva os dados do e-mail (snapshot) se eles não vierem no objeto de edição
+    const _prev = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]").find(x => String(x.id) === String(p.id));
+    if (_prev) {
+      p.roteiro_enviado_em = ev.roteiro_enviado_em !== undefined ? ev.roteiro_enviado_em : _prev.roteiro_enviado_em;
+      p.roteiro_enviado_para = ev.roteiro_enviado_para !== undefined ? ev.roteiro_enviado_para : _prev.roteiro_enviado_para;
+      p.roteiro_snapshot = ev.roteiro_snapshot !== undefined ? ev.roteiro_snapshot : _prev.roteiro_snapshot;
+    }
 
     /* Sempre atualiza o cache local ANTES de tentar a nuvem.
        Assim a UI vê o dado imediatamente, mesmo se a nuvem falhar. */
@@ -9323,7 +9501,7 @@ const Agenda = (() => {
             return new Date(iso).getTime() >= Date.now();
           } catch(e) { return false; }
         })() && !bloqueioCard;
-        const _emailEnviado = !!ev.roteiro_enviado_em;
+        const _emailEnviado = !!ev.roteiro_enviado_em && !window._verificarAlteracaoVoo(ev);
         const _emailBadge = !_podeEmail ? '' : (_emailEnviado
           ? '<span title="Roteiro enviado em ' + new Date(ev.roteiro_enviado_em).toLocaleString("pt-BR") + '" style="width:10px;height:10px;border-radius:50%;background:#30cf8a;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(48,207,138,.25)"></span>'
           : '<span title="Roteiro ainda não enviado" style="width:10px;height:10px;border-radius:50%;background:#f2c94c;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(242,201,76,.25)"></span>');
@@ -9545,7 +9723,7 @@ const Agenda = (() => {
                       return new Date(iso).getTime() >= Date.now();
                     } catch(e) { return false; }
                   })() && !bloqueio;
-                  const _emailEnviadoX = !!ev.roteiro_enviado_em;
+                  const _emailEnviadoX = !!ev.roteiro_enviado_em && !window._verificarAlteracaoVoo(ev);
                   const _emailBadgeX = !_podeEmailX ? '' : (_emailEnviadoX
                     ? '<span title="Roteiro enviado em ' + new Date(ev.roteiro_enviado_em).toLocaleString("pt-BR") + '" style="width:10px;height:10px;border-radius:50%;background:#30cf8a;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(48,207,138,.25)"></span>'
                     : '<span title="Roteiro ainda não enviado" style="width:10px;height:10px;border-radius:50%;background:#f2c94c;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(242,201,76,.25)"></span>');
@@ -11324,13 +11502,7 @@ const Agenda = (() => {
     if (revisandoIdx === 0) {
       /* Primeiro trecho: usa Tanque Confirmado (validado antes) */
       const confFinal = tanqueConfirmadoQtd;
-      console.log("[DEBUG save trecho 0]", {
-        tanqueConfirmadoQtd: tanqueConfirmadoQtd,
-        inpConfValue: g("rvTanqueConfirmado")?.value,
-        confFinal: confFinal,
-        tanqueUnid: tanqueUnid,
-        tanqueAntesLitros: confFinal === null || confFinal === undefined ? "NULL/UNDEF" : (tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal)
-      });
+      
       tanqueAntesLitros = tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal;
       tanqueAntesPreco = Number(aero.tanque_preco) || 0;
     } else {
@@ -19743,7 +19915,6 @@ function _thRelCity(icao) {
 
 
     const drawLogoAt = async (src, targetX) => {
-      console.log("DEBUG PDF LOGO - src:", src ? src.substring(0, 100) : "VAZIO");
       if (!src) return null;
       try {
         const box = await _logoParaCanvas(src);
@@ -21193,6 +21364,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       _i2.addEventListener("input", () => {
         localStorage.setItem("dv_report_color2", _i2.value);
         if (_l2) _l2.textContent = _i2.value.toUpperCase();
+      });
+    }
+    
+    // Sincroniza Cores do E-mail
+    const _eh = localStorage.getItem("dv_email_header_color") || "#1e293b";
+    const _et = localStorage.getItem("dv_email_text_color") || "#ffffff";
+    const _ih = document.getElementById("setEmailHeaderColor");
+    const _it = document.getElementById("setEmailTextColor");
+    const _lh = document.getElementById("emailHeaderColorValue");
+    const _lt = document.getElementById("emailTextColorValue");
+    
+    if (_ih) {
+      _ih.value = _eh;
+      if (_lh) _lh.textContent = _eh.toUpperCase();
+      _ih.addEventListener("input", () => {
+        localStorage.setItem("dv_email_header_color", _ih.value);
+        if (_lh) _lh.textContent = _ih.value.toUpperCase();
+      });
+    }
+    if (_it) {
+      _it.value = _et;
+      if (_lt) _lt.textContent = _et.toUpperCase();
+      _it.addEventListener("input", () => {
+        localStorage.setItem("dv_email_text_color", _it.value);
+        if (_lt) _lt.textContent = _it.value.toUpperCase();
       });
     }
   }
