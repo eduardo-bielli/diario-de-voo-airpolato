@@ -10864,6 +10864,88 @@ const Agenda = (() => {
     if (pTot)  pTot.textContent  = fmtBR(valorGasto + manPrev + despTotal);
   }
 
+  window.__paxEditIds = [];
+
+  window.__rvRenderPax = function() {
+    const lista = document.getElementById("rvPaxLista");
+    if (!lista) return;
+    const todosPax = (typeof Passengers !== "undefined" && Passengers.get) ? Passengers.get() : [];
+    
+    if (window.__paxEditIds.length === 0) {
+      lista.innerHTML = '<span class="hint" style="font-size:11px;">Nenhum passageiro neste trecho.</span>';
+    } else {
+      lista.innerHTML = window.__paxEditIds.map(id => {
+        const p = todosPax.find(x => String(x.id) === String(id));
+        const nome = p ? p.nome : "Desconhecido";
+        return `<div style="display:inline-flex; justify-content:space-between; align-items:center; background:#f0f2f5; padding:4px 8px; border-radius:16px; border:1px solid #ccc; gap:6px;">
+          <span style="font-size:11px; font-weight:600; color:#000;">${nome}</span>
+          <button type="button" onclick="window.__rvRemovePax('${id}')" style="background:none; border:none; color:#ff4d4f; font-weight:bold; cursor:pointer; font-size:14px; line-height:1; padding:0;">×</button>
+        </div>`;
+      }).join("");
+    }
+
+    const input = document.getElementById("rvPaxInput");
+    if (input) input.value = ""; // Limpa o campo após adicionar
+    const suggestions = document.getElementById("rvPaxSuggestions");
+    if (suggestions) suggestions.style.display = "none";
+  };
+
+  // Lógica de busca em tempo real
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.id === 'rvPaxInput') {
+      const val = e.target.value.toLowerCase();
+      const suggestions = document.getElementById('rvPaxSuggestions');
+      if (!suggestions) return;
+      
+      if (val.length < 1) {
+        suggestions.style.display = 'none';
+        return;
+      }
+      
+      const todosPax = (typeof Passengers !== "undefined" && Passengers.get) ? Passengers.get() : [];
+      const matches = todosPax.filter(p => p.nome.toLowerCase().includes(val) && !window.__paxEditIds.includes(String(p.id))).slice(0, 5);
+      
+      if (matches.length === 0) {
+        suggestions.style.display = 'none';
+        return;
+      }
+      
+      suggestions.innerHTML = matches.map(p => `<div style="padding:8px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid #eee; transition: background 0.1s; background:#fff; color:#000;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='#fff'" onclick="window.__rvAddPax('${p.id}')">${p.nome}</div>`).join("");
+      suggestions.style.display = 'block';
+    }
+  });
+
+  // Fecha sugestões ao clicar fora
+  document.addEventListener('click', function(e) {
+    const suggestions = document.getElementById('rvPaxSuggestions');
+    if (suggestions && !e.target.closest('#rvPaxInput') && !e.target.closest('#rvPaxSuggestions')) {
+      suggestions.style.display = 'none';
+    }
+  });
+
+
+  window.__rvAddPax = function(id = null) {
+    if (!id) {
+      // Se clicou no botão sem passar ID, tenta achar pelo texto exato
+      const input = document.getElementById("rvPaxInput");
+      if (!input || !input.value.trim()) return;
+      const todosPax = (typeof Passengers !== "undefined" && Passengers.get) ? Passengers.get() : [];
+      const p = todosPax.find(x => x.nome.toLowerCase() === input.value.trim().toLowerCase());
+      if (p) id = p.id;
+      else return; // Nome não encontrado
+    }
+    
+    if (!window.__paxEditIds.includes(String(id))) {
+      window.__paxEditIds.push(String(id));
+      window.__rvRenderPax();
+    }
+  };
+
+  window.__rvRemovePax = function(id) {
+    window.__paxEditIds = window.__paxEditIds.filter(x => String(x) !== String(id));
+    window.__rvRenderPax();
+  };
+
   function abrirRevisao(evId, idx) {
     const eventosAgenda = (typeof Agenda !== "undefined" && Agenda.getEventos) ? Agenda.getEventos() : [];
         const ev = eventosAgenda.find(x => String(x.id) === String(evId));
@@ -10937,6 +11019,9 @@ const Agenda = (() => {
     g("rvCombLitros").value = litrosAbast > 0 ? _fmtQtdBR(+litrosParaUnidade(litrosAbast, unidAbastSalva).toFixed(1)) : "";
 
     g("rvObs").value = rv.observacoes || "";
+    
+    window.__paxEditIds = Array.isArray(tr.passageiros_ids) ? [...tr.passageiros_ids].map(String) : [];
+    window.__rvRenderPax();
 
     const selGasto = g("rvCombGastoUnidade");
     if (selGasto) {
@@ -11318,6 +11403,9 @@ const Agenda = (() => {
 
     /* Prepara a lista de aeronaves para o save sincrono */
     const listaAero = Aircraft.get();
+
+    /* ==== Atualiza a lista de passageiros ==== */
+    ev.trechos[revisandoIdx].passageiros_ids = [...window.__paxEditIds];
 
     /* ==== Monta revisão ==== */
     const revisao = {
@@ -21931,6 +22019,16 @@ Router.init();
           <span>💵 Valor do combustível gasto:</span>
           <strong id="rvCombGastoValor" style="color:var(--accent)">R$ 0,00</strong>
           <span id="rvCombGastoDetalhe" style="font-size:11px;color:var(--muted);margin-left:auto"></span>
+        </div>
+      </div>
+
+      <div class="revisao-sec mobile-card">
+        <h4>Passageiros do Trecho</h4>
+        <div id="rvPaxLista" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+        <div style="display:flex; gap:8px; position:relative;">
+          <input id="rvPaxInput" type="text" placeholder="Digite o nome do passageiro..." autocomplete="off" class="mobile-input-compact" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--text);">
+          <div id="rvPaxSuggestions" style="display:none; position:absolute; top:100%; left:0; right:80px; background:#fff; color:#000; border:1px solid var(--line); border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999; max-height:150px; overflow-y:auto; margin-top:4px;"></div>
+          <button type="button" class="btn btn--secondary" onclick="window.__rvAddPax()" style="padding:0 16px; font-size:12px; white-space:nowrap;">+ Adicionar</button>
         </div>
       </div>
 
