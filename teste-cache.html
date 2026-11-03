@@ -3557,7 +3557,14 @@ body.is-booting .app {
           <ul class="mission-list" id="missionList"></ul>
         </div>
         <div class="panel panel--alert">
-          <header class="panel__head"><h3>Atenção <span class="badge badge--danger" id="alertBadgeCount">0</span></h3></header>
+          <header class="panel__head">
+            <h3>Atenção <span class="badge badge--danger" id="alertBadgeCount">0</span></h3>
+            <select id="alertaFiltroDias" style="margin-left:auto; font-size:11px; padding:4px; border-radius:4px; border:1px solid var(--line); background:var(--bg); color:var(--text); cursor:pointer;">
+              <option value="30">30 dias</option>
+              <option value="60">60 dias</option>
+              <option value="90">90 dias</option>
+            </select>
+          </header>
           <ul class="alert-list" id="alertListDashboard">
             <li class="alert" style="color:var(--muted);font-size:12px;text-align:center;padding:16px">Carregando...</li>
           </ul>
@@ -3678,7 +3685,17 @@ body.is-booting .app {
           <button class="btn btn--secondary" id="pilTabEscala" style="padding:8px 16px;font-size:13px">👥 Escala de pilotos</button>
           <button class="btn btn--secondary" id="pilTabDisp" style="padding:8px 16px;font-size:13px">📅 Minha disponibilidade</button>
           <button class="btn btn--secondary" id="pilTabLicencas" style="padding:8px 16px;font-size:13px">📋 Minhas Habilitações</button>
-          <button class="btn btn--secondary" id="btnFiltroPilotos" style="display:none; margin-left:auto; padding:8px 16px; font-size:13px;">👥 Filtro</button>
+          <button class="btn btn--secondary" id="btnFiltroPilotos" style="display:none; margin-left:auto; padding:8px 16px; font-size:13px;">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align: text-bottom; margin-right: 6px;">
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <circle cx="8" cy="6" r="3.5" fill="var(--bg)"></circle>
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <circle cx="16" cy="12" r="3.5" fill="var(--bg)"></circle>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+    <circle cx="11" cy="18" r="3.5" fill="var(--bg)"></circle>
+  </svg>
+  Filtro
+</button>
           <div id="menuFiltroPilotos" style="display:none; position:absolute; right:0; top:40px; background:var(--bg); border:1px solid var(--line); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:9999; width:220px; padding:12px;">
              <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Visualizar</div>
              <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--line);">
@@ -3702,7 +3719,7 @@ body.is-booting .app {
 
             <!-- Card 2: Próximo Voo -->
             <div class="panel">
-              <header class="panel__head"><h3>✈️ Próximo Voo</h3><a href="#/agenda" class="btn btn--secondary" style="font-size:11px;padding:4px 8px;text-decoration:none">Ver Agenda</a></header>
+              <header class="panel__head"><h3>✈️ Próximo Voo (15 dias)</h3><a href="#/agenda" class="btn btn--secondary" style="font-size:11px;padding:4px 8px;text-decoration:none">Ver Agenda</a></header>
               <div style="padding:16px" id="vgProximoVoo"></div>
             </div>
 
@@ -15861,13 +15878,13 @@ const Disponibilidade = (() => {
 
       /* Treinamentos neste dia */
       const treinosNesteDia = dados.treinamentos ? Object.keys(dados.treinamentos).filter(k => k.endsWith("::" + data)) : [];
+      const revalNesteDia = dados.revalidacao ? Object.keys(dados.revalidacao).filter(k => k.endsWith("::" + data)) : [];
       const nomesTreino = treinosNesteDia.map(k => {
         const uid = k.split("::")[0];
         const u = todosUsers.find(x => x.id === uid);
         return u ? u.nome.split(" ")[0] : "?";
       });
 
-      const revalNesteDia = dados.revalidacao ? Object.keys(dados.revalidacao).filter(k => k.endsWith("::" + data)) : [];
       const nomesReval = revalNesteDia.map(k => {
         const uid = k.split("::")[0];
         const u = todosUsers.find(x => x.id === uid);
@@ -15915,7 +15932,7 @@ const Disponibilidade = (() => {
         tagsHtml.push('<div class="calendar__tag calendar__tag--treinamento">🔵 ' + nomes + '</div>');
       }
       if (nomesReval && nomesReval.length) {
-        const nomes = revalsNesteDia.map(k => {
+        const nomes = (typeof revalNesteDia !== 'undefined' ? revalNesteDia : []).map(k => {
            const uid = k.split("::")[0];
            const u = todosUsers.find(x => x.id === uid);
            const nome = u ? u.nome.split(" ")[0] : "?";
@@ -16508,6 +16525,106 @@ const Alertas = (() => {
       });
     });
 
+    /* 1.9 ALERTAS DE DISPONIBILIDADE (FOLGA, TREINAMENTO, REVALIDAÇÃO) */
+    const _selDias = document.getElementById("alertaFiltroDias");
+    const _limiteDias = _selDias ? (parseInt(_selDias.value) || 30) : 30;
+    const _dispDash = JSON.parse(localStorage.getItem("dv.disponibilidade.v1") || "{}");
+    const _hojeStrAlert = (() => { const n = new Date(); return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0"); })();
+    const _hojeDateAlert = new Date(_hojeStrAlert + "T00:00:00");
+
+    const _ids = window.__filtroPilotosIds;
+    const _hasFiltro = _ids && _ids.length > 0;
+    const _usersFiltrados = _isAdminDash ? (_usersDash.filter(u => _hasFiltro ? _ids.includes(String(u.id)) : true)) : [_sessaoDash];
+
+    // 1. Coletar todos os eventos brutos
+    const _eventosBrutos = [];
+    const _processarDisp = (obj, label, cor) => {
+        if (!obj) return;
+        Object.keys(obj).forEach(k => {
+            const parts = k.split("::");
+            if (parts.length < 2) return;
+            const uid = parts[0];
+            const data = parts[1];
+            
+            if (!_usersFiltrados.some(u => String(u.id) === String(uid))) return;
+            
+            const dEvent = new Date(data + "T00:00:00");
+            const diffDays = Math.round((dEvent - _hojeDateAlert) / 86400000);
+            if (diffDays < 0 || diffDays > _limiteDias) return;
+
+            const u = _usersDash.find(x => String(x.id) === String(uid));
+            const nomePiloto = u ? u.nome.split(" ")[0] : "?";
+            
+            _eventosBrutos.push({ data, label, cor, uid, nomePiloto });
+        });
+    };
+
+    _processarDisp(_dispDash.folgas, "Folga", "var(--yellow)");
+    _processarDisp(_dispDash.treinamentos, "Treinamento", "var(--accent)");
+    _processarDisp(_dispDash.revalidacao, "Revalidação", "#a855f7");
+
+    // 2. Agrupar dias contínuos por usuário e tipo
+    const _porUsuario = {};
+    _eventosBrutos.forEach(ev => {
+        const k = ev.uid + "|" + ev.label;
+        if (!_porUsuario[k]) _porUsuario[k] = [];
+        _porUsuario[k].push(ev);
+    });
+
+    let _blocosIndividuais = [];
+    Object.keys(_porUsuario).forEach(k => {
+        const evs = _porUsuario[k].sort((a,b) => a.data.localeCompare(b.data));
+        const blocosU = [];
+        evs.forEach(ev => {
+            const ultimo = blocosU[blocosU.length - 1];
+            if (ultimo && ultimo.label === ev.label) {
+                const p1 = ultimo.fim.split('-'); const p2 = ev.data.split('-');
+                const utc1 = Date.UTC(p1[0], p1[1]-1, p1[2]);
+                const utc2 = Date.UTC(p2[0], p2[1]-1, p2[2]);
+                if (Math.round((utc2 - utc1) / 86400000) === 1) {
+                    ultimo.fim = ev.data;
+                    return;
+                }
+            }
+            blocosU.push({ label: ev.label, cor: ev.cor, inicio: ev.data, fim: ev.data, uid: ev.uid, nomePiloto: ev.nomePiloto });
+        });
+        _blocosIndividuais = _blocosIndividuais.concat(blocosU);
+    });
+
+    // 3. Agrupar usuários com o mesmo evento e mesmas datas
+    const _blocosAgrupados = [];
+    _blocosIndividuais.forEach(b => {
+        const match = _blocosAgrupados.find(x => x.label === b.label && x.inicio === b.inicio && x.fim === b.fim);
+        if (match) {
+            if (!match.nomes.includes(b.nomePiloto)) match.nomes.push(b.nomePiloto);
+        } else {
+            _blocosAgrupados.push({ label: b.label, cor: b.cor, inicio: b.inicio, fim: b.fim, nomes: [b.nomePiloto] });
+        }
+    });
+
+    // 4. Ordenar e criar os alertas
+    _blocosAgrupados.sort((a,b) => a.inicio.localeCompare(b.inicio));
+    
+    const _fmtD = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+
+    _blocosAgrupados.forEach(b => {
+        const bStart = new Date(b.inicio + "T00:00:00");
+        const diffDays = Math.round((bStart - _hojeDateAlert) / 86400000);
+        let quando = diffDays === 0 ? "Hoje" : (diffDays === 1 ? "Amanhã" : `Em ${diffDays} dias`);
+        
+        let periodo = (b.inicio !== b.fim) ? ` (${_fmtD(b.inicio)} a ${_fmtD(b.fim)})` : ` (${_fmtD(b.inicio)})`;
+        
+        let nomesStr = b.nomes.join(" / ");
+        
+        alertas.push({
+            tipo: b.label,
+            aeronave: "",
+            severidade: "warning",
+            titulo: b.label + " - " + nomesStr + periodo,
+            sub: quando
+        });
+    });
+
     return alertas.filter(function(a) { return !_alertaDispensado(_alertaId(a)); });
   }
 
@@ -16516,6 +16633,15 @@ const Alertas = (() => {
     const box = document.getElementById("alertListDashboard");
     const badge = document.getElementById("alertBadgeCount");
     if (!box) return;
+
+    // Adiciona o evento de mudança no filtro de dias (se ainda não tiver)
+    const selDias = document.getElementById("alertaFiltroDias");
+    if (selDias && !selDias.dataset.bound) {
+        selDias.dataset.bound = "1";
+        selDias.addEventListener("change", () => {
+            render();
+        });
+    }
 
     const lista = calcular();
 
@@ -16532,6 +16658,20 @@ const Alertas = (() => {
     box.innerHTML = lista.map(a => {
       const cor = a.severidade === "danger" ? "var(--red)" : "var(--yellow)";
       const alertId = _alertaId(a);
+
+      // --- NOVO: Badge customizado para Disponibilidade ---
+      if (["Folga", "Treinamento", "Revalidação"].includes(a.tipo)) {
+          let bgColor = a.tipo === "Folga" ? "#eab308" : (a.tipo === "Treinamento" ? "#3b82f6" : "#a855f7");
+          let label = a.tipo;
+          let badgeHtml = '<span style="display:inline-block; background:' + bgColor + ' !important; color:#fff !important; padding:2px 6px; border-radius:4px; font-weight:800; font-size:11px; margin-right:6px; vertical-align:middle; font-family:ui-monospace,monospace;">' + label + '</span>';
+          let textoTituloDisp = a.titulo.replace(label + " - ", "").trim();
+          
+          return '<li class="alert" data-alerta-id="' + esc(alertId) + '" data-alerta-ev="' + esc(a.ev_id || '') + '" data-alerta-tipo="' + esc(a.tipo || '') + '" style="cursor:pointer;position:relative;padding-right:24px">'
+            + '<strong style="color:var(--text); display:block; margin-bottom:2px;">⚠ ' + badgeHtml + esc(textoTituloDisp) + '</strong>'
+            + '<small>' + esc(a.sub) + '</small>'
+            + '<button type="button" class="alerta-x" data-alerta-id="' + esc(alertId) + '" title="Dispensar por 30 dias" style="position:absolute;top:2px;right:2px;background:transparent;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px;width:16px;height:16px;line-height:1;border-radius:50%;opacity:0.5;">✕</button>'
+            + '</li>';
+      }
       
       // Procura QUALQUER prefixo de aeronave no título para transformar em badge
       let prefixoBadge = "";
@@ -24961,7 +25101,16 @@ document.addEventListener("DOMContentLoaded", function() {
     const pilotos = users.filter(u => (u.perfil === 'piloto' || u.tambem_e_piloto) && u.ativo !== false);
 
     if (isAdmin && !window.__filtroPilotosIds) {
-        window.__filtroPilotosIds = pilotos.map(p => p.id);
+        const _salvo = localStorage.getItem("dv.pilotos.filtroIds");
+        if (_salvo) {
+            try {
+                window.__filtroPilotosIds = JSON.parse(_salvo);
+            } catch(e) {
+                window.__filtroPilotosIds = pilotos.map(p => String(p.id));
+            }
+        } else {
+            window.__filtroPilotosIds = pilotos.map(p => String(p.id));
+        }
     }
     
     const btnFiltro = document.getElementById('btnFiltroPilotos');
@@ -24971,6 +25120,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
     if (isAdmin && btnFiltro && menuFiltro) {
         btnFiltro.style.display = 'inline-block';
+        
+        // 1. Cria os checkboxes apenas uma vez
+        if (listPilotos.children.length === 0) {
+            listPilotos.innerHTML = pilotos.map(p => `
+                <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                    <input type="checkbox" class="chkFiltroPiloto" value="${p.id}"> ${p.nome.split(' ')[0]}
+                </label>
+            `).join("");
+        }
+        
+        // 2. Configura o botão de abrir/fechar menu
         if (!btnFiltro.dataset.bound) {
             btnFiltro.dataset.bound = '1';
             btnFiltro.addEventListener('click', (e) => {
@@ -24982,39 +25142,49 @@ document.addEventListener("DOMContentLoaded", function() {
                     menuFiltro.style.display = 'none';
                 }
             });
+        }
+
+        // 3. Atualiza o estado visual
+        const idsStr = (window.__filtroPilotosIds || []).map(String);
+        const soEu = idsStr.length === 1 && idsStr[0] === String(sessao.id);
+        
+        radioMeu.checked = soEu;
+        
+        listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
+            cb.checked = idsStr.includes(String(cb.value));
             
-            radioMeu.addEventListener('change', () => {
-                window.__filtroPilotosIds = [sessao.id];
+            // Remove listener antigo e cria um novo
+            cb.onchange = null;
+            cb.onchange = () => {
+                const selecionados = Array.from(listPilotos.querySelectorAll('.chkFiltroPiloto:checked')).map(x => String(x.value));
+                window.__filtroPilotosIds = selecionados;
+                localStorage.setItem("dv.pilotos.filtroIds", JSON.stringify(selecionados));
+                radioMeu.checked = (selecionados.length === 1 && selecionados[0] === String(sessao.id));
                 renderVisaoGeral();
                 if (typeof renderCurrentPage === 'function') renderCurrentPage();
-            });
-
-            listPilotos.innerHTML = pilotos.map(p => `
-                <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
-                    <input type="checkbox" class="chkFiltroPiloto" value="${p.id}" checked> ${p.nome.split(' ')[0]}
-                </label>
-            `).join('');
-
-            listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
-                cb.addEventListener('change', () => {
-                    const selecionados = Array.from(listPilotos.querySelectorAll('.chkFiltroPiloto:checked')).map(x => x.value);
-                    window.__filtroPilotosIds = selecionados;
-                    radioMeu.checked = false;
-                    renderVisaoGeral();
-                    if (typeof renderCurrentPage === 'function') renderCurrentPage();
-                });
-            });
-        }
-        
-        const soEuChecked = window.__filtroPilotosIds.length === 1 && window.__filtroPilotosIds[0] === sessao.id;
-        radioMeu.checked = soEuChecked;
-        listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
-            cb.checked = window.__filtroPilotosIds.includes(cb.value);
+            };
         });
+
+        // 4. Configura o rádio "Meu Painel"
+        radioMeu.onchange = null;
+        radioMeu.onchange = () => {
+            if (radioMeu.checked) {
+                window.__filtroPilotosIds = [String(sessao.id)];
+                localStorage.setItem("dv.pilotos.filtroIds", JSON.stringify(window.__filtroPilotosIds));
+                
+                // Desmarca todos os checkboxes visualmente na hora
+                listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
+                    cb.checked = (String(cb.value) === String(sessao.id));
+                });
+
+                renderVisaoGeral();
+                if (typeof renderCurrentPage === 'function') renderCurrentPage();
+            }
+        };
     }
 
-    const targetPilotos = isAdmin ? window.__filtroPilotosIds : [sessao.id];
-    const isMeuPainel = targetPilotos.length === 1 && targetPilotos[0] === sessao.id;
+    const targetPilotos = isAdmin ? (window.__filtroPilotosIds || []).map(String) : [String(sessao.id)];
+    const isMeuPainel = targetPilotos.length === 1 && targetPilotos[0] === String(sessao.id);
     const hojeStr = (() => { const n = new Date(); return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0"); })();
 
     // ----- 1. COMPLIANCE -----
@@ -25096,10 +25266,14 @@ document.addEventListener("DOMContentLoaded", function() {
         const voosAgrupados = {}; 
         targetPilotos.forEach(uid => {
             const minhaAgenda = eventos.filter(ev => String(ev.piloto_p1) === String(uid) || String(ev.piloto_p2) === String(uid));
-            const futuros = minhaAgenda.filter(ev => {
-                const trs = ev.trechos || [];
-                return trs.length && trs[trs.length - 1].data >= hojeStr;
-            });
+            const _limiteDate = new Date(); _limiteDate.setDate(_limiteDate.getDate() + 15);
+        const _limiteStr = _limiteDate.getFullYear() + "-" + String(_limiteDate.getMonth()+1).padStart(2,"0") + "-" + String(_limiteDate.getDate()).padStart(2,"0");
+        
+        const futuros = minhaAgenda.filter(ev => {
+            const trs = ev.trechos || [];
+            // O voo deve COMEÇAR hoje ou no futuro E antes do limite de 15 dias
+            return trs.length && trs[0].data >= hojeStr && trs[0].data <= _limiteStr;
+        });
             
             if (futuros.length > 0) {
                 const prox = futuros.sort((a, b) => (a.trechos[0].data + a.trechos[0].hora).localeCompare(b.trechos[0].data + b.trechos[0].hora))[0];
@@ -25143,7 +25317,7 @@ document.addEventListener("DOMContentLoaded", function() {
             html += '</div>';
             boxVoo.innerHTML = html;
         } else {
-            boxVoo.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">🌴</span><span class="hint">Nenhum voo agendado no momento.</span></div>';
+            boxVoo.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">🏖️</span><span class="hint">Nenhum voo nos próximos 15 dias.</span></div>';
         }
     }
 
@@ -25162,7 +25336,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const uid = parts[0];
                 const data = parts[1];
                 
-                if (!targetPilotos.includes(uid)) return;
+                if (!targetPilotos.includes(String(uid))) return;
                 if (data >= hojeStr) {
                     const u = users.find(x => String(x.id) === String(uid));
                     eventosBrutos.push({ data, label, cor, uid, nomePiloto: u ? u.nome.split(" ")[0] : "" });
