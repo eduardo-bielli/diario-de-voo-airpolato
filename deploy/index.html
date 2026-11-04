@@ -22,6 +22,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{--bg:#06101b;--panel:#091b2c;--sidebar-bg:#030c15;--line:#173651;--text:#f1f7ff;--muted:#8fa7bc;--accent:#1687ff;--icon-color:#38a8ff;--nav-title-color:#3e83bd;--nav-active-bg:#123252;--green:#30cf8a;--yellow:#f2c94c;--red:#ff5a5f;--card-exec-bg:#0a2219;--card-maint-bg:#2a1518;--card-extra-bg:#2a1f10;--shadow:0 18px 50px rgba(0,0,0,.28);--radius:12px;--radius-lg:16px;--gap:14px}
 *,*::before,*::after{box-sizing:border-box}
@@ -3556,7 +3557,14 @@ body.is-booting .app {
           <ul class="mission-list" id="missionList"></ul>
         </div>
         <div class="panel panel--alert">
-          <header class="panel__head"><h3>Atenção <span class="badge badge--danger" id="alertBadgeCount">0</span></h3></header>
+          <header class="panel__head">
+            <h3>Atenção <span class="badge badge--danger" id="alertBadgeCount">0</span></h3>
+            <select id="alertaFiltroDias" style="margin-left:auto; font-size:11px; padding:4px; border-radius:4px; border:1px solid var(--line); background:var(--bg); color:var(--text); cursor:pointer;">
+              <option value="30">30 dias</option>
+              <option value="60">60 dias</option>
+              <option value="90">90 dias</option>
+            </select>
+          </header>
           <ul class="alert-list" id="alertListDashboard">
             <li class="alert" style="color:var(--muted);font-size:12px;text-align:center;padding:16px">Carregando...</li>
           </ul>
@@ -3672,13 +3680,130 @@ body.is-booting .app {
       <!-- Visão PILOTOS (nova) -->
       <div id="agendaPilotos" hidden>
         <!-- Abas internas -->
-        <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div style="display:flex;gap:8px;margin-bottom:14px; position: relative;">
+          <button class="btn btn--secondary" id="pilTabVisao" style="padding:8px 16px;font-size:13px">📊 Visão Geral</button>
           <button class="btn btn--secondary" id="pilTabEscala" style="padding:8px 16px;font-size:13px">👥 Escala de pilotos</button>
           <button class="btn btn--secondary" id="pilTabDisp" style="padding:8px 16px;font-size:13px">📅 Minha disponibilidade</button>
+          <button class="btn btn--secondary" id="pilTabLicencas" style="padding:8px 16px;font-size:13px">📋 Minhas Habilitações</button>
+          <button class="btn btn--secondary" id="btnFiltroPilotos" style="display:none; margin-left:auto; padding:8px 16px; font-size:13px;">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align: text-bottom; margin-right: 6px;">
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <circle cx="8" cy="6" r="3.5" fill="var(--bg)"></circle>
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <circle cx="16" cy="12" r="3.5" fill="var(--bg)"></circle>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+    <circle cx="11" cy="18" r="3.5" fill="var(--bg)"></circle>
+  </svg>
+  Filtro
+</button>
+          <div id="menuFiltroPilotos" style="display:none; position:absolute; right:0; top:40px; background:var(--bg); border:1px solid var(--line); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:9999; width:220px; padding:12px;">
+             <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Visualizar</div>
+             <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--line);">
+                <input type="radio" name="filtroModo" id="filtroModoMeu" value="meu"> Meu Painel
+             </label>
+             <div id="filtroListaPilotos" style="max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                <!-- Checkboxes gerados via JS -->
+             </div>
+          </div>
+        </div>
+
+        <!-- Aba: Visão Geral (Mini-Dashboard) -->
+        <div id="pilViewVisaoGeral">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px">
+            
+            <!-- Card 1: Compliance -->
+            <div class="panel">
+              <header class="panel__head"><h3>🛡️ Status de Licenças</h3></header>
+              <div style="padding:16px" id="vgCompliance"></div>
+            </div>
+
+            <!-- Card 2: Próximo Voo -->
+            <div class="panel">
+              <header class="panel__head"><h3>✈️ Próximo Voo (15 dias)</h3><a href="#/agenda" class="btn btn--secondary" style="font-size:11px;padding:4px 8px;text-decoration:none">Ver Agenda</a></header>
+              <div style="padding:16px" id="vgProximoVoo"></div>
+            </div>
+
+            <!-- Card 3: Disponibilidade -->
+            <div class="panel">
+              <header class="panel__head">
+                <div style="display:flex;align-items:center;gap:8px;position:relative">
+                  <h3>📅 Próximos Dias</h3>
+                  
+                  <!-- Botão de Filtro -->
+                  <button id="vgFiltroBtn" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0;margin-left:4px;" title="Filtrar Eventos">⚙️</button>
+                  
+                  <!-- Menu Dropdown Flutuante -->
+                  <div id="vgFiltroMenu" style="display:none; position:absolute; top:24px; left:120px; background:var(--card); border:1px solid var(--line); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:100; min-width:130px; overflow:hidden;">
+                    <div id="vgFiltroTodos" style="padding:8px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid var(--line); hover:background:var(--bg);">Todos os Pilotos</div>
+                    <div id="vgFiltroMeus" style="padding:8px 12px; font-size:12px; cursor:pointer; hover:background:var(--bg);">Meus Dias</div>
+                  </div>
+                </div>
+                
+                <a href="#/piloto" onclick="setTimeout(()=>document.getElementById('pilTabDisp').click(), 100)" class="btn btn--secondary" style="font-size:11px;padding:4px 8px;text-decoration:none">Calendário</a>
+              </header>
+              <div style="padding:16px" id="vgDisponibilidade"></div>
+            </div>
+          </div>
+
+          <!-- Card 4: Documentos (Ocupa a linha inteira) -->
+          <div class="panel">
+            <header class="panel__head">
+              <h3>📁 Meus Documentos e Pastas</h3>
+              <button class="btn btn--secondary" style="font-size:12px" id="vgBtnNovaPasta">+ Nova Pasta</button>
+            </header>
+            <div style="padding:16px; display:flex; flex-direction:column; gap:16px" id="vgDocumentos">
+              <p class="hint" style="text-align:center;padding:20px">Carregando pastas...</p>
+              <!-- Exemplo de Pasta de Viagem -->
+              <div style="border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--bg)">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                  <div>
+                    <h4 style="margin:0 0 4px;font-size:14px">Simulador EUA 2026</h4>
+                    <span style="font-size:11px;background:var(--nav-active-bg);color:var(--accent);padding:2px 6px;border-radius:4px">Compartilhado com Piloto X</span>
+                  </div>
+                  <div style="font-size:11px;color:var(--muted)">Criado em 02/11/2026</div>
+                </div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap">
+                  <!-- Arquivos -->
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer" title="Clique para visualizar">
+                    <span style="font-size:20px">📄</span>
+                    <span style="font-size:12px;font-weight:600">Passagem.pdf</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer" title="Clique para visualizar">
+                    <span style="font-size:20px">📄</span>
+                    <span style="font-size:12px;font-weight:600">Hotel.pdf</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer" title="Clique para visualizar">
+                    <span style="font-size:20px">📄</span>
+                    <span style="font-size:12px;font-weight:600">Aluguel_Carro.pdf</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Exemplo de Pasta Compartilhada Geral -->
+              <div style="border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--bg)">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                  <div>
+                    <h4 style="margin:0 0 4px;font-size:14px">Manuais da Frota</h4>
+                    <span style="font-size:11px;background:var(--nav-active-bg);color:var(--green);padding:2px 6px;border-radius:4px">Todos os Pilotos</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap">
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer">
+                    <span style="font-size:20px">📘</span>
+                    <span style="font-size:12px;font-weight:600">Manual Pilatus PC-12.pdf</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:8px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer">
+                    <span style="font-size:20px">📘</span>
+                    <span style="font-size:12px;font-weight:600">Manual King Air 360.pdf</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Aba: Escala -->
-        <div id="pilViewEscala">
+        <div id="pilViewEscala" hidden>
           <div class="panel">
             <header class="panel__head">
               <h3>Escala de pilotos <span id="pilCount" style="color:var(--muted);font-weight:500;font-size:12px"></span></h3>
@@ -3694,11 +3819,30 @@ body.is-booting .app {
             <header class="panel__head">
               <h3 id="dispTitle">Minha disponibilidade</h3>
               <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-                <div id="dispLegend" style="font-size:11px;color:var(--muted)">🟡 Folga · 🔵 Treino</div>
+                <div id="dispLegend" style="font-size:11px;color:var(--muted)">🟡 Folga · 🔵 Treinamento · 🟣 Revalidação</div>
               </div>
             </header>
             <div style="padding:14px 16px">
               <div id="dispCalendario"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aba: Habilitações e Licenças -->
+        <div id="pilViewLicencas" hidden>
+          <div class="panel">
+            <header class="panel__head" style="flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <h3 id="pilTituloLicencas">📋 Minhas Habilitações e Licenças</h3>
+                <select id="pilSelectPiloto" style="display:none; padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-size:13px; font-weight:600;"></select>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn" id="pilImportarPdfBtn">📄 Importar PDF ANAC</button>
+                <button class="btn btn--secondary" id="pilAddManualBtn" style="margin-left:8px">+ Adicionar Manual</button>
+              </div>
+            </header>
+            <div style="padding:16px">
+              <div id="pilLicencasResumo"></div>
             </div>
           </div>
         </div>
@@ -4299,6 +4443,13 @@ body.is-booting .app {
 <div class="formgrid">
 <label class="field"><span>Cor primária</span><div class="color-row"><input id="setReportColor1" type="color" value="#1e293b"><code id="reportColor1Value">#1E293B</code></div></label>
 <label class="field"><span>Cor secundária</span><div class="color-row"><input id="setReportColor2" type="color" value="#38a8ff"><code id="reportColor2Value">#38A8FF</code></div></label>
+</div>
+</div>
+<div class="settings-section"><h3>Cores do E-mail</h3>
+<p class="hint" style="margin-top:0;margin-bottom:12px">Usadas no cabeçalho do e-mail enviado aos passageiros e tripulação.</p>
+<div class="formgrid">
+<label class="field"><span>Cor do Topo (Logo)</span><div class="color-row"><input id="setEmailHeaderColor" type="color" value="#1e293b"><code id="emailHeaderColorValue">#1E293B</code></div></label>
+<label class="field"><span>Cor do Texto "ROTEIRO DO VOO"</span><div class="color-row"><input id="setEmailTextColor" type="color" value="#ffffff"><code id="emailTextColorValue">#FFFFFF</code></div></label>
 </div>
 </div>
 <div class="settings-section"><h3>Cards específicos</h3><p class="hint" style="margin-top:0;margin-bottom:12px">Cor de fundo dos cards de acordo com o tipo</p><div class="formgrid">
@@ -5985,6 +6136,73 @@ window.Log = (() => {
 /* ============================================================
    EmailRoteiro — envia roteiro do voo por email (via Edge Function)
    ============================================================ */
+window._gerarSnapshotVoo = function(ev) {
+  const trechos = (ev.trechos || []).map(t => ({
+    origem: t.origem,
+    destino: t.destino,
+    hora: t.hora,
+    data: t.data,
+    passageiros_ids: [...(t.passageiros_ids || [])]
+  }));
+  return { trechos, aeronave_tail: ev.aeronave_tail };
+};
+
+window._verificarAlteracaoVoo = function(ev) {
+  if (!ev.roteiro_snapshot) return true; // Se não tem snapshot, considera alterado
+  const snap = ev.roteiro_snapshot;
+  if (snap.aeronave_tail !== ev.aeronave_tail) return true;
+  
+  const trechosAtuais = (ev.trechos || []).filter(t => t && t.data);
+  if (snap.trechos.length !== trechosAtuais.length) return true;
+
+  for (let i = 0; i < snap.trechos.length; i++) {
+    if (snap.trechos[i].origem !== trechosAtuais[i].origem) return true;
+    if (snap.trechos[i].destino !== trechosAtuais[i].destino) return true;
+    if (snap.trechos[i].hora !== trechosAtuais[i].hora) return true;
+    
+    const paxSnap = (snap.trechos[i].passageiros_ids || []).sort().join(",");
+    const paxAtual = (trechosAtuais[i].passageiros_ids || []).sort().join(",");
+    if (paxSnap !== paxAtual) return true;
+  }
+  return false;
+};
+
+window._getNovosPassageiros = function(ev) {
+  if (!ev.roteiro_snapshot || !ev.roteiro_snapshot.trechos) return [];
+  const snapPax = new Set();
+  ev.roteiro_snapshot.trechos.forEach(t => (t.passageiros_ids || []).forEach(id => snapPax.add(String(id))));
+  const atuaisPax = new Set();
+  (ev.trechos || []).forEach(t => (t.passageiros_ids || []).forEach(id => atuaisPax.add(String(id))));
+  const novos = [];
+  atuaisPax.forEach(id => { if (!snapPax.has(id)) novos.push(id); });
+  return novos;
+};
+
+window._gerarSnapshotVoo = function(ev) {
+  const trechos = (ev.trechos || []).map(t => ({
+    origem: t.origem, destino: t.destino, hora: t.hora, data: t.data,
+    passageiros_ids: [...(t.passageiros_ids || [])]
+  }));
+  return { trechos, aeronave_tail: ev.aeronave_tail };
+};
+
+window._verificarAlteracaoVoo = function(ev) {
+  if (!ev.roteiro_snapshot) return true; 
+  const snap = ev.roteiro_snapshot;
+  if (snap.aeronave_tail !== ev.aeronave_tail) return true;
+  const trechosAtuais = (ev.trechos || []).filter(t => t && t.data);
+  if (snap.trechos.length !== trechosAtuais.length) return true;
+  for (let i = 0; i < snap.trechos.length; i++) {
+    if (snap.trechos[i].origem !== trechosAtuais[i].origem) return true;
+    if (snap.trechos[i].destino !== trechosAtuais[i].destino) return true;
+    if (snap.trechos[i].hora !== trechosAtuais[i].hora) return true;
+    const paxSnap = (snap.trechos[i].passageiros_ids || []).sort().join(",");
+    const paxAtual = (trechosAtuais[i].passageiros_ids || []).sort().join(",");
+    if (paxSnap !== paxAtual) return true;
+  }
+  return false;
+};
+
 window.EmailRoteiro = (() => {
   let _evId = null;
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -6184,10 +6402,12 @@ window.EmailRoteiro = (() => {
 
   async function enviar() {
     const g = (id) => document.getElementById(id);
-    const ev = Agenda.getEventos().find(x => String(x.id) === String(_evId));
+    // Busca o evento direto do cache local (que é atualizado na hora) para não pegar versão stale em memória
+    const _evsCache = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]");
+    const ev = _evsCache.find(x => String(x.id) === String(_evId)) || Agenda.getEventos().find(x => String(x.id) === String(_evId));
     if (!ev) return;
     const dests = _coletarDestinatarios(ev);
-    const selecionados = [];
+    let selecionados = [];
     document.querySelectorAll("#sendEmailList [data-dest-idx]:checked").forEach(cb => {
       const i = +cb.dataset.destIdx;
       if (dests[i]) selecionados.push(dests[i]);
@@ -6197,6 +6417,45 @@ window.EmailRoteiro = (() => {
       g("sendEmailErro").style.display = "block";
       return;
     }
+
+    // ==== LÓGICA DE TIPO DE ENVIO ====
+    const novosPax = window._getNovosPassageiros(ev);
+    let rotaHoraAeroAlterada = false;
+    
+    if (ev.roteiro_snapshot) {
+        if (ev.roteiro_snapshot.aeronave_tail !== ev.aeronave_tail) rotaHoraAeroAlterada = true;
+        const snapTrs = ev.roteiro_snapshot.trechos || [];
+        const atuaisTrs = (ev.trechos || []).filter(t => t && t.data);
+        if (snapTrs.length !== atuaisTrs.length) rotaHoraAeroAlterada = true;
+        else {
+            for (let i=0; i<snapTrs.length; i++) {
+                if (snapTrs[i].origem !== atuaisTrs[i].origem) rotaHoraAeroAlterada = true;
+                if (snapTrs[i].destino !== atuaisTrs[i].destino) rotaHoraAeroAlterada = true;
+                if (snapTrs[i].hora !== atuaisTrs[i].hora) rotaHoraAeroAlterada = true;
+            }
+        }
+    }
+
+    let tipoEnvio = "novo";
+    if (ev.roteiro_enviado_em) {
+        if (rotaHoraAeroAlterada) {
+            tipoEnvio = "atualizacao";
+        } else if (novosPax.length > 0) {
+            tipoEnvio = "novo_passageiro";
+            // Filtra quem vai receber: Pilotos e Solicitantes (sempre) + os novos passageiros
+            selecionados = selecionados.filter(d => {
+                if (d.tipo === "piloto" || d.tipo === "solicitante") return true;
+                if (d.tipo === "passageiro" && d.passageiro_id && novosPax.includes(String(d.passageiro_id))) return true;
+                return false;
+            });
+            if (!selecionados.length) {
+                g("sendEmailErro").textContent = "Nenhum destinatário válido para o novo passageiro.";
+                g("sendEmailErro").style.display = "block";
+                return;
+            }
+        }
+    }
+    // ==================================
     const btn = g("sendEmailBtn");
     btn.disabled = true;
     const txtAntes = btn.textContent;
@@ -6217,6 +6476,18 @@ window.EmailRoteiro = (() => {
       if (_logoDataUrl.startsWith("data:image")) {
         const m = _logoDataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
         if (m) { _logoMime = m[1]; _logoB64 = m[2]; }
+      } else if (_logoDataUrl.startsWith("http")) {
+        // Se for URL do Supabase Storage, baixa e converte para Base64
+        try {
+          const resp = await fetch(_logoDataUrl);
+          const blob = await resp.blob();
+          _logoB64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(blob);
+          });
+          _logoMime = blob.type;
+        } catch(e) { console.warn("Erro ao baixar logo para o e-mail:", e); }
       }
       const empresa = {
         nome: localStorage.getItem("dv_company_name") || window.APP_CONFIG.APP_NAME || "Air Polato",
@@ -6242,14 +6513,56 @@ window.EmailRoteiro = (() => {
           return Array.from(ids).map(id => (Passengers.get().find(p => String(p.id) === String(id)) || {}).nome).filter(Boolean);
         })()
       };
+      // Cores do E-mail (lidas da Aparência)
+      const corHeaderEmail = localStorage.getItem("dv_email_header_color") || "#1e293b";
+      const corTextoEmail = localStorage.getItem("dv_email_text_color") || "#ffffff";
+
+      // Gerar a lista de mudanças para o e-mail
+      const mudancasTexto = [];
+      if (ev.roteiro_snapshot) {
+          const snap = ev.roteiro_snapshot;
+          const trsAtuais = (ev.trechos || []).filter(t => t && t.data);
+          const trsSnap = snap.trechos || [];
+          
+          trsAtuais.forEach((t, i) => {
+              const s = trsSnap[i];
+              if (s) {
+                  if (s.hora !== t.hora) mudancasTexto.push(`T${i+1} era ${s.hora} passou para ${t.hora}`);
+                  if (s.destino !== t.destino) mudancasTexto.push(`T${i+1} Destino era ${s.destino} passou para ${t.destino}`);
+              }
+          });
+      }
+      if (novosPax.length > 0) {
+          const todosPax = Passengers.get();
+          const nomes = novosPax.map(id => (todosPax.find(x => String(x.id) === String(id)) || {}).nome).filter(Boolean);
+          mudancasTexto.push(`Passageiro(s) ${nomes.join(", ")} adicionado(s) ao voo`);
+      }
+      
+      // Agora envia como Array para o Backend montar a lista
+      const arrayMudancas = mudancasTexto;
+      
+      
       const resp = await sb.functions.invoke("send-flight-email", {
-        body: { tipo: "novo", empresa, voo, destinatarios: selecionados, mudancas: [] }
+        body: { 
+          tipo: tipoEnvio, 
+          empresa, 
+          voo, 
+          destinatarios: selecionados, 
+          mudancas: arrayMudancas,
+          corHeaderEmail: corHeaderEmail,
+          corTextoEmail: corTextoEmail
+        }
       });
       if (resp.error) throw new Error(resp.error.message || "Falha na função");
       if (resp.data && resp.data.ok === false) throw new Error(resp.data.erro || "Erro desconhecido");
 
       const agora = new Date().toISOString();
-      const payload = { ...ev, roteiro_enviado_em: agora, roteiro_enviado_para: selecionados.map(d => d.email) };
+      const payload = { 
+        ...ev, 
+        roteiro_enviado_em: agora, 
+        roteiro_enviado_para: selecionados.map(d => d.email),
+        roteiro_snapshot: window._gerarSnapshotVoo(ev) // Salva a foto do voo enviado
+      };
       await Db.upsertEvent(payload);
       await Agenda.load();
 
@@ -7036,9 +7349,18 @@ const Db = (() => {
       dataFim: ev.dataFim||null, horaFim: ev.horaFim||null,
       roteiro_enviado_em: ev.roteiro_enviado_em||null,
       roteiro_enviado_para: ev.roteiro_enviado_para||null,
+      roteiro_snapshot: ev.roteiro_snapshot||null,
       _tanque_aplicado: ev._tanque_aplicado === true,
       _tanque_aplicado_em: ev._tanque_aplicado_em||null };
     p.id = ev.id || ("ev-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8));
+
+    // Preserva os dados do e-mail (snapshot) se eles não vierem no objeto de edição
+    const _prev = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]").find(x => String(x.id) === String(p.id));
+    if (_prev) {
+      p.roteiro_enviado_em = ev.roteiro_enviado_em !== undefined ? ev.roteiro_enviado_em : _prev.roteiro_enviado_em;
+      p.roteiro_enviado_para = ev.roteiro_enviado_para !== undefined ? ev.roteiro_enviado_para : _prev.roteiro_enviado_para;
+      p.roteiro_snapshot = ev.roteiro_snapshot !== undefined ? ev.roteiro_snapshot : _prev.roteiro_snapshot;
+    }
 
     /* Sempre atualiza o cache local ANTES de tentar a nuvem.
        Assim a UI vê o dado imediatamente, mesmo se a nuvem falhar. */
@@ -9179,7 +9501,7 @@ const Agenda = (() => {
             return new Date(iso).getTime() >= Date.now();
           } catch(e) { return false; }
         })() && !bloqueioCard;
-        const _emailEnviado = !!ev.roteiro_enviado_em;
+        const _emailEnviado = !!ev.roteiro_enviado_em && !window._verificarAlteracaoVoo(ev);
         const _emailBadge = !_podeEmail ? '' : (_emailEnviado
           ? '<span title="Roteiro enviado em ' + new Date(ev.roteiro_enviado_em).toLocaleString("pt-BR") + '" style="width:10px;height:10px;border-radius:50%;background:#30cf8a;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(48,207,138,.25)"></span>'
           : '<span title="Roteiro ainda não enviado" style="width:10px;height:10px;border-radius:50%;background:#f2c94c;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(242,201,76,.25)"></span>');
@@ -9401,7 +9723,7 @@ const Agenda = (() => {
                       return new Date(iso).getTime() >= Date.now();
                     } catch(e) { return false; }
                   })() && !bloqueio;
-                  const _emailEnviadoX = !!ev.roteiro_enviado_em;
+                  const _emailEnviadoX = !!ev.roteiro_enviado_em && !window._verificarAlteracaoVoo(ev);
                   const _emailBadgeX = !_podeEmailX ? '' : (_emailEnviadoX
                     ? '<span title="Roteiro enviado em ' + new Date(ev.roteiro_enviado_em).toLocaleString("pt-BR") + '" style="width:10px;height:10px;border-radius:50%;background:#30cf8a;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(48,207,138,.25)"></span>'
                     : '<span title="Roteiro ainda não enviado" style="width:10px;height:10px;border-radius:50%;background:#f2c94c;display:inline-block;flex:none;box-shadow:0 0 0 2px rgba(242,201,76,.25)"></span>');
@@ -10720,6 +11042,88 @@ const Agenda = (() => {
     if (pTot)  pTot.textContent  = fmtBR(valorGasto + manPrev + despTotal);
   }
 
+  window.__paxEditIds = [];
+
+  window.__rvRenderPax = function() {
+    const lista = document.getElementById("rvPaxLista");
+    if (!lista) return;
+    const todosPax = (typeof Passengers !== "undefined" && Passengers.get) ? Passengers.get() : [];
+    
+    if (window.__paxEditIds.length === 0) {
+      lista.innerHTML = '<span class="hint" style="font-size:11px;">Nenhum passageiro neste trecho.</span>';
+    } else {
+      lista.innerHTML = window.__paxEditIds.map(id => {
+        const p = todosPax.find(x => String(x.id) === String(id));
+        const nome = p ? p.nome : "Desconhecido";
+        return `<div style="display:inline-flex; justify-content:space-between; align-items:center; background:#f0f2f5; padding:4px 8px; border-radius:16px; border:1px solid #ccc; gap:6px;">
+          <span style="font-size:11px; font-weight:600; color:#000;">${nome}</span>
+          <button type="button" onclick="window.__rvRemovePax('${id}')" style="background:none; border:none; color:#ff4d4f; font-weight:bold; cursor:pointer; font-size:14px; line-height:1; padding:0;">×</button>
+        </div>`;
+      }).join("");
+    }
+
+    const input = document.getElementById("rvPaxInput");
+    if (input) input.value = ""; // Limpa o campo após adicionar
+    const suggestions = document.getElementById("rvPaxSuggestions");
+    if (suggestions) suggestions.style.display = "none";
+  };
+
+  // Lógica de busca em tempo real
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.id === 'rvPaxInput') {
+      const val = e.target.value.toLowerCase();
+      const suggestions = document.getElementById('rvPaxSuggestions');
+      if (!suggestions) return;
+      
+      if (val.length < 1) {
+        suggestions.style.display = 'none';
+        return;
+      }
+      
+      const todosPax = (typeof Passengers !== "undefined" && Passengers.get) ? Passengers.get() : [];
+      const matches = todosPax.filter(p => p.nome.toLowerCase().includes(val) && !window.__paxEditIds.includes(String(p.id))).slice(0, 5);
+      
+      if (matches.length === 0) {
+        suggestions.style.display = 'none';
+        return;
+      }
+      
+      suggestions.innerHTML = matches.map(p => `<div style="padding:8px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid #eee; transition: background 0.1s; background:#fff; color:#000;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='#fff'" onclick="window.__rvAddPax('${p.id}')">${p.nome}</div>`).join("");
+      suggestions.style.display = 'block';
+    }
+  });
+
+  // Fecha sugestões ao clicar fora
+  document.addEventListener('click', function(e) {
+    const suggestions = document.getElementById('rvPaxSuggestions');
+    if (suggestions && !e.target.closest('#rvPaxInput') && !e.target.closest('#rvPaxSuggestions')) {
+      suggestions.style.display = 'none';
+    }
+  });
+
+
+  window.__rvAddPax = function(id = null) {
+    if (!id) {
+      // Se clicou no botão sem passar ID, tenta achar pelo texto exato
+      const input = document.getElementById("rvPaxInput");
+      if (!input || !input.value.trim()) return;
+      const todosPax = (typeof Passengers !== "undefined" && Passengers.get) ? Passengers.get() : [];
+      const p = todosPax.find(x => x.nome.toLowerCase() === input.value.trim().toLowerCase());
+      if (p) id = p.id;
+      else return; // Nome não encontrado
+    }
+    
+    if (!window.__paxEditIds.includes(String(id))) {
+      window.__paxEditIds.push(String(id));
+      window.__rvRenderPax();
+    }
+  };
+
+  window.__rvRemovePax = function(id) {
+    window.__paxEditIds = window.__paxEditIds.filter(x => String(x) !== String(id));
+    window.__rvRenderPax();
+  };
+
   function abrirRevisao(evId, idx) {
     const eventosAgenda = (typeof Agenda !== "undefined" && Agenda.getEventos) ? Agenda.getEventos() : [];
         const ev = eventosAgenda.find(x => String(x.id) === String(evId));
@@ -10793,6 +11197,9 @@ const Agenda = (() => {
     g("rvCombLitros").value = litrosAbast > 0 ? _fmtQtdBR(+litrosParaUnidade(litrosAbast, unidAbastSalva).toFixed(1)) : "";
 
     g("rvObs").value = rv.observacoes || "";
+    
+    window.__paxEditIds = Array.isArray(tr.passageiros_ids) ? [...tr.passageiros_ids].map(String) : [];
+    window.__rvRenderPax();
 
     const selGasto = g("rvCombGastoUnidade");
     if (selGasto) {
@@ -11095,13 +11502,7 @@ const Agenda = (() => {
     if (revisandoIdx === 0) {
       /* Primeiro trecho: usa Tanque Confirmado (validado antes) */
       const confFinal = tanqueConfirmadoQtd;
-      console.log("[DEBUG save trecho 0]", {
-        tanqueConfirmadoQtd: tanqueConfirmadoQtd,
-        inpConfValue: g("rvTanqueConfirmado")?.value,
-        confFinal: confFinal,
-        tanqueUnid: tanqueUnid,
-        tanqueAntesLitros: confFinal === null || confFinal === undefined ? "NULL/UNDEF" : (tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal)
-      });
+      
       tanqueAntesLitros = tanqueUnid === "LB" ? (confFinal / LB_POR_KG) / DENSIDADE_JETA1 : confFinal;
       tanqueAntesPreco = Number(aero.tanque_preco) || 0;
     } else {
@@ -11174,6 +11575,9 @@ const Agenda = (() => {
 
     /* Prepara a lista de aeronaves para o save sincrono */
     const listaAero = Aircraft.get();
+
+    /* ==== Atualiza a lista de passageiros ==== */
+    ev.trechos[revisandoIdx].passageiros_ids = [...window.__paxEditIds];
 
     /* ==== Monta revisão ==== */
     const revisao = {
@@ -15567,6 +15971,8 @@ const Disponibilidade = (() => {
     } catch(e) { dados = { folgas: {}, locks: {} }; }
     if (!dados.folgas) dados.folgas = {};
     if (!dados.locks) dados.locks = {};
+    if (!dados.treinamentos) dados.treinamentos = {};
+    if (!dados.revalidacao) dados.revalidacao = {};
   }
 
   async function salvarDados() {
@@ -15732,11 +16138,19 @@ const Disponibilidade = (() => {
 
       /* Treinamentos neste dia */
       const treinosNesteDia = dados.treinamentos ? Object.keys(dados.treinamentos).filter(k => k.endsWith("::" + data)) : [];
+      const revalNesteDia = dados.revalidacao ? Object.keys(dados.revalidacao).filter(k => k.endsWith("::" + data)) : [];
       const nomesTreino = treinosNesteDia.map(k => {
         const uid = k.split("::")[0];
         const u = todosUsers.find(x => x.id === uid);
         return u ? u.nome.split(" ")[0] : "?";
       });
+
+      const nomesReval = revalNesteDia.map(k => {
+        const uid = k.split("::")[0];
+        const u = todosUsers.find(x => x.id === uid);
+        return u ? u.nome.split(" ")[0] : "?";
+      });
+
 
       /* Locks neste dia — todos veem todos */
       const locksNesteDia = Object.keys(dados.locks).filter(k => k.endsWith("::" + data));
@@ -15755,12 +16169,41 @@ const Disponibilidade = (() => {
       if (c.other) cls.push("is-other");
       if (data === hoje) cls.push("is-today");
       if (temFolga) cls.push("is-folga");
-      if (temTreino) cls.push("is-treinamento");
+      if (nomesTreino && nomesTreino.length > 0) cls.push("is-treinamento");
+      if (nomesReval && nomesReval.length > 0) cls.push("is-revalidacao");
+
+      let tagsHtml = [];
+      if (temFolga) {
+        const nomes = folgasNesteDia.map(k => {
+           const uid = k.split("::")[0];
+           const u = todosUsers.find(x => x.id === uid);
+           const nome = u ? u.nome.split(" ")[0] : "?";
+           return `<span onclick="event.stopPropagation(); window.abrirModal('${data}', '${uid}', 'folga')" style="cursor:pointer; text-decoration:underline;">${nome}</span>`;
+        }).join(", ");
+        tagsHtml.push('<div class="calendar__tag">🟡 ' + nomes + '</div>');
+      }
+      if (nomesTreino && nomesTreino.length) {
+        const nomes = treinosNesteDia.map(k => {
+           const uid = k.split("::")[0];
+           const u = todosUsers.find(x => x.id === uid);
+           const nome = u ? u.nome.split(" ")[0] : "?";
+           return `<span onclick="event.stopPropagation(); window.abrirModal('${data}', '${uid}', 'treinamento')" style="cursor:pointer; text-decoration:underline;">${nome}</span>`;
+        }).join(", ");
+        tagsHtml.push('<div class="calendar__tag calendar__tag--treinamento">🔵 ' + nomes + '</div>');
+      }
+      if (nomesReval && nomesReval.length) {
+        const nomes = (typeof revalNesteDia !== 'undefined' ? revalNesteDia : []).map(k => {
+           const uid = k.split("::")[0];
+           const u = todosUsers.find(x => x.id === uid);
+           const nome = u ? u.nome.split(" ")[0] : "?";
+           return `<span onclick="event.stopPropagation(); window.abrirModal('${data}', '${uid}', 'revalidacao')" style="cursor:pointer; text-decoration:underline;">${nome}</span>`;
+        }).join(", ");
+        tagsHtml.push('<div class="calendar__tag" style="background:#a855f7;color:#fff;">🟣 ' + nomes + '</div>');
+      }
 
       html += '<div class="' + cls.join(" ") + '" data-disp-date="' + data + '">'
         + '<span class="calendar__num">' + c.d.getDate() + '</span>'
-        + (temFolga ? '<span class="calendar__tag">🟡 ' + nomesFolga.join(", ") + '</span>' : '')
-        + (nomesTreino && nomesTreino.length ? '<span class="calendar__tag calendar__tag--treinamento">🔵 ' + nomesTreino.join(", ") + '</span>' : '')
+        + '<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">' + tagsHtml.join('') + '</div>'
         + '</div>';
     });
 
@@ -15787,7 +16230,8 @@ const Disponibilidade = (() => {
     const temAlgo = (d) => {
       const temFolga = dados.folgas && Object.keys(dados.folgas).some(k => k.endsWith("::" + d));
       const temTrein = dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + d));
-      return temFolga || temTrein;
+      const temReval = dados.revalidacao && Object.keys(dados.revalidacao).some(k => k.endsWith("::" + d));
+      return temFolga || temTrein || temReval;
     };
     const addDia = (iso, n) => {
       const [y, m, dd] = iso.split("-").map(Number);
@@ -15812,7 +16256,8 @@ const Disponibilidade = (() => {
     return { ini, fim };
   }
 
-  function abrirModal(data) {
+
+  function abrirModal(data, uid = null, tipo = null) {
     const me = usuarioAtual();
     if (!podeEditar()) { alert("Sem permissao."); return; }
 
@@ -15820,15 +16265,20 @@ const Disponibilidade = (() => {
     const g = (id) => document.getElementById(id);
     const ehAdmin = me.perfil === "admin";
 
-    g("folgaModalTitle").textContent = "Minha disponibilidade \u2014 " + fmtData(data);
-    g("folgaModalSub").textContent = ehAdmin
-      ? "Selecione um ou mais pilotos, o tipo (folga ou treinamento) e o periodo."
-      : "Marque folga ou treinamento para o periodo desejado.";
+    window.__editMode = !!uid;
+    window.__editUid = uid || me.id;
+    window.__editTipo = tipo || null;
+    const isEdit = window.__editMode;
+
+    g("folgaModalTitle").textContent = isEdit ? "Editar Agendamento" : ("Minha disponibilidade \u2014 " + fmtData(data));
+    g("folgaModalSub").textContent = isEdit
+      ? "Edite as datas ou exclua o agendamento."
+      : (ehAdmin ? "Selecione um ou mais pilotos e o tipo de evento." : "Marque folga, treinamento ou revalidação.");
 
     const _dataIni = data || new Date().toISOString().slice(0,10);
-    /* Expande para o range completo do lancamento que contem esse dia */
-    const _range = _rangeLancamentoNoDia(_dataIni);
-    window.__rangeOriginal = { ini: _range.ini, fim: _range.fim };
+    const _range = _rangeLancamentoNoDia(_dataIni, isEdit ? window.__editUid : null, window.__editTipo);
+    window.__rangeOriginal = { ini: _range.ini, fim: _range.fim, uids: isEdit ? [window.__editUid] : [] };
+    
     g("folgaDataIni").value = _range.ini;
     g("folgaDataFim").value = _range.fim;
     g("folgaDataIni").min = "";
@@ -15838,7 +16288,7 @@ const Disponibilidade = (() => {
     const secAdmin = g("folgaPilotoSec");
     const secFixo = g("folgaPilotoFixo");
 
-    if (ehAdmin) {
+    if (ehAdmin && !isEdit) {
       secAdmin.style.display = "";
       secFixo.style.display = "none";
       const pilotos = (Users.pilotos ? Users.pilotos() : Users.get().filter(u => u.ativo !== false && u.perfil === "piloto"));
@@ -15846,8 +16296,9 @@ const Disponibilidade = (() => {
         const uid = u.id;
         const temFolga = !!dados.folgas[uid + "::" + data];
         const temTrein = dados.treinamentos && !!dados.treinamentos[uid + "::" + data];
-        const checked = (temFolga || temTrein) ? "checked" : "";
-        const tag = temFolga ? " \ud83d\udfe1" : (temTrein ? " \ud83d\udd35" : "");
+        const temReval = dados.revalidacao && !!dados.revalidacao[uid + "::" + data];
+        const checked = (temFolga || temTrein || temReval) ? "checked" : "";
+        const tag = temFolga ? " \ud83d\udfe1" : (temTrein ? " \ud83d\udd35" : (temReval ? " \ud83d\udfe3" : ""));
         return '<label style="display:flex;align-items:center;gap:10px;padding:8px;cursor:pointer;border-bottom:1px solid var(--line)">'
           + '<input type="checkbox" class="folgaPilotoChk" value="' + esc(uid) + '" ' + checked + '>'
           + '<span>' + esc(u.nome) + tag + '</span>'
@@ -15856,28 +16307,54 @@ const Disponibilidade = (() => {
     } else {
       secAdmin.style.display = "none";
       secFixo.style.display = "";
-      g("folgaPilotoNome").textContent = me.nome || me.id;
+      const u = (Users.get() || []).find(x => String(x.id) === String(window.__editUid));
+      g("folgaPilotoNome").textContent = u ? u.nome : window.__editUid;
     }
 
-    const temFolga = !!dados.folgas[me.id + "::" + data];
-    const temTrein = dados.treinamentos && !!dados.treinamentos[me.id + "::" + data];
-    g("folgaTipo").checked = temFolga || !temTrein;
-    g("treinamentoTipo").checked = temTrein;
+    const folgaChk = g("folgaTipo");
+    const treinChk = g("treinamentoTipo");
+    const revalChk = g("revalidacaoTipo");
+
+    if (isEdit) {
+        folgaChk.disabled = true;
+        treinChk.disabled = true;
+        if (revalChk) revalChk.disabled = true;
+        
+        folgaChk.checked = (window.__editTipo === 'folga');
+        treinChk.checked = (window.__editTipo === 'treinamento');
+        if (revalChk) revalChk.checked = (window.__editTipo === 'revalidacao');
+        
+        const k = window.__editUid + "::" + data;
+        g("folgaObs").value = (dados.folgas[k]?.obs) || (dados.treinamentos && dados.treinamentos[k]?.obs) || (dados.revalidacao && dados.revalidacao[k]?.obs) || "";
+    } else {
+        folgaChk.disabled = false;
+        treinChk.disabled = false;
+        if (revalChk) revalChk.disabled = false;
+        
+        folgaChk.checked = false;
+        treinChk.checked = false;
+        if (revalChk) revalChk.checked = false;
+        g("folgaObs").value = "";
+    }
 
     let temAlgo = false;
-    if (ehAdmin) {
-      temAlgo = Object.keys(dados.folgas).some(k => k.endsWith("::" + data))
-        || (dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + data)));
+    if (isEdit) {
+        const k = window.__editUid + "::" + data;
+        temAlgo = (window.__editTipo === 'folga' && dados.folgas[k]) || (window.__editTipo === 'treinamento' && dados.treinamentos && dados.treinamentos[k]) || (window.__editTipo === 'revalidacao' && dados.revalidacao && dados.revalidacao[k]);
     } else {
-      temAlgo = temFolga || temTrein;
+        if (ehAdmin) {
+          temAlgo = Object.keys(dados.folgas).some(k => k.endsWith("::" + data))
+            || (dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + data)))
+            || (dados.revalidacao && Object.keys(dados.revalidacao).some(k => k.endsWith("::" + data)));
+        } else {
+          const temFolga = !!dados.folgas[me.id + "::" + data];
+          const temTrein = dados.treinamentos && !!dados.treinamentos[me.id + "::" + data];
+          const temReval = dados.revalidacao && !!dados.revalidacao[me.id + "::" + data];
+          temAlgo = temFolga || temTrein || temReval;
+        }
     }
     g("folgaDeleteBtn").hidden = !temAlgo;
 
-    const kFolga = Object.keys(dados.folgas).find(k => k.endsWith("::" + data));
-    const kTrein = dados.treinamentos ? Object.keys(dados.treinamentos).find(k => k.endsWith("::" + data)) : null;
-    g("folgaObs").value = (kFolga && dados.folgas[kFolga]?.obs) || (kTrein && dados.treinamentos[kTrein]?.obs) || "";
-
-    /* Linka Data Inicio <-> Data Fim */
     const iniEl = g("folgaDataIni");
     const fimEl = g("folgaDataFim");
     if (iniEl && fimEl && !iniEl.__linked) {
@@ -15897,6 +16374,7 @@ const Disponibilidade = (() => {
 
     g("folgaModal").classList.add("is-open");
   }
+  window.abrirModal = abrirModal;
 
   async function salvar() {
     try {
@@ -15908,63 +16386,67 @@ const Disponibilidade = (() => {
       const fim = g("folgaDataFim").value;
       const ehFolga = g("folgaTipo").checked;
       const ehTrein = g("treinamentoTipo").checked;
+      const ehReval = g("revalidacaoTipo")?.checked;
       const obs = g("folgaObs").value.trim();
 
       if (!ini || !fim) { alert("Preencha as datas."); return; }
       if (ini > fim) { alert("Data inicio depois da data fim."); return; }
-      if (!ehFolga && !ehTrein) { alert("Marque folga ou treinamento."); return; }
-
-      const dias = Math.floor((new Date(fim + "T00:00:00") - new Date(ini + "T00:00:00")) / 86400000);
-      if (dias > 365) { alert("Periodo maximo: 1 ano."); return; }
+      if (!ehFolga && !ehTrein && !ehReval) { alert("Marque pelo menos uma opção."); return; }
 
       let uids = [];
-      if (ehAdmin) {
-        uids = Array.from(document.querySelectorAll(".folgaPilotoChk:checked")).map(el => el.value);
-        if (!uids.length) { alert("Marque pelo menos um piloto."); return; }
+      if (window.__editMode) {
+          uids = [window.__editUid];
       } else {
-        uids = [me.id];
+          if (ehAdmin) {
+            uids = Array.from(document.querySelectorAll(".folgaPilotoChk:checked")).map(el => el.value);
+            if (!uids.length) { alert("Marque pelo menos um piloto."); return; }
+          } else {
+            uids = [me.id];
+          }
       }
 
       if (!dados.treinamentos) dados.treinamentos = {};
+      if (!dados.revalidacao) dados.revalidacao = {};
 
-      const temAlgoNoPeriodo = (uid) => {
-        const d1 = new Date(ini + "T00:00:00");
-        const d2 = new Date(fim + "T00:00:00");
-        for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
-          const data = ymd(d);
-          if (dados.folgas[uid + "::" + data]) return "folga";
-          if (dados.treinamentos[uid + "::" + data]) return "treinamento";
-        }
-        return null;
-      };
-
-      /* Apaga o range original (dias que sobraram) + o novo range, e grava */
-      const _orig = window.__rangeOriginal || null;
-      for (const uid of uids) {
-        /* 1) Apaga o range original COMPLETO desse piloto */
-        if (_orig && _orig.ini && _orig.fim) {
-          const o1 = new Date(_orig.ini + "T00:00:00");
-          const o2 = new Date(_orig.fim + "T00:00:00");
+      if (window.__editMode) {
+          const oldRange = window.__rangeOriginal;
+          const o1 = new Date(oldRange.ini + "T00:00:00");
+          const o2 = new Date(oldRange.fim + "T00:00:00");
           for (let d = new Date(o1); d <= o2; d.setDate(d.getDate() + 1)) {
-            const data = ymd(d);
-            delete dados.folgas[uid + "::" + data];
-            delete dados.treinamentos[uid + "::" + data];
+              const data = ymd(d);
+              for (const uid of uids) {
+                  if (window.__editTipo === 'folga') delete dados.folgas[uid + "::" + data];
+                  if (window.__editTipo === 'treinamento') delete dados.treinamentos[uid + "::" + data];
+                  if (window.__editTipo === 'revalidacao') delete dados.revalidacao[uid + "::" + data];
+              }
           }
-        }
-        /* 2) Grava o novo range */
-        const d1 = new Date(ini + "T00:00:00");
-        const d2 = new Date(fim + "T00:00:00");
-        for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
+      } else {
+          const d1 = new Date(ini + "T00:00:00");
+          const d2 = new Date(fim + "T00:00:00");
+          for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
+              const data = ymd(d);
+              for (const uid of uids) {
+                  delete dados.folgas[uid + "::" + data];
+                  delete dados.treinamentos[uid + "::" + data];
+                  delete dados.revalidacao[uid + "::" + data];
+              }
+          }
+      }
+
+      const n1 = new Date(ini + "T00:00:00");
+      const n2 = new Date(fim + "T00:00:00");
+      for (let d = new Date(n1); d <= n2; d.setDate(d.getDate() + 1)) {
           const data = ymd(d);
-          delete dados.folgas[uid + "::" + data];
-          delete dados.treinamentos[uid + "::" + data];
-          if (ehFolga) dados.folgas[uid + "::" + data] = { obs };
-          else dados.treinamentos[uid + "::" + data] = { obs };
-        }
+          for (const uid of uids) {
+              if (ehFolga) dados.folgas[uid + "::" + data] = { obs };
+              if (ehTrein) dados.treinamentos[uid + "::" + data] = { obs };
+              if (ehReval) dados.revalidacao[uid + "::" + data] = { obs };
+          }
       }
 
       await salvarDados();
       window.__rangeOriginal = null;
+      window.__editMode = false;
       g("folgaModal").classList.remove("is-open");
       render();
     } catch(err) {
@@ -15973,38 +16455,46 @@ const Disponibilidade = (() => {
     }
   }
 
-  /* Remove locks do pr  /* Remove locks do próprio usuário num intervalo */
   async function excluirDoModal() {
     const me = usuarioAtual();
     const ini = document.getElementById("folgaDataIni").value;
     const fim = document.getElementById("folgaDataFim").value;
     const ehAdmin = me.perfil === "admin";
-    const msg = ehAdmin
-      ? "Remover TODOS os lançamentos deste dia (folgas de todos + locks de todas as aeronaves)?"
-      : "Remover os seus lançamentos deste dia?";
-    if (!confirm(msg)) return;
-
-    if (ehAdmin) {
-      const d1 = new Date(ini + "T00:00:00");
-      const d2 = new Date(fim + "T00:00:00");
-      for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
-        const data = ymd(d);
-        Object.keys(dados.folgas).forEach(k => { if (k.endsWith("::" + data)) delete dados.folgas[k]; });
-        if (dados.treinamentos) Object.keys(dados.treinamentos).forEach(k => { if (k.endsWith("::" + data)) delete dados.treinamentos[k]; });
-      }
+    
+    let uids = [];
+    if (window.__editMode) {
+        uids = [window.__editUid];
     } else {
-      await removerFolga(me.id, ini, fim);
-      if (dados.treinamentos) {
-        const d1 = new Date(ini + "T00:00:00");
-        const d2 = new Date(fim + "T00:00:00");
-        for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
-          const data = ymd(d);
-          delete dados.treinamentos[me.id + "::" + data];
+        if (ehAdmin) {
+            uids = Array.from(document.querySelectorAll(".folgaPilotoChk:checked")).map(el => el.value);
+            if (!uids.length) { alert("Marque pelo menos um piloto para remover."); return; }
+        } else {
+            uids = [me.id];
         }
-      }
     }
 
+    const msg = ehAdmin ? "Remover os lançamentos dos PILOTOS SELECIONADOS neste período?" : "Remover os seus lançamentos deste período?";
+    if (!confirm(msg)) return;
+
+    const d1 = new Date(ini + "T00:00:00");
+    const d2 = new Date(fim + "T00:00:00");
+    for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
+        const data = ymd(d);
+        for (const uid of uids) {
+            if (window.__editMode) {
+                if (window.__editTipo === 'folga') delete dados.folgas[uid + "::" + data];
+                if (window.__editTipo === 'treinamento') delete dados.treinamentos[uid + "::" + data];
+                if (window.__editTipo === 'revalidacao') delete dados.revalidacao[uid + "::" + data];
+            } else {
+                delete dados.folgas[uid + "::" + data];
+                if (dados.treinamentos) delete dados.treinamentos[uid + "::" + data];
+                if (dados.revalidacao) delete dados.revalidacao[uid + "::" + data];
+            }
+        }
+    }
+    
     await salvarDados();
+    window.__editMode = false;
     document.getElementById("folgaModal").classList.remove("is-open");
     render();
   }
@@ -16093,6 +16583,61 @@ const Alertas = (() => {
     /* 0. Alertas de aeronaves (CVA, Horas, Custom) */
     const _aerosDash = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
     const _hojeDate = new Date(hojeStr + "T00:00:00");
+
+    /* 1.5 ALERTAS DE LICENÇAS (PILOTOS) */
+    const _sessaoDash = (typeof Session !== "undefined" && Session.get) ? Session.get() : null;
+    const _isAdminDash = _sessaoDash && _sessaoDash.perfil === "admin";
+    
+    const _usersDash = JSON.parse(localStorage.getItem("dv.users.v1") || "[]");
+    _usersDash.forEach(function(u) {
+      if (u.ativo === false) return;
+      if (u.perfil !== "piloto" && u.tambem_e_piloto !== true) return;
+      
+      /* Privacidade: Piloto vê só os seus. */
+      if (!_isAdminDash && (!_sessaoDash || String(_sessaoDash.id) !== String(u.id))) return;
+      
+      /* Filtro do Admin: se selecionou alguém na Visão Geral, aplica aqui também */
+      if (_isAdminDash && window.__filtroPilotosIds && !window.__filtroPilotosIds.includes(String(u.id))) return;
+      
+      const ext = u.extras || {};
+      const hidden = ext.hidden_licencas || [];
+      const customs = ext.custom_licencas || [];
+      
+      const defaults = [
+        { key: 'cma', nome: 'CMA' },
+        { key: 'ifr', nome: 'IFR' },
+        { key: 'mnte', nome: 'MNTE' },
+        { key: 'mlte', nome: 'MLTE' },
+        { key: 'inva', nome: 'INVA' },
+        { key: 'icao', nome: 'ICAO' },
+        { key: 'simulador', nome: 'Simulador' }
+      ];
+      
+      const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key));
+      
+      licencas.forEach(function(l) {
+        if (ext['notif_' + l.key] === false) return; // Alerta desativado no card
+        const dataStr = ext['validade_' + l.key];
+        if (!dataStr) return;
+        
+        const dataLic = new Date(dataStr + "T00:00:00");
+        if (isNaN(dataLic.getTime())) return;
+        
+        const dias = Math.floor((dataLic - _hojeDate) / 86400000);
+        const aviso = ext['aviso_' + l.key] || 30;
+        
+        if (dias <= aviso) {
+          alertas.push({
+            tipo: "licenca",
+            aeronave: l.nome,
+            severidade: dias <= 7 ? "danger" : "warning",
+            titulo: "👨‍✈️ " + u.nome + " — " + l.nome + " " + (dias < 0 ? "vencido" : "vence em " + dias + " dia" + (dias !== 1 ? "s" : "")),
+            sub: "Validade: " + fmtData(dataStr)
+          });
+        }
+      });
+    });
+
     _aerosDash.forEach(function(aero) {
       if (aero.ativo === false) return;
       const _custos = aero.custos_por_ano || {};
@@ -16240,6 +16785,106 @@ const Alertas = (() => {
       });
     });
 
+    /* 1.9 ALERTAS DE DISPONIBILIDADE (FOLGA, TREINAMENTO, REVALIDAÇÃO) */
+    const _selDias = document.getElementById("alertaFiltroDias");
+    const _limiteDias = _selDias ? (parseInt(_selDias.value) || 30) : 30;
+    const _dispDash = JSON.parse(localStorage.getItem("dv.disponibilidade.v1") || "{}");
+    const _hojeStrAlert = (() => { const n = new Date(); return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0"); })();
+    const _hojeDateAlert = new Date(_hojeStrAlert + "T00:00:00");
+
+    const _ids = window.__filtroPilotosIds;
+    const _hasFiltro = _ids && _ids.length > 0;
+    const _usersFiltrados = _isAdminDash ? (_usersDash.filter(u => _hasFiltro ? _ids.includes(String(u.id)) : true)) : [_sessaoDash];
+
+    // 1. Coletar todos os eventos brutos
+    const _eventosBrutos = [];
+    const _processarDisp = (obj, label, cor) => {
+        if (!obj) return;
+        Object.keys(obj).forEach(k => {
+            const parts = k.split("::");
+            if (parts.length < 2) return;
+            const uid = parts[0];
+            const data = parts[1];
+            
+            if (!_usersFiltrados.some(u => String(u.id) === String(uid))) return;
+            
+            const dEvent = new Date(data + "T00:00:00");
+            const diffDays = Math.round((dEvent - _hojeDateAlert) / 86400000);
+            if (diffDays < 0 || diffDays > _limiteDias) return;
+
+            const u = _usersDash.find(x => String(x.id) === String(uid));
+            const nomePiloto = u ? u.nome.split(" ")[0] : "?";
+            
+            _eventosBrutos.push({ data, label, cor, uid, nomePiloto });
+        });
+    };
+
+    _processarDisp(_dispDash.folgas, "Folga", "var(--yellow)");
+    _processarDisp(_dispDash.treinamentos, "Treinamento", "var(--accent)");
+    _processarDisp(_dispDash.revalidacao, "Revalidação", "#a855f7");
+
+    // 2. Agrupar dias contínuos por usuário e tipo
+    const _porUsuario = {};
+    _eventosBrutos.forEach(ev => {
+        const k = ev.uid + "|" + ev.label;
+        if (!_porUsuario[k]) _porUsuario[k] = [];
+        _porUsuario[k].push(ev);
+    });
+
+    let _blocosIndividuais = [];
+    Object.keys(_porUsuario).forEach(k => {
+        const evs = _porUsuario[k].sort((a,b) => a.data.localeCompare(b.data));
+        const blocosU = [];
+        evs.forEach(ev => {
+            const ultimo = blocosU[blocosU.length - 1];
+            if (ultimo && ultimo.label === ev.label) {
+                const p1 = ultimo.fim.split('-'); const p2 = ev.data.split('-');
+                const utc1 = Date.UTC(p1[0], p1[1]-1, p1[2]);
+                const utc2 = Date.UTC(p2[0], p2[1]-1, p2[2]);
+                if (Math.round((utc2 - utc1) / 86400000) === 1) {
+                    ultimo.fim = ev.data;
+                    return;
+                }
+            }
+            blocosU.push({ label: ev.label, cor: ev.cor, inicio: ev.data, fim: ev.data, uid: ev.uid, nomePiloto: ev.nomePiloto });
+        });
+        _blocosIndividuais = _blocosIndividuais.concat(blocosU);
+    });
+
+    // 3. Agrupar usuários com o mesmo evento e mesmas datas
+    const _blocosAgrupados = [];
+    _blocosIndividuais.forEach(b => {
+        const match = _blocosAgrupados.find(x => x.label === b.label && x.inicio === b.inicio && x.fim === b.fim);
+        if (match) {
+            if (!match.nomes.includes(b.nomePiloto)) match.nomes.push(b.nomePiloto);
+        } else {
+            _blocosAgrupados.push({ label: b.label, cor: b.cor, inicio: b.inicio, fim: b.fim, nomes: [b.nomePiloto] });
+        }
+    });
+
+    // 4. Ordenar e criar os alertas
+    _blocosAgrupados.sort((a,b) => a.inicio.localeCompare(b.inicio));
+    
+    const _fmtD = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+
+    _blocosAgrupados.forEach(b => {
+        const bStart = new Date(b.inicio + "T00:00:00");
+        const diffDays = Math.round((bStart - _hojeDateAlert) / 86400000);
+        let quando = diffDays === 0 ? "Hoje" : (diffDays === 1 ? "Amanhã" : `Em ${diffDays} dias`);
+        
+        let periodo = (b.inicio !== b.fim) ? ` (${_fmtD(b.inicio)} a ${_fmtD(b.fim)})` : ` (${_fmtD(b.inicio)})`;
+        
+        let nomesStr = b.nomes.join(" / ");
+        
+        alertas.push({
+            tipo: b.label,
+            aeronave: "",
+            severidade: "warning",
+            titulo: b.label + " - " + nomesStr + periodo,
+            sub: quando
+        });
+    });
+
     return alertas.filter(function(a) { return !_alertaDispensado(_alertaId(a)); });
   }
 
@@ -16248,6 +16893,15 @@ const Alertas = (() => {
     const box = document.getElementById("alertListDashboard");
     const badge = document.getElementById("alertBadgeCount");
     if (!box) return;
+
+    // Adiciona o evento de mudança no filtro de dias (se ainda não tiver)
+    const selDias = document.getElementById("alertaFiltroDias");
+    if (selDias && !selDias.dataset.bound) {
+        selDias.dataset.bound = "1";
+        selDias.addEventListener("change", () => {
+            render();
+        });
+    }
 
     const lista = calcular();
 
@@ -16264,6 +16918,20 @@ const Alertas = (() => {
     box.innerHTML = lista.map(a => {
       const cor = a.severidade === "danger" ? "var(--red)" : "var(--yellow)";
       const alertId = _alertaId(a);
+
+      // --- NOVO: Badge customizado para Disponibilidade ---
+      if (["Folga", "Treinamento", "Revalidação"].includes(a.tipo)) {
+          let bgColor = a.tipo === "Folga" ? "#eab308" : (a.tipo === "Treinamento" ? "#3b82f6" : "#a855f7");
+          let label = a.tipo;
+          let badgeHtml = '<span style="display:inline-block; background:' + bgColor + ' !important; color:#fff !important; padding:2px 6px; border-radius:4px; font-weight:800; font-size:11px; margin-right:6px; vertical-align:middle; font-family:ui-monospace,monospace;">' + label + '</span>';
+          let textoTituloDisp = a.titulo.replace(label + " - ", "").trim();
+          
+          return '<li class="alert" data-alerta-id="' + esc(alertId) + '" data-alerta-ev="' + esc(a.ev_id || '') + '" data-alerta-tipo="' + esc(a.tipo || '') + '" style="cursor:pointer;position:relative;padding-right:24px">'
+            + '<strong style="color:var(--text); display:block; margin-bottom:2px;">⚠ ' + badgeHtml + esc(textoTituloDisp) + '</strong>'
+            + '<small>' + esc(a.sub) + '</small>'
+            + '<button type="button" class="alerta-x" data-alerta-id="' + esc(alertId) + '" title="Dispensar por 30 dias" style="position:absolute;top:2px;right:2px;background:transparent;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px;width:16px;height:16px;line-height:1;border-radius:50%;opacity:0.5;">✕</button>'
+            + '</li>';
+      }
       
       // Procura QUALQUER prefixo de aeronave no título para transformar em badge
       let prefixoBadge = "";
@@ -19247,7 +19915,6 @@ function _thRelCity(icao) {
 
 
     const drawLogoAt = async (src, targetX) => {
-      console.log("DEBUG PDF LOGO - src:", src ? src.substring(0, 100) : "VAZIO");
       if (!src) return null;
       try {
         const box = await _logoParaCanvas(src);
@@ -20699,6 +21366,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (_l2) _l2.textContent = _i2.value.toUpperCase();
       });
     }
+    
+    // Sincroniza Cores do E-mail
+    const _eh = localStorage.getItem("dv_email_header_color") || "#1e293b";
+    const _et = localStorage.getItem("dv_email_text_color") || "#ffffff";
+    const _ih = document.getElementById("setEmailHeaderColor");
+    const _it = document.getElementById("setEmailTextColor");
+    const _lh = document.getElementById("emailHeaderColorValue");
+    const _lt = document.getElementById("emailTextColorValue");
+    
+    if (_ih) {
+      _ih.value = _eh;
+      if (_lh) _lh.textContent = _eh.toUpperCase();
+      _ih.addEventListener("input", () => {
+        localStorage.setItem("dv_email_header_color", _ih.value);
+        if (_lh) _lh.textContent = _ih.value.toUpperCase();
+      });
+    }
+    if (_it) {
+      _it.value = _et;
+      if (_lt) _lt.textContent = _et.toUpperCase();
+      _it.addEventListener("input", () => {
+        localStorage.setItem("dv_email_text_color", _it.value);
+        if (_lt) _lt.textContent = _it.value.toUpperCase();
+      });
+    }
   }
   // <<< init Relatorios
   hydrateIcons();
@@ -21526,6 +22218,16 @@ Router.init();
         </div>
       </div>
 
+      <div class="revisao-sec mobile-card">
+        <h4>Passageiros do Trecho</h4>
+        <div id="rvPaxLista" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+        <div style="display:flex; gap:8px; position:relative;">
+          <input id="rvPaxInput" type="text" placeholder="Digite o nome do passageiro..." autocomplete="off" class="mobile-input-compact" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--text);">
+          <div id="rvPaxSuggestions" style="display:none; position:absolute; top:100%; left:0; right:80px; background:#fff; color:#000; border:1px solid var(--line); border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999; max-height:150px; overflow-y:auto; margin-top:4px;"></div>
+          <button type="button" class="btn btn--secondary" onclick="window.__rvAddPax()" style="padding:0 16px; font-size:12px; white-space:nowrap;">+ Adicionar</button>
+        </div>
+      </div>
+
       <div class="revisao-sec mobile-card" id="rvDespesasSec" style="margin-bottom:0; border-bottom:0; padding: 12px 16px !important;">
   <h4 style="margin-bottom: 8px !important;">Outras Despesas</h4>
   <label class="mobile-obs-label">
@@ -22077,12 +22779,16 @@ Router.init();
 <div class="revisao-sec">
   <h4>O que lançar?</h4>
   <label class="perm-item" style="width:100%;padding:12px;margin-bottom:10px">
-    <input type="radio" name="folgaTipoRadio" id="folgaTipo" value="folga" checked>
+    <input type="checkbox" id="folgaTipo" value="folga" style="width:auto;margin-right:8px">
     <span>🟡 Folga (piloto indisponível)</span>
   </label>
   <label class="perm-item" style="width:100%;padding:12px;margin-bottom:10px">
-    <input type="radio" name="folgaTipoRadio" id="treinamentoTipo" value="treinamento">
+    <input type="checkbox" id="treinamentoTipo" value="treinamento" style="width:auto;margin-right:8px">
     <span>🔵 Treinamento (piloto em treinamento)</span>
+  </label>
+  <label class="perm-item" style="width:100%;padding:12px;margin-bottom:10px">
+    <input type="checkbox" id="revalidacaoTipo" value="revalidacao" style="width:auto;margin-right:8px">
+    <span>🟣 Revalidação (piloto em revalidação)</span>
   </label>
 </div>
 
@@ -24501,6 +25207,1288 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 </style>
+
+<!-- Modal: Adicionar Licença Manual -->
+<div class="modal" id="pilAddModal"><div class="dialog">
+  <h2>+ Adicionar Habilitação</h2>
+  <p class="hint" style="margin-top:-14px;margin-bottom:18px">Adicione cursos ou licenças que não aparecem no extrato da ANAC (ex: RVSM).</p>
+  <div class="formgrid">
+    <label class="field"><span>Nome (ex: RVSM)</span><input id="pilAddName" placeholder="Nome da habilitação" style="text-transform:uppercase"></label>
+    <label class="field"><span>Data de Validade (opcional)</span><input type="date" id="pilAddDate"></label>
+  </div>
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilAddModal">Cancelar</button>
+    <button type="button" class="btn" id="pilAddSalvar">Adicionar</button>
+  </div>
+</div></div>
+
+<!-- Modal: Criar Nova Pasta de Documentos -->
+<div class="modal" id="pilPastaModal"><div class="dialog">
+  <h2>📁 Nova Pasta de Documentos</h2>
+  <p class="hint" style="margin-top:-14px;margin-bottom:18px">Crie um card para organizar os arquivos (ex: Viagem EUA, Meus Documentos).</p>
+  
+  <label class="field"><span>Nome da Pasta *</span><input id="pilPastaNome" placeholder="Ex: Simulador EUA 2026"></label>
+  
+  <label class="field" style="margin-top:12px"><span>Privacidade</span>
+    <select id="pilPastaPrivacidade" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:8px;">
+      <option value="privado">🔒 Privado (Só eu e Admins)</option>
+      <option value="todos">🌐 Compartilhado (Todos os Pilotos)</option>
+      <option value="custom">👥 Compartilhar com Pilotos Específicos</option>
+    </select>
+  </label>
+
+  <div id="pilPastaCustomWrap" style="display:none; margin-top:12px; max-height:150px; overflow-y:auto; padding:10px; background:var(--bg); border-radius:8px;">
+    <p style="margin:0 0 8px; font-size:11px; font-weight:700; color:var(--muted)">Selecione os pilotos:</p>
+    <div id="pilPastaPilotosLista" style="display:flex; flex-direction:column; gap:6px;"></div>
+  </div>
+
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilPastaModal">Cancelar</button>
+    <button type="button" class="btn" id="pilPastaSalvar">Criar Pasta</button>
+  </div>
+</div></div>
+
+<!-- Modal: Visualizador de Documentos -->
+<div class="modal" id="pilPreviewModal"><div class="dialog dialog--wide" style="max-width:900px;width:95%">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h2 id="pilPreviewTitle" style="margin:0;font-size:16px">Documento</h2>
+    <div style="display:flex;gap:8px">
+      <a id="pilPreviewDownload" href="#" download target="_blank" class="btn btn--secondary" style="text-decoration:none">⬇️ Baixar</a>
+      <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilPreviewModal">Fechar</button>
+    </div>
+  </div>
+  <div id="pilPreviewContent" style="width:100%;height:75vh;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--line)">
+    <!-- Iframe ou Imagem injetados aqui -->
+  </div>
+</div></div>
+
+<!-- Modal: Upload de Arquivo com Nome Customizado -->
+<div class="modal" id="pilUploadModal"><div class="dialog">
+  <h2>📎 Anexar Arquivo</h2>
+  <p class="hint" style="margin-top:-14px;margin-bottom:18px">Escolha o arquivo e dê um nome curto para facilitar a visualização.</p>
+  
+  <label class="field"><span>Selecionar Arquivo (PDF ou Imagem) *</span>
+    <input type="file" id="pilUploadFile" accept=".pdf, image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);">
+  </label>
+  
+  <label class="field" style="margin-top:12px"><span>Nome no Card (ex: Hotel, Passagem, RG) *</span>
+    <input id="pilUploadNome" placeholder="Digite um nome curto">
+  </label>
+
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilUploadModal">Cancelar</button>
+    <button type="button" class="btn" id="pilUploadSalvar">Enviar Arquivo</button>
+  </div>
+</div></div>
+
+<!-- Modal: Importar PDF de Licenças -->
+<div class="modal" id="pilPdfModal"><div class="dialog">
+  <h2>📄 Importar Extrato ANAC</h2>
+  
+  <div style="margin-top:-14px;margin-bottom:18px;font-size:13px;line-height:1.6;color:var(--muted)">
+    1. Acesse o site da <a href="https://consultadelicencas.anac.gov.br/consultadelicencas/" target="_blank" style="color:var(--accent);font-weight:800;text-decoration:underline;">ANAC</a><br>
+    2. Clique em <b>Impressão do extrato de pesquisa de habilitações</b><br>
+    3. Baixe o arquivo em PDF e anexe abaixo.
+  </div>
+
+  <div style="margin-bottom:18px">
+    <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Arquivo PDF</div>
+    <!-- Esconde o input feio e cria um botão de Procurar -->
+    <input type="file" id="pilPdfFile" accept=".pdf" style="display:none;">
+    <label for="pilPdfFile" class="btn btn--secondary" style="cursor:pointer; padding:10px 16px; font-size:12px; display:inline-flex; align-items:center; gap:8px;">
+      📁 Procurar Arquivo
+    </label>
+    <span id="pilPdfFileName" style="font-size:12px; color:var(--text); margin-left:12px; font-weight:600;">Nenhum arquivo selecionado</span>
+  </div>
+
+  <div id="pilPdfResultado" style="margin-top:12px"></div>
+  
+  <div class="dialog__actions">
+    <button type="button" class="btn btn--secondary" data-action="close-modal" data-modal="pilPdfModal">Cancelar</button>
+    <button type="button" class="btn" id="pilPdfSalvar" disabled>Salvar Datas</button>
+  </div>
+</div></div>
+
+<script>
+// ============================================================
+// MÓDULO: HABILITAÇÕES E LICENÇAS DO PILOTO
+// ============================================================
+(function() {
+  const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+  let dadosExtraidos = null;
+
+  async function carregarPdfJs() {
+    if (window.pdfjsLib) return;
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve();
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  async function extrairTextoPdf(file) {
+    await carregarPdfJs();
+    if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let textoCompleto = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      textoCompleto += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    
+    return textoCompleto;
+  }
+
+  function extrairDatas(texto) {
+    const res = { cma: null, cma_obs: null, ifr: null, mnte: null, mlte: null, inva: null, icao: null, simulador: null, icao_level: null };
+    const t = texto.replace(/\s+/g, ' ').toUpperCase();
+    
+    const buscarData = (regexStr) => {
+      const regex = new RegExp(regexStr + '.*?(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{2})\\s*[\\/\\.\\-]\\s*(\\d{4})', 'i');
+      const m = t.match(regex);
+      if (m) return m[3] + '-' + m[2] + '-' + m[1];
+      return null;
+    };
+
+    // 1. CMA Data
+    res.cma = buscarData('(?:CMA|CERTIFICADO\\s*M[ÉE]DICO\\s*AERON[ÁA]UTICO)');
+    
+    // 2. CMA Observação (Busca ignorando espaços entre > e a palavra, e limpa o "/")
+    const mCmaObs = t.match(/OBSERVA[ÇC][ÕO]ES\s*DO\s*CMA[>\s]*(.*?)\s*OBSERVA[ÇC][ÕO]ES/i);
+    if (mCmaObs) {
+      let obs = mCmaObs[1].trim();
+      obs = obs.replace(/^[\/\-\s]+/, "").trim();
+      if (obs && !obs.toUpperCase().startsWith("SEM OBSERVA")) {
+        res.cma_obs = obs;
+      }
+    }
+
+    // 3. Outras Habilitações
+    res.ifr = buscarData('IFR');
+    res.mnte = buscarData('MNTE');
+    res.mlte = buscarData('MLTE');
+    res.inva = buscarData('INVA');
+
+    // 4. ICAO (Voltando para a regex flexível que procura apenas 'LEVEL')
+    const mIcao = t.match(/L\s*E\s*V\s*E\s*L.*?(\d).*?(\d{2})\s*[\/\.\-]\s*(\d{4})/i);
+    if (mIcao) {
+      const level = parseInt(mIcao[1]);
+      res.icao_level = level;
+      if (level >= 4) {
+        res.icao = mIcao[3] + '-' + mIcao[2] + '-01'; 
+      }
+    }
+
+    return res;
+  }
+
+    function renderVisaoGeral() {
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    
+    const isAdmin = sessao.perfil === 'admin';
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const pilotos = users.filter(u => (u.perfil === 'piloto' || u.tambem_e_piloto) && u.ativo !== false);
+
+    if (isAdmin && !window.__filtroPilotosIds) {
+        const _salvo = localStorage.getItem("dv.pilotos.filtroIds");
+        if (_salvo) {
+            try {
+                window.__filtroPilotosIds = JSON.parse(_salvo);
+            } catch(e) {
+                window.__filtroPilotosIds = pilotos.map(p => String(p.id));
+            }
+        } else {
+            window.__filtroPilotosIds = pilotos.map(p => String(p.id));
+        }
+    }
+    
+    const btnFiltro = document.getElementById('btnFiltroPilotos');
+    const menuFiltro = document.getElementById('menuFiltroPilotos');
+    const listPilotos = document.getElementById('filtroListaPilotos');
+    const radioMeu = document.getElementById('filtroModoMeu');
+
+    if (isAdmin && btnFiltro && menuFiltro) {
+        btnFiltro.style.display = 'inline-block';
+        
+        // 1. Cria os checkboxes apenas uma vez
+        if (listPilotos.children.length === 0) {
+            listPilotos.innerHTML = pilotos.map(p => `
+                <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                    <input type="checkbox" class="chkFiltroPiloto" value="${p.id}"> ${p.nome.split(' ')[0]}
+                </label>
+            `).join("");
+        }
+        
+        // 2. Configura o botão de abrir/fechar menu
+        if (!btnFiltro.dataset.bound) {
+            btnFiltro.dataset.bound = '1';
+            btnFiltro.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menuFiltro.style.display = menuFiltro.style.display === 'none' ? 'block' : 'none';
+            });
+            document.addEventListener('click', (e) => {
+                if (menuFiltro.style.display === 'block' && !menuFiltro.contains(e.target) && e.target !== btnFiltro) {
+                    menuFiltro.style.display = 'none';
+                }
+            });
+        }
+
+        // 3. Atualiza o estado visual
+        const idsStr = (window.__filtroPilotosIds || []).map(String);
+        const soEu = idsStr.length === 1 && idsStr[0] === String(sessao.id);
+        
+        radioMeu.checked = soEu;
+        
+        listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
+            cb.checked = idsStr.includes(String(cb.value));
+            
+            // Remove listener antigo e cria um novo
+            cb.onchange = null;
+            cb.onchange = () => {
+                const selecionados = Array.from(listPilotos.querySelectorAll('.chkFiltroPiloto:checked')).map(x => String(x.value));
+                window.__filtroPilotosIds = selecionados;
+                localStorage.setItem("dv.pilotos.filtroIds", JSON.stringify(selecionados));
+                radioMeu.checked = (selecionados.length === 1 && selecionados[0] === String(sessao.id));
+                renderVisaoGeral();
+                if (typeof renderCurrentPage === 'function') renderCurrentPage();
+            };
+        });
+
+        // 4. Configura o rádio "Meu Painel"
+        radioMeu.onchange = null;
+        radioMeu.onchange = () => {
+            if (radioMeu.checked) {
+                window.__filtroPilotosIds = [String(sessao.id)];
+                localStorage.setItem("dv.pilotos.filtroIds", JSON.stringify(window.__filtroPilotosIds));
+                
+                // Desmarca todos os checkboxes visualmente na hora
+                listPilotos.querySelectorAll('.chkFiltroPiloto').forEach(cb => {
+                    cb.checked = (String(cb.value) === String(sessao.id));
+                });
+
+                renderVisaoGeral();
+                if (typeof renderCurrentPage === 'function') renderCurrentPage();
+            }
+        };
+    }
+
+    const targetPilotos = isAdmin ? (window.__filtroPilotosIds || []).map(String) : [String(sessao.id)];
+    const isMeuPainel = targetPilotos.length === 1 && targetPilotos[0] === String(sessao.id);
+    const hojeStr = (() => { const n = new Date(); return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0"); })();
+
+    // ----- 1. COMPLIANCE -----
+    const boxComp = document.getElementById('vgCompliance');
+    if (boxComp) {
+        if (isMeuPainel) {
+            const user = users.find(u => u.id === sessao.id) || sessao;
+            const ext = user.extras || {};
+            const defaults = [{ key: 'cma' }, { key: 'ifr' }, { key: 'mnte' }, { key: 'mlte' }, { key: 'inva' }, { key: 'icao' }, { key: 'simulador' }];
+            const licencas = [...defaults, ...(ext.custom_licencas || [])].filter(l => !(ext.hidden_licencas || []).includes(l.key));
+
+            let valid = 0, warning = 0, expired = 0;
+            licencas.forEach(l => {
+                if (ext['notif_' + l.key] === false) return;
+                const dataStr = ext['validade_' + l.key];
+                if (!dataStr) return;
+                const dias = Math.floor((new Date(dataStr + "T00:00:00") - new Date()) / 86400000);
+                const aviso = ext['aviso_' + l.key] || 30;
+                if (dias < 0) expired++;
+                else if (dias <= aviso) warning++;
+                else valid++;
+            });
+
+            const total = valid + warning + expired;
+            if (total === 0) {
+                boxComp.innerHTML = '<p class="hint" style="margin:0">Nenhuma licença monitorada.</p>';
+            } else {
+                const pV = (valid / total) * 100, pW = (warning / total) * 100, pE = (expired / total) * 100;
+                boxComp.innerHTML = `
+                  <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:12px">
+                    <span style="color:var(--green);font-weight:700;opacity:${valid === 0 ? '0.3' : '1'}">✅ ${valid} Válidas</span>
+                    <span style="color:var(--yellow);font-weight:700;opacity:${warning === 0 ? '0.3' : '1'}">⚠️ ${warning} Vencendo</span>
+                    <span style="color:var(--red);font-weight:700;opacity:${expired === 0 ? '0.3' : '1'}">❌ ${expired} Vencidas</span>
+                  </div>
+                  <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;display:flex">
+                    <div style="width:${pV}%;background:var(--green)"></div>
+                    <div style="width:${pW}%;background:var(--yellow)"></div>
+                    <div style="width:${pE}%;background:var(--red)"></div>
+                  </div>
+                `;
+            }
+        } else {
+            let html = '<div style="display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; padding-right:4px;">';
+            targetPilotos.forEach(uid => {
+                const u = users.find(x => x.id === uid);
+                if (!u) return;
+                const ext = u.extras || {};
+                const defaults = [{ key: 'cma' }, { key: 'ifr' }, { key: 'mnte' }, { key: 'mlte' }, { key: 'inva' }, { key: 'icao' }, { key: 'simulador' }];
+                const licencas = [...defaults, ...(ext.custom_licencas || [])].filter(l => !(ext.hidden_licencas || []).includes(l.key));
+                
+                let v = 0, w = 0, e = 0;
+                licencas.forEach(l => {
+                    if (ext['notif_' + l.key] === false) return;
+                    const d = ext['validade_' + l.key];
+                    if (!d) return;
+                    const dias = Math.floor((new Date(d + "T00:00:00") - new Date()) / 86400000);
+                    if (dias < 0) e++;
+                    else if (dias <= (ext['aviso_' + l.key] || 30)) w++;
+                    else v++;
+                });
+                
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:4px;">
+                    <span style="font-size:12px; font-weight:700; width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(u.nome)}">${esc(u.nome.split(' ')[0])}</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--green); opacity:${v===0?'0.3':'1'}">✅ ${v}</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--yellow); opacity:${w===0?'0.3':'1'}">⚠️ ${w}</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--red); opacity:${e===0?'0.3':'1'}">❌ ${e}</span>
+                </div>`;
+            });
+            html += '</div>';
+            boxComp.innerHTML = html;
+        }
+    }
+
+    // ----- 2. PRÓXIMO VOO -----
+    const boxVoo = document.getElementById('vgProximoVoo');
+    if (boxVoo) {
+        const eventos = (typeof Agenda !== 'undefined' && Agenda.getEventos) ? Agenda.getEventos() : [];
+        
+        const voosAgrupados = {}; 
+        targetPilotos.forEach(uid => {
+            const minhaAgenda = eventos.filter(ev => String(ev.piloto_p1) === String(uid) || String(ev.piloto_p2) === String(uid));
+            const _limiteDate = new Date(); _limiteDate.setDate(_limiteDate.getDate() + 15);
+        const _limiteStr = _limiteDate.getFullYear() + "-" + String(_limiteDate.getMonth()+1).padStart(2,"0") + "-" + String(_limiteDate.getDate()).padStart(2,"0");
+        
+        const futuros = minhaAgenda.filter(ev => {
+            const trs = ev.trechos || [];
+            // O voo deve COMEÇAR hoje ou no futuro E antes do limite de 15 dias
+            return trs.length && trs[0].data >= hojeStr && trs[0].data <= _limiteStr;
+        });
+            
+            if (futuros.length > 0) {
+                const prox = futuros.sort((a, b) => (a.trechos[0].data + a.trechos[0].hora).localeCompare(b.trechos[0].data + b.trechos[0].hora))[0];
+                
+                if (!voosAgrupados[prox.id]) voosAgrupados[prox.id] = { ev: prox, pilotosIds: [] };
+                voosAgrupados[prox.id].pilotosIds.push(String(uid));
+            }
+        });
+
+        const voosArray = Object.values(voosAgrupados).sort((a,b) => (a.ev.trechos[0].data).localeCompare(b.ev.trechos[0].data));
+
+        if (voosArray.length > 0) {
+            let html = '<div style="display:flex; flex-direction:column; gap:10px; max-height:220px; overflow-y:auto; padding-right:4px;">';
+            voosArray.forEach(item => {
+                const ev = item.ev;
+                const trs = ev.trechos;
+                const dataIni = trs[0].data, dataFim = trs[trs.length - 1].data;
+                const fmt = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+                const periodo = (dataIni === dataFim) ? fmt(dataIni) : fmt(dataIni) + ' a ' + fmt(dataFim);
+                const rota = trs[0].origem + trs.map(t => ' → ' + t.destino).join('');
+                const corAero = (typeof window.corDaAeronave === 'function') ? window.corDaAeronave(ev.aeronave_tail) : 'var(--muted)';
+                
+                let nomePiloto = "";
+                if (!isMeuPainel) {
+                    const nomes = item.pilotosIds.map(uid => {
+                        const u = users.find(x => x.id === uid);
+                        return u ? u.nome.split(' ')[0] : '?';
+                    });
+                    nomePiloto = `<div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">PILOTO: ${nomes.join(' / ')}</div>`;
+                }
+
+                html += `<div style="border-bottom:1px dashed var(--line); padding-bottom:6px;">
+                    ${nomePiloto}
+                    <div style="font-size:13px;font-weight:700;">${periodo}</div>
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${rota}">${rota}</div>
+                    <div style="font-size:11px;background:var(--bg);border-left:2px solid ${corAero};padding:2px 6px;border-radius:4px;display:inline-block;font-weight:600">
+                        ✈️ <b style="color:${corAero}">${ev.aeronave_tail}</b>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            boxVoo.innerHTML = html;
+        } else {
+            boxVoo.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">🏖️</span><span class="hint">Nenhum voo nos próximos 15 dias.</span></div>';
+        }
+    }
+
+    // ----- 3. PRÓXIMOS DIAS -----
+    const boxDisp = document.getElementById('vgDisponibilidade');
+    if (boxDisp) {
+        const disp = JSON.parse(localStorage.getItem('dv.disponibilidade.v1') || '{}');
+        const hojeDate = new Date(); hojeDate.setHours(0,0,0,0);
+        
+        const eventosBrutos = [];
+        const processarDados = (obj, label, cor) => {
+            if (!obj) return;
+            Object.keys(obj).forEach(k => {
+                const parts = k.split("::");
+                if (parts.length < 2) return;
+                const uid = parts[0];
+                const data = parts[1];
+                
+                if (!targetPilotos.includes(String(uid))) return;
+                if (data >= hojeStr) {
+                    const u = users.find(x => String(x.id) === String(uid));
+                    eventosBrutos.push({ data, label, cor, uid, nomePiloto: u ? u.nome.split(" ")[0] : "" });
+                }
+            });
+        };
+        
+        processarDados(disp.folgas, "Folga", "var(--yellow)");
+        processarDados(disp.treinamentos, "Treinamento", "var(--accent)");
+        processarDados(disp.revalidacao, "Revalidação", "#a855f7");
+        
+        // 1. Agrupar dias contínuos POR USUÁRIO (para não misturar os dias)
+        const porUsuario = {};
+        eventosBrutos.forEach(ev => {
+            if (!porUsuario[ev.uid]) porUsuario[ev.uid] = [];
+            porUsuario[ev.uid].push(ev);
+        });
+
+        let blocosIndividuais = [];
+        Object.keys(porUsuario).forEach(uid => {
+            const evs = porUsuario[uid].sort((a,b) => a.data.localeCompare(b.data));
+            const blocosU = [];
+            evs.forEach(ev => {
+                const ultimo = blocosU[blocosU.length - 1];
+                if (ultimo && ultimo.label === ev.label) {
+                    // Usando UTC para não errar a virada de dia
+                    const p1 = ultimo.fim.split('-'); const p2 = ev.data.split('-');
+                    const utc1 = Date.UTC(p1[0], p1[1]-1, p1[2]);
+                    const utc2 = Date.UTC(p2[0], p2[1]-1, p2[2]);
+                    if (Math.round((utc2 - utc1) / 86400000) === 1) {
+                        ultimo.fim = ev.data;
+                        return;
+                    }
+                }
+                blocosU.push({ label: ev.label, cor: ev.cor, inicio: ev.data, fim: ev.data, uid: ev.uid, nomePiloto: ev.nomePiloto });
+            });
+            blocosIndividuais = blocosIndividuais.concat(blocosU);
+        });
+
+        // 2. Agrupar blocos que têm o MESMO evento nas MESMAS datas
+        const blocosAgrupados = [];
+        blocosIndividuais.forEach(b => {
+            const match = blocosAgrupados.find(x => x.label === b.label && x.inicio === b.inicio && x.fim === b.fim);
+            if (match) {
+                if (!match.nomes.includes(b.nomePiloto)) match.nomes.push(b.nomePiloto);
+            } else {
+                blocosAgrupados.push({ label: b.label, cor: b.cor, inicio: b.inicio, fim: b.fim, nomes: [b.nomePiloto] });
+            }
+        });
+
+        // 3. Ordenar e limitar a 4 itens
+        blocosAgrupados.sort((a,b) => a.inicio.localeCompare(b.inicio));
+        const futuros = blocosAgrupados.slice(0, 4); 
+        
+        if (!futuros.length) {
+            boxDisp.innerHTML = '<div style="text-align:center;padding:16px 0"><span style="font-size:24px;display:block;margin-bottom:8px">☕</span><span class="hint">Nenhum evento futuro.</span></div>';
+        } else {
+            const fmtD = (s) => { const [y,m,d] = s.split('-'); return d+'/'+m; };
+            let htmlDisp = '';
+            
+            futuros.forEach(b => {
+                const bStart = new Date(b.inicio + "T00:00:00");
+                const diffDays = Math.round((bStart - hojeDate) / 86400000);
+                let quando = diffDays === 0 ? "Hoje" : (diffDays === 1 ? "Amanhã" : `Em ${diffDays} dias`);
+                
+                let periodo = (b.inicio !== b.fim) ? ` (${fmtD(b.inicio)} a ${fmtD(b.fim)})` : ` (${fmtD(b.inicio)})`;
+                
+                let periodoTexto = (b.inicio !== b.fim) ? ` (${fmtD(b.inicio)} a ${fmtD(b.fim)})` : ` (${fmtD(b.inicio)})`;
+                let periodoHtml = `<span style="color:var(--muted);font-size:11px">${periodoTexto}</span>`;
+                
+                let nomesTexto = "";
+                let nomesHtml = "";
+                if (!isMeuPainel && b.nomes.length > 0) {
+                    nomesTexto = ` - ${b.nomes.join(" / ")}`;
+                    nomesHtml = ` <span style="color:var(--text); font-weight:normal">- ${b.nomes.join(" / ")}</span>`;
+                }
+
+                let tituloTexto = esc(`${b.label}${nomesTexto}${periodoTexto}`);
+
+                htmlDisp += `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--line); gap: 8px;">
+                    <span style="font-size:12px;color:${b.cor};font-weight:700;line-height:1.4;" title="${tituloTexto}">
+                        ${b.label}${nomesHtml}${periodoHtml}
+                    </span>
+                    <span style="font-size:10px;font-weight:800;background:var(--bg);padding:2px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0;">${quando}</span>
+                </div>`;
+            });
+            
+            boxDisp.innerHTML = htmlDisp;
+        }
+    }
+  }
+
+  function renderPastasDocumentos() {
+    const container = document.getElementById('vgDocumentos');
+    if (!container) return;
+    
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    const isAdmin = sessao.perfil === 'admin';
+    
+    const todasPastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+    
+    // Filtro de privacidade
+    const pastasVisiveis = todasPastas.filter(p => {
+      if (isAdmin) return true; // Admin vê tudo
+      if (String(p.dono_id) === String(sessao.id)) return true; // Dono vê a sua
+      if (p.privacidade === 'todos') return true; // Todos veem
+      if (p.privacidade === 'custom' && p.compartilhado_com.includes(sessao.id)) return true; // Compartilhado com ele
+      return false;
+    });
+
+    if (!pastasVisiveis.length) {
+      container.innerHTML = '<p class="hint" style="text-align:center;padding:20px">Nenhuma pasta encontrada. Clique em "+ Nova Pasta" para começar.</p>';
+      return;
+    }
+
+    container.innerHTML = pastasVisiveis.map(p => {
+      const tagPriv = p.privacidade === 'privado' ? '<span style="font-size:11px;background:var(--bg);border:1px solid var(--line);padding:2px 6px;border-radius:4px;color:var(--muted)">🔒 Privado</span>' 
+                    : p.privacidade === 'todos' ? '<span style="font-size:11px;background:var(--nav-active-bg);padding:2px 6px;border-radius:4px;color:var(--green)">🌐 Compartilhado</span>'
+                    : '<span style="font-size:11px;background:var(--nav-active-bg);padding:2px 6px;border-radius:4px;color:var(--accent)">👥 Compartilhado com ' + p.compartilhado_com.length + ' piloto(s)</span>';
+
+      return `<div style="border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--bg)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div>
+            <h4 style="margin:0 0 4px;font-size:14px">${esc(p.titulo)}</h4>
+            <div style="display:flex;gap:8px;align-items:center">
+              ${tagPriv}
+              <span style="font-size:11px;color:var(--muted)">Dono: ${esc(p.dono_nome)}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="font-size:11px;color:var(--muted)">${new Date(p.criado_em).toLocaleDateString()}</div>
+            ${(String(p.dono_id) === String(sessao.id) || isAdmin) ? `
+              <button onclick="window.__pilEditarPasta('${p.id}')" style="background:none;border:none;cursor:pointer;font-size:14px" title="Editar Permissões">✏️</button>
+              <button onclick="window.__pilExcluirPasta('${p.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--red)" title="Excluir Pasta">🗑️</button>
+            ` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          ${p.arquivos.map(a => `<div style="display:flex;align-items:center;gap:6px;background:var(--card);padding:6px 10px;border-radius:6px;border:1px solid var(--line);">
+            <span onclick="window.__pilAbrirPreview('${a.url}', '${esc(a.nome)}', '${a.tipo}')" style="font-size:20px;cursor:pointer" title="Clique para visualizar">${a.tipo === 'pdf' ? '📄' : '🖼️'}</span>
+            <span onclick="window.__pilAbrirPreview('${a.url}', '${esc(a.nome)}', '${a.tipo}')" style="font-size:12px;font-weight:600;cursor:pointer">${esc(a.nome)}</span>
+            ${(String(p.dono_id) === String(sessao.id) || isAdmin) ? `<button onclick="window.__pilExcluirArquivo('${p.id}', '${a.url}', '${a.path}')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0 4px;font-size:14px" title="Apagar arquivo">✕</button>` : ''}
+          </div>`).join('')}
+          
+          <button onclick="window.__pilAbrirUpload('${p.id}')" class="btn btn--secondary" style="font-size:11px;padding:6px 12px;border-style:dashed">+ Anexar Arquivo</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  let __editPastaId = null;
+
+  window.__pilEditarPasta = function(pastaId) {
+    __editPastaId = pastaId;
+    const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+    const p = pastas.find(x => x.id === pastaId);
+    if(!p) return;
+    
+    abrirModalPasta(pastaId);
+    document.getElementById('pilPastaNome').value = p.titulo;
+    document.getElementById('pilPastaPrivacidade').value = p.privacidade;
+    document.getElementById('pilPastaCustomWrap').style.display = (p.privacidade === 'custom') ? '' : 'none';
+    
+    document.querySelectorAll('.pilPastaCheckPiloto').forEach(cb => {
+       cb.checked = p.compartilhado_com.includes(cb.value);
+    });
+  };
+
+  function abrirModalPasta(pastaId = null) {
+    if (!pastaId) __editPastaId = null;
+    document.getElementById('pilPastaNome').value = '';
+    document.getElementById('pilPastaPrivacidade').value = 'privado';
+    document.getElementById('pilPastaCustomWrap').style.display = 'none';
+    
+    // Popula a lista de pilotos para o compartilhamento customizado
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const pilotos = users.filter(u => (u.perfil === 'piloto' || u.tambem_e_piloto) && u.id !== sessao.id && u.ativo !== false);
+    
+    const lista = document.getElementById('pilPastaPilotosLista');
+    lista.innerHTML = pilotos.map(p => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="${p.id}" class="pilPastaCheckPiloto"> ${esc(p.nome)}</label>`).join('');
+    if(!pilotos.length) lista.innerHTML = '<p class="hint" style="margin:0">Nenhum outro piloto cadastrado.</p>';
+
+    document.getElementById('pilPastaModal').classList.add('is-open');
+  }
+
+  function salvarPasta() {
+    const titulo = document.getElementById('pilPastaNome').value.trim();
+    if (!titulo) { alert('Digite um nome para a pasta.'); return; }
+    
+    const privacidade = document.getElementById('pilPastaPrivacidade').value;
+    let compartilhado_com = [];
+    
+    if (privacidade === 'custom') {
+      document.querySelectorAll('.pilPastaCheckPiloto:checked').forEach(cb => compartilhado_com.push(cb.value));
+      if (!compartilhado_com.length) { alert('Selecione pelo menos um piloto ou mude a privacidade.'); return; }
+    }
+
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+
+    const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+    
+    if (__editPastaId) {
+      const idx = pastas.findIndex(p => p.id === __editPastaId);
+      if (idx >= 0) {
+        pastas[idx].titulo = titulo;
+        pastas[idx].privacidade = privacidade;
+        pastas[idx].compartilhado_com = compartilhado_com;
+      }
+    } else {
+      pastas.push({
+        id: 'pasta-' + Date.now(),
+        dono_id: sessao.id,
+        dono_nome: sessao.nome,
+        titulo: titulo,
+        privacidade: privacidade,
+        compartilhado_com: compartilhado_com,
+        arquivos: [],
+        criado_em: new Date().toISOString()
+      });
+    }
+    
+    localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+    
+    document.getElementById('pilPastaModal').classList.remove('is-open');
+    renderPastasDocumentos();
+    
+    // Sincroniza com Supabase em background
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: pastas }).then();
+    } catch(e) {}
+  }
+
+  function renderResumo() {
+    const box = document.getElementById('pilLicencasResumo');
+    if (!box) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) { box.innerHTML = '<p class="hint">Faça login para ver suas licenças.</p>'; return; }
+    
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    let targetUserId = sessao.id;
+
+    if (isAdmin) {
+      if (selPiloto) {
+        if (selPiloto.options.length === 0) {
+          const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+          const pilotos = users.filter(u => u.perfil === 'piloto' || u.tambem_e_piloto);
+          
+          if (!pilotos.find(p => p.id === sessao.id) && pilotos.length > 0) {
+            targetUserId = pilotos[0].id;
+          }
+          selPiloto.innerHTML = pilotos.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+          selPiloto.value = targetUserId;
+          
+          selPiloto.addEventListener('change', () => renderResumo());
+        } else {
+          targetUserId = selPiloto.value;
+        }
+        selPiloto.style.display = 'inline-block';
+      }
+    } else {
+      if (selPiloto) selPiloto.style.display = 'none';
+    }
+
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const user = users.find(u => u.id === targetUserId) || sessao;
+    const ext = user.extras || {};
+
+    const tituloEl = document.getElementById('pilTituloLicencas');
+    if (tituloEl) {
+      if (isAdmin && user.id !== sessao.id) {
+        tituloEl.textContent = `📋 Habilitações de ${user.nome.split(' ')[0]}`;
+      } else {
+        tituloEl.textContent = '📋 Minhas Habilitações e Licenças';
+      }
+    }
+    
+    const levelIcao = ext['icao_level'];
+    const labelIcao = levelIcao ? `Habilitação ICAO (LEVEL ${levelIcao})` : 'Habilitação ICAO';
+    
+    const defaults = [
+      { key: 'cma', nome: 'CMA', label: 'Certificado Médico Aeronáutico' },
+      { key: 'ifr', nome: 'IFR', label: 'Habilitação IFR' },
+      { key: 'mnte', nome: 'MNTE', label: 'Habilitação MNTE' },
+      { key: 'mlte', nome: 'MLTE', label: 'Habilitação MLTE' },
+      { key: 'inva', nome: 'INVA', label: 'Habilitação INVA' },
+      { key: 'icao', nome: 'ICAO', label: labelIcao },
+      { key: 'simulador', nome: 'Simulador', label: 'Simulador de Voo' }
+    ];
+    const customs = ext.custom_licencas || [];
+    const hidden = ext.hidden_licencas || [];
+    
+    // Mostra apenas as licenças que NÃO estão ocultas E que JÁ TÊM uma data de validade
+    const licencas = [...defaults, ...customs].filter(l => !hidden.includes(l.key) && ext['validade_' + l.key]);
+
+    // Se a lista ficar vazia (ex: nenhum PDF importado ainda)
+    if (licencas.length === 0) {
+      box.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><span style="font-size:32px;display:block;margin-bottom:12px">📄</span><span class="hint">Nenhuma licença cadastrada.<br>Importe o PDF da ANAC para começar.</span></div>';
+      return;
+    }
+    
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px">';
+    licencas.forEach(l => {
+      const dataValidade = ext['validade_' + l.key] || '';
+      const aviso = ext['aviso_' + l.key] || 30;
+      const notif = ext['notif_' + l.key] !== false;
+      
+      let status = 'Não informado';
+      let cor = 'var(--muted)';
+      if (dataValidade) {
+        const dias = Math.floor((new Date(dataValidade + 'T00:00:00') - new Date()) / 86400000);
+        if (dias < 0) { status = 'VENCIDO'; cor = 'var(--red)'; }
+        else if (dias <= aviso) { status = dias + ' dias restantes'; cor = 'var(--yellow)'; }
+        else { status = 'Válido'; cor = 'var(--green)'; }
+      }
+      
+      const obs = (l.key === 'cma' && ext['cma_obs']) ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.2">Obs: ${esc(ext['cma_obs'])}</div>` : '';
+
+      html += `<div style="background:var(--card);border:1px solid var(--line);border-left:3px solid ${cor};border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <span style="font-size:10px;font-weight:800;color:${cor};text-transform:uppercase">${l.nome}</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer">
+              <input type="checkbox" onchange="window.__pilAlterarNotif('${l.key}', this.checked)" ${notif ? 'checked' : ''}> Alerta
+            </label>
+            <button onclick="window.__pilRemoverLicenca('${l.key}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0" title="Remover do painel">🗑️</button>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:700">${l.label}</div>
+        ${obs}
+        <input type="date" value="${dataValidade}" onchange="window.__pilSalvarData('${l.key}', this.value)" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:6px;border-radius:6px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span style="font-size:11px;color:${cor};font-weight:700">${status}</span>
+          <select onchange="window.__pilSalvarAviso('${l.key}', this.value)" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:4px;border-radius:4px;font-size:11px">
+            <option value="30" ${aviso === 30 ? 'selected' : ''}>30d</option>
+            <option value="60" ${aviso === 60 ? 'selected' : ''}>60d</option>
+            <option value="90" ${aviso === 90 ? 'selected' : ''}>90d</option>
+            <option value="120" ${aviso === 120 ? 'selected' : ''}>120d</option>
+          </select>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    
+    box.innerHTML = html;
+  }
+
+  // ========== UPLOAD E PREVIEW DE DOCUMENTOS ==========
+
+  window.__pilAbrirPreview = function(url, nome, tipo) {
+    document.getElementById('pilPreviewTitle').textContent = nome;
+    document.getElementById('pilPreviewDownload').href = url;
+    
+    const container = document.getElementById('pilPreviewContent');
+    if (tipo === 'pdf') {
+      container.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`;
+    } else {
+      container.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:auto;"><img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`;
+    }
+    document.getElementById('pilPreviewModal').classList.add('is-open');
+  };
+
+  // ---- UPLOAD ----
+  let __pastaUploadAtual = null;
+
+  window.__pilAbrirUpload = function(pastaId) {
+    __pastaUploadAtual = pastaId;
+    document.getElementById('pilUploadFile').value = '';
+    document.getElementById('pilUploadNome').value = '';
+    document.getElementById('pilUploadModal').classList.add('is-open');
+  };
+
+  window.__pilExecutarUpload = async function() {
+    const file = document.getElementById('pilUploadFile').files[0];
+    let nomeCustom = document.getElementById('pilUploadNome').value.trim();
+    
+    if (!file) { alert('Selecione um arquivo.'); return; }
+    if (!nomeCustom) { nomeCustom = file.name; } // Fallback para o nome original
+    
+    const btn = document.getElementById('pilUploadSalvar');
+    btn.innerHTML = 'Enviando...';
+    btn.disabled = true;
+
+    try {
+      const sb = getSupabase();
+      if (!sb) throw new Error("Supabase indisponível");
+      
+      const ext = file.name.split('.').pop().toLowerCase();
+      const tipo = ext === 'pdf' ? 'pdf' : 'imagem';
+      const filename = __pastaUploadAtual + '/' + Date.now() + '.' + ext;
+      
+      const { error } = await sb.storage.from('documentos').upload(filename, file, { upsert: true });
+      if (error) throw error;
+      
+      const { data: urlData } = sb.storage.from('documentos').getPublicUrl(filename);
+      
+      const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      const idx = pastas.findIndex(p => p.id === __pastaUploadAtual);
+      if (idx >= 0) {
+        pastas[idx].arquivos.push({ nome: nomeCustom, url: urlData.publicUrl, tipo: tipo, path: filename });
+        localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+        await sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: pastas });
+        renderPastasDocumentos();
+      }
+      document.getElementById('pilUploadModal').classList.remove('is-open');
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao enviar arquivo: " + err.message);
+    } finally {
+      btn.innerHTML = 'Enviar Arquivo';
+      btn.disabled = false;
+    }
+  };
+
+  // ---- EXCLUSÃO ----
+  window.__pilExcluirPasta = async function(pastaId) {
+    if (!confirm("Tem certeza que deseja apagar esta pasta inteira e todos os seus arquivos?")) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    
+    try {
+      const sb = getSupabase();
+      const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      const p = pastas.find(x => x.id === pastaId);
+      
+      if (p && p.arquivos.length && sb) {
+         const paths = p.arquivos.map(a => a.path).filter(Boolean);
+         if (paths.length) await sb.storage.from('documentos').remove(paths);
+      }
+      
+      const novasPastas = pastas.filter(x => x.id !== pastaId);
+      localStorage.setItem('dv.documentos.v1', JSON.stringify(novasPastas));
+      if (sb) await sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: novasPastas });
+      renderPastasDocumentos();
+    } catch(e) { console.error(e); alert("Erro ao apagar pasta."); }
+  };
+
+  window.__pilExcluirArquivo = async function(pastaId, url, path) {
+    if (!confirm("Apagar este arquivo?")) return;
+    try {
+      const sb = getSupabase();
+      if (sb && path) await sb.storage.from('documentos').remove([path]);
+      
+      const pastas = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      const idx = pastas.findIndex(p => p.id === pastaId);
+      if (idx >= 0) {
+        pastas[idx].arquivos = pastas[idx].arquivos.filter(a => a.url !== url);
+        localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+        if (sb) await sb.from('kv_store').upsert({ key: 'dv.documentos.v1', value: pastas });
+        renderPastasDocumentos();
+      }
+    } catch(e) { console.error(e); alert("Erro ao apagar arquivo."); }
+  };
+
+
+  window.__pilRemoverLicenca = function(key) {
+    if (!confirm("Tem certeza que deseja remover esta habilitação do painel? (Se você importar um novo PDF, ela voltará a aparecer).")) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === targetUserId);
+    if (idx < 0) return;
+
+    users[idx].extras = users[idx].extras || {};
+    const ext = users[idx].extras;
+    
+    const isCustom = (ext.custom_licencas || []).some(l => l.key === key);
+    if (isCustom) {
+        ext.custom_licencas = ext.custom_licencas.filter(l => l.key !== key);
+    } else {
+        ext.hidden_licencas = ext.hidden_licencas || [];
+        if (!ext.hidden_licencas.includes(key)) ext.hidden_licencas.push(key);
+    }
+
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('users').update({ extras: ext }).eq('id', targetUserId).then();
+    } catch(e) {}
+    
+    renderResumo();
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  };
+
+  window.__pilAdicionarManual = function() {
+    const nome = document.getElementById('pilAddName').value.trim();
+    const data = document.getElementById('pilAddDate').value;
+    if (!nome) { alert("Digite o nome da habilitação."); return; }
+
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === targetUserId);
+    if (idx < 0) return;
+
+    users[idx].extras = users[idx].extras || {};
+    const ext = users[idx].extras;
+    
+    ext.custom_licencas = ext.custom_licencas || [];
+    const newKey = 'custom_' + Date.now();
+    ext.custom_licencas.push({ key: newKey, nome: nome.toUpperCase(), label: 'Habilitação ' + nome });
+    
+    if (data) ext['validade_' + newKey] = data;
+    ext['aviso_' + newKey] = 30;
+    ext['notif_' + newKey] = true;
+
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('users').update({ extras: ext }).eq('id', targetUserId).then();
+    } catch(e) {}
+
+    document.getElementById('pilAddModal').classList.remove('is-open');
+    document.getElementById('pilAddName').value = '';
+    document.getElementById('pilAddDate').value = '';
+    
+    renderResumo();
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  };
+
+  // Funções globais para os inputs do card
+  window.__pilSalvarData = function(key, val) { 
+    salvarExtra('validade_' + key, val); 
+    renderResumo(); // <-- Atualiza o card na hora!
+  };
+  window.__pilSalvarAviso = function(key, val) { 
+    salvarExtra('aviso_' + key, Number(val)); 
+    renderResumo(); // <-- Atualiza o card na hora!
+  };
+  window.__pilAlterarNotif = function(key, val) { 
+    salvarExtra('notif_' + key, val); 
+    renderResumo(); // <-- Atualiza o card na hora!
+  };
+
+  function salvarExtra(chave, valor) {
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === targetUserId);
+    if (idx < 0) return;
+    users[idx].extras = users[idx].extras || {};
+    users[idx].extras[chave] = valor;
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    
+    // Sync com Supabase em background
+    try {
+      const sb = getSupabase();
+      if (sb) sb.from('users').update({ extras: users[idx].extras }).eq('id', targetUserId).then();
+    } catch(e) {}
+    
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  }
+
+  function abrirModalPdf() {
+    const modal = document.getElementById('pilPdfModal');
+    if (modal) modal.classList.add('is-open');
+    if (document.getElementById('pilPdfFile')) document.getElementById('pilPdfFile').value = '';
+    if (document.getElementById('pilPdfResultado')) document.getElementById('pilPdfResultado').innerHTML = '';
+    dadosExtraidos = null;
+    if (document.getElementById('pilPdfSalvar')) document.getElementById('pilPdfSalvar').disabled = true;
+  }
+
+  async function onFileChange(e) {
+    const file = e.target.files?.[0];
+    
+    // Atualiza o nome do arquivo na tela
+    const nomeEl = document.getElementById('pilPdfFileName');
+    if (nomeEl) nomeEl.textContent = file ? file.name : 'Nenhum arquivo selecionado';
+    
+    if (!file) return;
+    const resultadoBox = document.getElementById('pilPdfResultado');
+    resultadoBox.innerHTML = '<p class="hint">Lendo PDF...</p>';
+    try {
+      const texto = await extrairTextoPdf(file);
+      // Se o texto for muito curto, o PDF é uma imagem
+      if (!texto || texto.trim().length < 50) {
+        document.getElementById('pilPdfResultado').innerHTML = `
+          <div style="background:rgba(255,90,95,.1);border-left:3px solid var(--red);padding:12px;border-radius:6px;margin-top:12px">
+            <p style="margin:0;font-size:12px;color:var(--red);font-weight:700">⚠️ Este PDF foi salvo como imagem.</p>
+            <p style="margin:4px 0 0;font-size:11px;color:var(--text)">Não foi possível ler o texto.<br>Por favor, baixe novamente pelo Google Chrome (<b>Ctrl+P → Salvar como PDF</b>) ou preencha as datas manualmente clicando em <b>"+ Adicionar Manual"</b>.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const datas = extrairDatas(texto);
+      console.log("=== TEXTO EXTRAÍDO DO PDF ===");
+      console.log(texto);
+      console.log("=== DATAS ENCONTRADAS ===");
+      console.log(datas);
+      dadosExtraidos = datas;
+      let html = '<div style="background:var(--bg);padding:12px;border-radius:8px;margin-top:12px">';
+      html += '<p style="margin:0 0 8px;font-size:12px;font-weight:700">Datas encontradas:</p>';
+      const labels = { cma: 'CMA', ifr: 'IFR', mnte: 'MNTE', mlte: 'MLTE', inva: 'INVA', icao: 'ICAO', simulador: 'Simulador' };
+      let achou = false;
+      for (const [k, v] of Object.entries(datas)) {
+        if (k.endsWith('_level') || k === 'cma_obs') continue; // Ignora o level e a obs no loop
+        if (v) {
+          achou = true;
+          let extra = '';
+          if (k === 'icao' && datas.icao_level) extra = ` <b style="color:var(--green)">(LEVEL ${datas.icao_level})</b>`;
+          
+          let obsText = '';
+          if (k === 'cma' && datas.cma_obs) {
+            obsText = ` <span style="color:var(--muted);font-size:11px">(Obs: ${esc(datas.cma_obs)})</span>`;
+          }
+          
+          html += `<p style="margin:4px 0;font-size:12px">✅ ${labels[k]}: <b>${v.split('-').reverse().join('/')}</b>${extra}${obsText}</p>`;
+        }
+      }
+      if (datas.icao_level !== undefined && datas.icao_level !== null && datas.icao_level < 4) {
+        achou = true;
+        html += `<p style="margin:4px 0;font-size:12px;color:var(--red);font-weight:700">❌ ICAO: Nível ${datas.icao_level} (Abaixo de 4) — Não será monitorado.</p>`;
+      }
+      if (!datas.mnte) {
+        html += `<p style="margin:6px 0 0;font-size:11px;color:var(--yellow);font-weight:700">⚠️ O MNTE não foi encontrado no PDF (a IA pode ter pulado a linha). Adicione manualmente se necessário.</p>`;
+      }
+      if (!achou) html += '<p class="hint">Nenhuma data reconhecida. Verifique o PDF ou adicione manualmente.</p>';
+      html += '</div>';
+      resultadoBox.innerHTML = html;
+      if (achou) document.getElementById('pilPdfSalvar').disabled = false;
+    } catch (err) {
+      console.error(err);
+      resultadoBox.innerHTML = '<p style="color:var(--red)">Erro ao ler PDF: ' + err.message + '</p>';
+    }
+  }
+
+  async function salvarDatas() {
+    if (!dadosExtraidos) return;
+    const sessao = (typeof Session !== 'undefined' && Session.get) ? Session.get() : null;
+    if (!sessao) return;
+    
+    let targetUserId = sessao.id;
+    const isAdmin = sessao.perfil === 'admin';
+    const selPiloto = document.getElementById('pilSelectPiloto');
+    if (isAdmin && selPiloto && selPiloto.style.display !== 'none') {
+      targetUserId = selPiloto.value;
+    }
+
+    const users = JSON.parse(localStorage.getItem('dv.users.v1') || '[]');
+    const idx = users.findIndex(u => u.id === targetUserId);
+    if (idx < 0) return;
+
+    users[idx].extras = users[idx].extras || {};
+    const ext = users[idx].extras;
+    ext.hidden_licencas = ext.hidden_licencas || [];
+
+    for (const [k, v] of Object.entries(dadosExtraidos)) {
+      if (k.endsWith('_level')) continue; // Tratado separadamente
+      if (v) {
+        ext['validade_' + k] = v;
+        ext['aviso_' + k] = ext['aviso_' + k] || 30;
+        ext['notif_' + k] = true;
+        ext.hidden_licencas = ext.hidden_licencas.filter(key => key !== k);
+      }
+    }
+    
+    // Salva a observação do CMA
+    if (dadosExtraidos.cma_obs) {
+      ext['cma_obs'] = dadosExtraidos.cma_obs;
+    }
+
+    // Regra especial para o ICAO
+    if (dadosExtraidos.icao_level !== undefined) {
+      ext['icao_level'] = dadosExtraidos.icao_level;
+      if (dadosExtraidos.icao_level < 4) {
+        if (!ext.hidden_licencas.includes('icao')) ext.hidden_licencas.push('icao');
+      } else {
+        ext.hidden_licencas = ext.hidden_licencas.filter(key => key !== 'icao');
+      }
+    }
+
+    localStorage.setItem('dv.users.v1', JSON.stringify(users));
+    try {
+      const sb = getSupabase();
+      if (sb) await sb.from('users').update({ extras: ext }).eq('id', targetUserId);
+    } catch(e) { console.warn('Erro ao salvar no Supabase', e); }
+
+    alert('Licenças atualizadas com sucesso!');
+    document.getElementById('pilPdfModal').classList.remove('is-open');
+    renderResumo();
+    if (typeof renderCurrentPage === 'function') setTimeout(() => renderCurrentPage(), 100);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Navegação unificada das abas
+    window.mudarAbaPiloto = function(aba) {
+      const views = {
+        'visao': 'pilViewVisaoGeral',
+        'escala': 'pilViewEscala',
+        'disp': 'pilViewDisp',
+        'licencas': 'pilViewLicencas'
+      };
+      
+      const btns = {
+        'visao': 'pilTabVisao',
+        'escala': 'pilTabEscala',
+        'disp': 'pilTabDisp',
+        'licencas': 'pilTabLicencas'
+      };
+
+      // Esconde todas as views e tira o ativo de todos os botões
+      Object.values(views).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = true;
+      });
+      Object.values(btns).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('is-active');
+      });
+
+      // Mostra a view correta e ativa o botão
+      const viewAtiva = document.getElementById(views[aba]);
+      if (viewAtiva) viewAtiva.hidden = false;
+      const btnAtivo = document.getElementById(btns[aba]);
+      if (btnAtivo) btnAtivo.classList.add('is-active');
+
+      // Lógicas extras de cada aba
+      if (aba === 'visao') {
+        renderVisaoGeral();
+        renderPastasDocumentos();
+      }
+      if (aba === 'licencas') {
+        renderResumo();
+      }
+    };
+
+    // Vincula os botões à função unificada
+    document.getElementById('pilTabVisao').addEventListener('click', () => window.mudarAbaPiloto('visao'));
+    document.getElementById('pilTabEscala').addEventListener('click', () => window.mudarAbaPiloto('escala'));
+    document.getElementById('pilTabDisp').addEventListener('click', () => window.mudarAbaPiloto('disp'));
+    document.getElementById('pilTabLicencas').addEventListener('click', () => window.mudarAbaPiloto('licencas'));
+
+    // Define a aba inicial como Visão Geral
+    window.mudarAbaPiloto('visao');
+
+    // Quando a aba de pilotos for aberta, renderiza o resumo
+
+
+    const btnImportar = document.getElementById('pilImportarPdfBtn');
+    if (btnImportar) btnImportar.addEventListener('click', abrirModalPdf);
+
+    const btnAddManual = document.getElementById('pilAddManualBtn');
+    if (btnAddManual) btnAddManual.addEventListener('click', () => {
+       document.getElementById('pilAddModal').classList.add('is-open');
+    });
+
+    // NOVO: Eventos das Pastas
+    const btnNovaPasta = document.getElementById('vgBtnNovaPasta');
+    if (btnNovaPasta) btnNovaPasta.addEventListener('click', abrirModalPasta);
+    
+    const selPriv = document.getElementById('pilPastaPrivacidade');
+    if (selPriv) selPriv.addEventListener('change', (e) => {
+      document.getElementById('pilPastaCustomWrap').style.display = (e.target.value === 'custom') ? '' : 'none';
+    });
+
+    const btnSalvarPasta = document.getElementById('pilPastaSalvar');
+    if (btnSalvarPasta) btnSalvarPasta.addEventListener('click', salvarPasta);
+
+    const btnExecutarUpload = document.getElementById('pilUploadSalvar');
+    if (btnExecutarUpload) btnExecutarUpload.addEventListener('click', window.__pilExecutarUpload);
+
+    // Renderiza a visão geral e as pastas
+    const btnVisaoInicial = document.getElementById('pilTabVisao');
+    if (btnVisaoInicial) {
+        btnVisaoInicial.addEventListener('click', () => {
+          renderVisaoGeral();
+          renderPastasDocumentos();
+        });
+    }
+
+    // --- Mecanismo de Auto-load (espera os dados do Supabase chegarem) ---
+    window.atualizarTelaPiloto = function() {
+      if (document.getElementById('vgCompliance')) {
+        renderVisaoGeral();
+        renderPastasDocumentos();
+      }
+    };
+
+    // 1. Tenta carregar assim que os dados da nuvem forem atualizados
+    window.addEventListener('sessionUpdated', () => {
+        setTimeout(window.atualizarTelaPiloto, 200);
+    });
+    window.addEventListener('cloudUpdated', () => {
+        setTimeout(window.atualizarTelaPiloto, 200);
+    });
+
+    // 2. Tenta carregar ao navegar para a aba de pilotos
+    window.addEventListener('hashchange', () => {
+        if (location.hash === '#/piloto' || location.hash === '#/agenda') {
+            setTimeout(window.atualizarTelaPiloto, 300);
+        }
+    });
+
+    // 3. Retry Loop: Fica tentando por 15 segundos até o usuário, a sessão E a agenda carregarem
+    let _tentativasLoad = 0;
+    const _loopLoad = setInterval(() => {
+        _tentativasLoad++;
+        const sessaoOk = (typeof Session !== 'undefined' && Session.get);
+        const usersOk = JSON.parse(localStorage.getItem('dv.users.v1') || '[]').length > 0;
+        const agendaOk = (typeof Agenda !== 'undefined' && Agenda.getEventos) ? Agenda.getEventos().length > 0 : false;
+        
+        if (sessaoOk && usersOk) {
+            window.atualizarTelaPiloto();
+            if (agendaOk) {
+                clearInterval(_loopLoad); // Só para o loop se a agenda também já carregou
+            }
+        } else if (_tentativasLoad > 30) {
+            clearInterval(_loopLoad);
+            console.warn("[Pilotos] Desistindo de aguardar dados após 15s");
+        }
+    }, 500);
+    
+    const btnAddSalvar = document.getElementById('pilAddSalvar');
+    if (btnAddSalvar) btnAddSalvar.addEventListener('click', window.__pilAdicionarManual);
+
+    const fileInput = document.getElementById('pilPdfFile');
+    if (fileInput) fileInput.addEventListener('change', onFileChange);
+
+    const btnSalvar = document.getElementById('pilPdfSalvar');
+    if (btnSalvar) btnSalvar.addEventListener('click', salvarDatas);
+  });
+})();
+</script>
 </body>
 
 
