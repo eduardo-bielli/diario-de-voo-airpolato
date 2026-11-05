@@ -9737,7 +9737,7 @@ const Agenda = (() => {
           if (!tipo) continue;
           const p = Users.get().find(u => u.id === c.id);
           const nomeP = p?.nome || "piloto";
-          const label = tipo === "folga" ? "folga" : "treinamento";
+          const label = tipo === "folga" ? "folga" : (tipo === "treinamento" ? "treinamento" : "revalidação");
           el.className = "aviso-conflito aviso-conflito--warn is-open";
           el.innerHTML = '<strong>⛔ Piloto indisponível</strong>'
             + 'O <b>' + esc(c.role) + '</b> <b>' + esc(nomeP) + '</b> está em <b>' + esc(label) + '</b> no dia <b>' + formatDDMM(dataRef) + '</b>.'
@@ -11098,7 +11098,18 @@ const Agenda = (() => {
     const podeAlterarPilotos = (perfilForm === "admin" || perfilForm === "piloto");
     if (secPilotos) secPilotos.style.display = "";
     if (selP1 && selP2) {
-      const pilotos = (Users.pilotos ? Users.pilotos() : (Users.pilotos ? Users.pilotos() : Users.get().filter(u => u.perfil === "piloto" && u.ativo !== false)));
+      let pilotos = (Users.pilotos ? Users.pilotos() : Users.get().filter(u => u.perfil === "piloto" && u.ativo !== false));
+      const _tailFiltro = g("evAeronave")?.value;
+      if (_tailFiltro) {
+          try {
+              const _rawTrip = localStorage.getItem("dv.tripulacao.v1");
+              const _listTrip = _rawTrip ? JSON.parse(_rawTrip) : [];
+              const _idsPermitidos = _listTrip.filter(x => String(x.aeronave_tail || x.tail) === String(_tailFiltro)).map(x => String(x.piloto_id || x.pilotoId));
+              if (_idsPermitidos.length > 0) {
+                  pilotos = pilotos.filter(u => _idsPermitidos.includes(String(u.id)));
+              }
+          } catch(e) {}
+      }
       /* Data de referência pro cálculo (primeiro trecho) */
       const dataRef = (formTrechos[0]?.data) || new Date().toISOString().slice(0,10);
       /* Verifica disponibilidade de cada piloto */
@@ -11108,12 +11119,12 @@ const Agenda = (() => {
       };
       const optP1 = pilotos.map(u => {
         const ind = estaIndisp(u.id);
-        const label = esc(u.nome) + (ind === "folga" ? " ⚠ (folga)" : ind === "treinamento" ? " ⚠ (treinamento)" : "");
+        const label = esc(u.nome) + (ind === "folga" ? " ⚠ (folga)" : (ind === "treinamento" ? " ⚠ (treinamento)" : (ind === "revalidacao" ? " ⚠ (revalidação)" : "")));
         return '<option value="'+esc(u.id)+'"'+(ind?" disabled style=\"color:#ff8b8e\"":"")+'>'+label+'</option>';
       }).join("");
       const optP2 = pilotos.map(u => {
         const ind = estaIndisp(u.id);
-        const label = esc(u.nome) + (ind === "folga" ? " ⚠ (folga)" : ind === "treinamento" ? " ⚠ (treinamento)" : "");
+        const label = esc(u.nome) + (ind === "folga" ? " ⚠ (folga)" : (ind === "treinamento" ? " ⚠ (treinamento)" : (ind === "revalidacao" ? " ⚠ (revalidação)" : "")));
         return '<option value="'+esc(u.id)+'"'+(ind?" disabled style=\"color:#ff8b8e\"":"")+'>'+label+'</option>';
       }).join("");
       selP1.innerHTML = '<option value="">— Piloto a definir —</option>' + optP1;
@@ -11188,15 +11199,55 @@ const Agenda = (() => {
     const selP1 = g("evPilotoP1");
     const selP2 = g("evPilotoP2");
     if (!selP1 || !selP2) return;
+
+    // --- NOVO: FILTRAR PILOTOS POR AERONAVE ---
+    let pilotosAll = (Users.pilotos ? Users.pilotos() : Users.get().filter(u => u.perfil === "piloto" && u.ativo !== false));
+    try {
+        const rawTrip = localStorage.getItem("dv.tripulacao.v1");
+        const listTrip = rawTrip ? JSON.parse(rawTrip) : [];
+        const idsPermitidos = listTrip.filter(x => String(x.aeronave_tail || x.tail) === String(tail)).map(x => String(x.piloto_id || x.pilotoId));
+        if (idsPermitidos.length > 0) {
+            pilotosAll = pilotosAll.filter(u => idsPermitidos.includes(String(u.id)));
+        }
+    } catch(e) { console.warn("[Filtro Pilotos]", e); }
+
+    const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+    const estaIndisp = (uid) => {
+        if (typeof Disponibilidade === "undefined" || !Disponibilidade.pilotoIndisponivel) return null;
+        return Disponibilidade.pilotoIndisponivel(uid, dataRef);
+    };
+
+    const optP1 = pilotosAll.map(u => {
+        const ind = estaIndisp(u.id);
+        const label = esc(u.nome) + (ind === "folga" ? " ⚠ (folga)" : (ind === "treinamento" ? " ⚠ (treinamento)" : (ind === "revalidacao" ? " ⚠ (revalidação)" : "")));
+        return '<option value="'+esc(u.id)+'"'+(ind?" disabled style=\"color:#ff8b8e\"":"")+'>'+label+'</option>';
+    }).join("");
+    const optP2 = pilotosAll.map(u => {
+        const ind = estaIndisp(u.id);
+        const label = esc(u.nome) + (ind === "folga" ? " ⚠ (folga)" : (ind === "treinamento" ? " ⚠ (treinamento)" : (ind === "revalidacao" ? " ⚠ (revalidação)" : "")));
+        return '<option value="'+esc(u.id)+'"'+(ind?" disabled style=\"color:#ff8b8e\"":"")+'>'+label+'</option>';
+    }).join("");
+
+    const oldP1 = selP1.value;
+    const oldP2 = selP2.value;
+
+    selP1.innerHTML = '<option value="">— Piloto a definir —</option>' + optP1;
+    selP2.innerHTML = '<option value="">— Sem copiloto —</option>' + optP2;
+
+    if (oldP1 && pilotosAll.some(u => String(u.id) === oldP1)) selP1.value = oldP1;
+    if (oldP2 && pilotosAll.some(u => String(u.id) === oldP2)) selP2.value = oldP2;
+    // --- FIM DO FILTRO ---
+
     if (typeof Tripulacao === "undefined" || !Tripulacao.buscarPiloto) return;
     const a1 = Tripulacao.buscarPiloto(tail, dataRef, "P1");
     const a2 = Tripulacao.buscarPiloto(tail, dataRef, "P2");
+    
     selP1.value = a1 ? a1.piloto_id : "";
     selP2.value = a2 ? a2.piloto_id : "";
-    /* Dispara change pra qualquer listener do select reagir (avisos, conflitos) */
+
     try { selP1.dispatchEvent(new Event("change", { bubbles: true })); } catch(e){}
     try { selP2.dispatchEvent(new Event("change", { bubbles: true })); } catch(e){}
-    /* Atualiza aviso */
+
     const info = g("evPilotoInfo");
     const perfil = Session.get().perfil;
     const podeAlterar = (perfil === "admin" || perfil === "piloto" || (Session.get().tambem_e_piloto === true));
@@ -11212,7 +11263,6 @@ const Agenda = (() => {
         info.textContent = "";
       }
     }
-    /* Atualiza aviso de conflito/folga imediatamente após preencher P1/P2 */
     try { if (typeof atualizarAvisoConflito === "function") atualizarAvisoConflito(); } catch(e){}
   }
 
@@ -17144,7 +17194,8 @@ const Disponibilidade = (() => {
         const temFolga = !!dados.folgas[uid + "::" + data];
         const temTrein = dados.treinamentos && !!dados.treinamentos[uid + "::" + data];
         const temReval = dados.revalidacao && !!dados.revalidacao[uid + "::" + data];
-        const checked = (temFolga || temTrein || temReval) ? "checked" : "";
+        // CORREÇÃO: Sempre inicia desmarcado ao abrir o dia (novo agendamento)
+        const checked = "";
         const tag = temFolga ? " \ud83d\udfe1" : (temTrein ? " \ud83d\udd35" : (temReval ? " \ud83d\udfe3" : ""));
         return '<label style="display:flex;align-items:center;gap:10px;padding:8px;cursor:pointer;border-bottom:1px solid var(--line)">'
           + '<input type="checkbox" class="folgaPilotoChk" value="' + esc(uid) + '" ' + checked + '>'
@@ -17189,16 +17240,9 @@ const Disponibilidade = (() => {
         const k = window.__editUid + "::" + data;
         temAlgo = (window.__editTipo === 'folga' && dados.folgas[k]) || (window.__editTipo === 'treinamento' && dados.treinamentos && dados.treinamentos[k]) || (window.__editTipo === 'revalidacao' && dados.revalidacao && dados.revalidacao[k]);
     } else {
-        if (ehAdmin) {
-          temAlgo = Object.keys(dados.folgas).some(k => k.endsWith("::" + data))
-            || (dados.treinamentos && Object.keys(dados.treinamentos).some(k => k.endsWith("::" + data)))
-            || (dados.revalidacao && Object.keys(dados.revalidacao).some(k => k.endsWith("::" + data)));
-        } else {
-          const temFolga = !!dados.folgas[me.id + "::" + data];
-          const temTrein = dados.treinamentos && !!dados.treinamentos[me.id + "::" + data];
-          const temReval = dados.revalidacao && !!dados.revalidacao[me.id + "::" + data];
-          temAlgo = temFolga || temTrein || temReval;
-        }
+        // CORREÇÃO: Ao clicar no fundo do dia para criar um NOVO agendamento,
+        // não deve carregar os dados anteriores (só quando clicar no nome do piloto).
+        temAlgo = false;
     }
     g("folgaDeleteBtn").hidden = !temAlgo;
 
@@ -17268,16 +17312,9 @@ const Disponibilidade = (() => {
               }
           }
       } else {
-          const d1 = new Date(ini + "T00:00:00");
-          const d2 = new Date(fim + "T00:00:00");
-          for (let d = new Date(d1); d <= d2; d.setDate(d.getDate() + 1)) {
-              const data = ymd(d);
-              for (const uid of uids) {
-                  delete dados.folgas[uid + "::" + data];
-                  delete dados.treinamentos[uid + "::" + data];
-                  delete dados.revalidacao[uid + "::" + data];
-              }
-          }
+          // REMOVIDO: Não deletamos os eventos antigos aqui.
+          // Agora o sistema permite múltiplos eventos por dia (ex: Treinamento + Revalidação).
+          // Para remover um evento específico, use o modo de edição (clicando no nome do piloto).
       }
 
       const n1 = new Date(ini + "T00:00:00");
@@ -17360,6 +17397,7 @@ const Disponibilidade = (() => {
     if (!userId || !data) return null;
     if (dados.folgas && dados.folgas[userId + "::" + data]) return "folga";
     if (dados.treinamentos && dados.treinamentos[userId + "::" + data]) return "treinamento";
+    if (dados.revalidacao && dados.revalidacao[userId + "::" + data]) return "revalidacao";
     return null;
   }
 
