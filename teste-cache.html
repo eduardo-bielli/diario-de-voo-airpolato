@@ -4944,6 +4944,7 @@ body.is-booting .app {
           </label>
           <span id="thEnvelopeStatus" title="Selecione uma empresa" style="font-size:18px;line-height:1;cursor:help">⚪</span>
           <button type="button" class="btn btn--secondary" id="thBtnEnviar" disabled style="font-size:12px;padding:6px 12px;opacity:.5;cursor:not-allowed" title="Gerar envelope com lançamentos pendentes">📤 Enviar</button>
+          <button type="button" class="btn btn--secondary" id="thBtnHistorico" style="font-size:12px;padding:6px 12px;display:none" title="Ver envelopes já gerados">📋 Histórico</button>
           <button type="button" class="btn btn--secondary" id="thBtnReceber" style="font-size:12px;padding:6px 12px" title="Receber envelope de outra empresa">📥 Receber</button>
         </div>
         <div id="thDashboard" style="padding:16px 20px;border-bottom:1px solid var(--line)">
@@ -18776,19 +18777,27 @@ const TrocaHoras = (() => {
     if (modal) modal.classList.add("is-open");
   }
 
-function atualizarStatusEnvelope() {
+function _temEnvelopesParaEmpresa(empId) {
+    try {
+      const envelopes = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopes.v1") || "[]");
+      return envelopes.some(e => e.to_company && String(e.to_company.empresa_id) === String(empId));
+    } catch(e) { return false; }
+  }
+  
+  function atualizarStatusEnvelope() {
     const statusEl = document.getElementById("thEnvelopeStatus");
     const btnEnviar = document.getElementById("thBtnEnviar");
+    const btnHistorico = document.getElementById("thBtnHistorico");
+    const btnReceber = document.getElementById("thBtnReceber");
     if (!statusEl || !btnEnviar) return;
     
     const empId = _thEmpresaFiltroId();
     
     if (!empId) {
-      statusEl.textContent = "⚪";
-      statusEl.title = "Selecione uma empresa para ver o status";
-      btnEnviar.disabled = true;
-      btnEnviar.style.opacity = ".5";
-      btnEnviar.style.cursor = "not-allowed";
+      statusEl.style.display = "none";
+      btnEnviar.style.display = "none";
+      if (btnHistorico) btnHistorico.style.display = "none";
+      if (btnReceber) btnReceber.style.display = "none";
       return;
     }
     
@@ -18798,29 +18807,102 @@ function atualizarStatusEnvelope() {
     });
     
     const pendentes = lancamentos.filter(l => l.enviado === false);
+    const temEnvelopes = _temEnvelopesParaEmpresa(empId);
     
     if (!lancamentos.length) {
-      statusEl.textContent = "⚪";
-      statusEl.title = "Nenhum lançamento com esta empresa";
-      btnEnviar.disabled = true;
-      btnEnviar.style.opacity = ".5";
-      btnEnviar.style.cursor = "not-allowed";
-    } else if (pendentes.length === 0) {
+      statusEl.style.display = "none";
+      btnEnviar.style.display = "none";
+      if (btnHistorico) btnHistorico.style.display = "none";
+      if (btnReceber) btnReceber.style.display = "none";
+      return;
+    }
+    
+    statusEl.style.display = "";
+    if (btnReceber) btnReceber.style.display = "";
+    
+    if (pendentes.length === 0) {
       statusEl.textContent = "🟢";
       statusEl.title = "Tudo sincronizado — " + lancamentos.length + " lançamento(s) já enviado(s)";
-      btnEnviar.disabled = true;
-      btnEnviar.style.opacity = ".5";
-      btnEnviar.style.cursor = "not-allowed";
+      btnEnviar.style.display = "none";
+      if (btnHistorico) btnHistorico.style.display = temEnvelopes ? "" : "none";
     } else {
       statusEl.textContent = "🟡";
       statusEl.title = pendentes.length + " pendente(s) de envio (de " + lancamentos.length + " total)";
+      btnEnviar.style.display = "";
       btnEnviar.disabled = false;
       btnEnviar.style.opacity = "1";
       btnEnviar.style.cursor = "pointer";
+      if (btnHistorico) btnHistorico.style.display = temEnvelopes ? "" : "none";
     }
   }
+  
+  function abrirHistoricoEnvelopes(empId) {
+    injectModalEnvelope();
+    // Ajusta o título do modal para "Histórico de envelopes"
+    var _tituloModal = document.querySelector("#thEnvelopeModal h2");
+    if (_tituloModal) _tituloModal.textContent = "📋 Histórico de envelopes";
+    const envelopes = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopes.v1") || "[]")
+      .filter(e => e.to_company && String(e.to_company.empresa_id) === String(empId));
+    
+    const modal = document.getElementById("thEnvelopeModal");
+    if (!modal) return;
+    
+    const codeEl = document.getElementById("thEnvelopeCode");
+    const summaryEl = document.getElementById("thEnvelopeSummary");
+    const copyBtn = document.getElementById("thEnvelopeCopy");
+    const dlBtn = document.getElementById("thEnvelopeDownload");
+    
+    if (copyBtn) copyBtn.style.display = "none";
+    if (dlBtn) dlBtn.style.display = "none";
+    // Ajusta o subtítulo
+    var _subModal = document.querySelector("#thEnvelopeModal p.hint");
+    if (_subModal) _subModal.textContent = "Envelopes já gerados para esta empresa. Baixe novamente se precisar.";
+    if (codeEl) {
+      codeEl.textContent = "📋 " + envelopes.length + " envelope(s)";
+      codeEl.style.fontSize = "16px";
+    }
+    
+    if (!envelopes.length) {
+      if (summaryEl) summaryEl.innerHTML = "Nenhum envelope gerado para esta empresa.";
+    } else {
+      const listaHtml = envelopes.slice().reverse().map(function(env) {
+        const data = new Date(env.created_at).toLocaleString("pt-BR");
+        const cred = env.items.filter(function(i) { return i.tipo === "credito"; }).length;
+        const deb = env.items.filter(function(i) { return i.tipo === "debito"; }).length;
+        return '<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+          + '<div style="flex:1;min-width:0">'
+          +   '<div style="font-family:ui-monospace,monospace;font-size:14px;font-weight:800;color:var(--accent)">' + env.transfer_code + '</div>'
+          +   '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + data + ' · ' + env.items.length + ' items (' + cred + '↑ ' + deb + '↓)' + (env.links_aplicados.length ? ' · ' + env.links_aplicados.length + ' link(s)' : '') + '</div>'
+          + '</div>'
+          + '<button type="button" class="btn btn--secondary" data-env-download="' + env.envelope_id + '" style="font-size:11px;padding:4px 10px">⬇️ Baixar</button>'
+          + '</div>';
+      }).join("");
+      if (summaryEl) summaryEl.innerHTML = '<div style="max-height:300px;overflow-y:auto">' + listaHtml + '</div>';
+      
+      setTimeout(function() {
+        modal.querySelectorAll("[data-env-download]").forEach(function(btn) {
+          btn.onclick = function() {
+            const envId = btn.dataset.envDownload;
+            const env = envelopes.find(function(e) { return e.envelope_id === envId; });
+            if (!env) return;
+            const blob = new Blob([JSON.stringify(env, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = env.transfer_code + "-envelope.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          };
+        });
+      }, 50);
+    }
+    
+    modal.classList.add("is-open");
+  }
 
-async function gerarEnvelope(empId) {
+  async function gerarEnvelope(empId) {
     if (!empId) return { ok: false, msg: "Selecione uma empresa primeiro." };
     const empresa = lerEmpresas().find(e => String(e.id) === String(empId));
     if (!empresa) return { ok: false, msg: "Empresa não encontrada." };
@@ -19031,6 +19113,13 @@ async function gerarEnvelope(empId) {
         btn.disabled = false;
         btn.textContent = originalText;
       }
+      return;
+    }
+    if (e.target.closest("#thBtnHistorico")) {
+      e.preventDefault();
+      var empIdHist = _thEmpresaFiltroId();
+      if (!empIdHist) { alert("Selecione uma empresa."); return; }
+      abrirHistoricoEnvelopes(empIdHist);
       return;
     }
     if (e.target.closest("#thBtnReceber")) {
