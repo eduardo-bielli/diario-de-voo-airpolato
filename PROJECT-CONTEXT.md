@@ -93,3 +93,29 @@ Nesta sessão, o foco foi a modernização da interface mobile e a correção de
 - 3 (hub): tabelas hub_envelopes, hub_transfers, hub_audit + Edge Functions
 
 **TODO futuro:** botão de abatimento; hub central; alerta de erro por email via Database Webhook.
+
+## 🏢 Identidade da Empresa (Troca de Horas) — Decisão Final
+
+**Invariantes (regras que o código precisa respeitar sempre):**
+
+- **`id` é imutável.** Uma vez criado, nunca muda. Editar a empresa (nome, CNPJ, contato, logo, modelos) **não reescreve** o `id`.
+- **`id` nunca é exibido ao usuário final.** Só em telas técnicas (auditoria, export, debug). Usuário vê `nome`.
+- **Créditos, débitos, links e envelopes referenciam o `id`, nunca o `nome`.** Rename (mudança de nome/CNPJ) preserva o `id` e todo o histórico.
+- **`id` é único.** Empresas novas usam `crypto.randomUUID()` (com fallback para `Date.now().toString(36) + random`). Empresas antigas (formato `th-e-\d{13}` de timestamp) continuam válidas — não precisam ser migradas porque já são únicas na prática, e migrar quebraria referências em créditos/débitos/links.
+- **Snapshot de nome é guardado** em créditos/débitos de transferência para auditoria (vê o nome da época, não o atual). Relatórios mostram o nome atual + tooltip com histórico.
+
+**Edge cases (decisão para o futuro):**
+- **Rename:** `id` fica, `nome`/`cnpj` mudam. Registrar em `logs` (`"empresa X renomeada de 'A' para 'B'"`).
+- **Merge (AMAGGI compra XYZ):** usar `parent_id` na empresa filha apontando para a mãe. Histórico preservado, operacionalmente são "uma empresa". Não mover créditos/débitos (perde rastreabilidade).
+- **Split (AMAGGI se divide em Agro + Logística):** criar duas empresas com `id` novo + `parent_id` apontando para a original. Créditos/débitos antigos ficam na original (agora "mãe").
+
+**Estado atual (auditoria Nov/2026):**
+- 2 empresas, 10 lançamentos, 1 link, 5 modelos
+- ✅ Sem IDs duplicados
+- ✅ Sem lançamentos órfãos
+- ✅ Sem links órfãos
+- ✅ Todos os modelos têm ICAO
+- ⚠️ 2 empresas com formato antigo de ID (`Date.now`) — esperado, não migrar
+- ⚠️ 2 empresas sem CNPJ (AMAGGI, Teste) — opcional preencher via UI
+
+**Fix aplicado (Nov/2026):** `id` de empresa nova trocado de `"th-e-" + Date.now()` para `"th-e-" + crypto.randomUUID()`. Backup: `teste-cache.html.bak-fix-company-id` em ambos os projetos.

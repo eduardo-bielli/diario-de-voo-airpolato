@@ -19876,7 +19876,7 @@ function renderLista() {
       if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, logo, modelos };
     } else {
       lista.push({
-        id: "th-e-" + Date.now(),
+        id: "th-e-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10))),
         nome, cnpj, contato, obs, logo, modelos,
         criado_em: new Date().toISOString()
       });
