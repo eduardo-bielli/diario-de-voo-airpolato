@@ -62,3 +62,34 @@ Nesta sessão, o foco foi a modernização da interface mobile e a correção de
 | PS-LKS | Air Locks | King Air 360 | `B350` |
 | PS-STA | Air Polato | Pilatus PC-12 | `PC12` |
 | (TBM) | Air Polato | TBM 960 | `TBM7` |
+
+## 🔄 Transferência de Horas entre Empresas (Decisão Final - Nov 2026)
+
+**Princípio:** O credor cria o link e envia o envelope. O devedor recebe e aplica. Nada é apagado, sempre estorno.
+
+**Regras:**
+- Mesmo ICAO: automático (sem link manual)
+- ICAO diferente: credor cria link, envia envelope
+- Devedor quer zerar: pede ao credor, que cria e envia
+- Apagar crédito/débito: bloqueado, sempre estorno
+- Envelope: sempre gerado, sem atalho de compensação
+- Aviso "consulte empresa X": etiqueta de boa educação (não funcional)
+- Conflito: impossível (só o credor cria)
+- Chave canônica: modelo_credito_icao / modelo_debito_icao
+- Nome no relatório: usa cadastro local, fallback para nome do envelope
+
+**Envelope contém:** envelope_id, transfer_id, from/to_company, link (modelo_credito_icao, modelo_debito_icao, taxa, minutos), totais por modelo (credito_min, debito_min), snapshot (lista de entradas com id/tipo/minutos/origem/criado_em), hash SHA-256, assinatura HMAC.
+
+**Validação ao receber:** valida assinatura + envelope_id (idempotência) + compara totais (por ICAO). Se bater, aplica. Se divergir: mostra diff + 3 opções (sincronizar com A / rejeitar / cancelar).
+
+**Registro no ledger de B:** opção γ — registra +Xh modelo_debito e -Yh modelo_credito (saldo líquido 0, mas histórico mostra).
+
+**Temporalidade:** vincular = converte saldo + aplica futuras; desvincular = saldo fica, futuras isoladas; vincular→desvincular→revincular = idempotente (só a 1ª conversão efetiva ocorre).
+
+**Fases:**
+- 0 (prep): migrar link para ICAO
+- 1 (exportar): gerar envelope + salvar no hub (ou local + email)
+- 2 (importar): receber + validar + preview + aplicar
+- 3 (hub): tabelas hub_envelopes, hub_transfers, hub_audit + Edge Functions
+
+**TODO futuro:** botão de abatimento; hub central; alerta de erro por email via Database Webhook.
