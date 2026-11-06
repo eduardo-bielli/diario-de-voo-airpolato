@@ -19136,8 +19136,12 @@ function renderLista() {
     const aero = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get().find(a => a.tail === ev.aeronave_tail) : null;
 
     const lancamento = {
-      id: "th-c-" + Date.now(),
+      id: "th-c-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10))),
       tipo: "credito",
+      enviado: false,
+      envelope_id: null,
+      enviado_em: null,
+      modelo_icao: (typeof ModelosAeronave !== "undefined" && ModelosAeronave.getIcao) ? (ModelosAeronave.getIcao(aero?.model) || null) : null,
       data: primeira.data || "",
       aeronave_tail: ev.aeronave_tail || "",
       modelo: aero?.model || "—",
@@ -19606,8 +19610,12 @@ function renderLista() {
     })();
 
     const lancamento = {
-      id: "th-d-" + Date.now(),
+      id: "th-d-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10))),
       tipo: "debito",
+      enviado: false,
+      envelope_id: null,
+      enviado_em: null,
+      modelo_icao: (typeof ModelosAeronave !== "undefined" && ModelosAeronave.getIcao) ? (ModelosAeronave.getIcao(modelo) || null) : null,
       aeronave_prefixo: prefixo,
       modelo: modelo,
       modelo_linkado: modeloVinculado,
