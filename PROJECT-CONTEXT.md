@@ -35,3 +35,13 @@ Nesta sessão, o foco foi a modernização da interface mobile e a correção de
 - **NUNCA usar Regex genérico/destrutivo** para substituir funções inteiras. Isso quebrou o arquivo durante a sessão. Usar sempre `start_marker` e `end_marker` com recorte de string (`c[:start] + new + c[end:]`).
 - **Isolamento de CSS:** Ao criar regras que usam `display: flex` ou altura (`height`), usar `:not([hidden])` se a página for controlada pelo Router. Caso contrário, a página "flutua" sobre as outras e quebra os cliques do menu.
 - **Backups Locais:** A criação de backups `.bak-...` antes de cada alteração grande salvou o projeto de perdas irreversíveis.
+
+## 🛡️ Monitoramento e Segurança (Novembro/2026)
+- **Monitoramento Global (`window.onerror`):** O sistema agora possui um "vigia" que captura erros de JavaScript (síncronos e Promises) e envia silenciosamente para a tabela `logs` do Supabase. Há um limite de 5 erros por sessão para proteger o egress.
+- **Destaque em Registros:** A tela de "Registros" agora pinta as linhas de erro de JS com fundo vermelho claro (`#fef2f2`), borda vermelha e ícone 🚨, facilitando a identificação visual imediata.
+- **Filtro de Pilotos (Novo Voo):** Ao selecionar uma aeronave, a lista de P1/P2 é automaticamente filtrada para exibir apenas os pilotos escalados para aquela aeronave (lendo de `dv.tripulacao.v1`).
+- **Disponibilidade Inteligente:** O modal de disponibilidade abre limpo (sem pré-seleção) ao clicar no dia. Permite múltiplos eventos no mesmo dia (ex: Treinamento + Revalidação) e a função `pilotoIndisponivel` agora bloqueia e alerta a agenda caso um piloto esteja em revalidação.
+
+## 🚀 Próximos Passos (Backlog)
+- [ ] **Alerta de Erros via E-mail/Telegram:** Configurar um Database Webhook no Supabase para notificar o admin sempre que um novo log do tipo `erro_js` cair na tabela.
+- [ ] **Exportação de Dados (Integração):** Desenhar a API (Edge Function) ou formato XLSX para enviar voos executados ao sistema da empresa.
