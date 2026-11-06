@@ -19727,8 +19727,11 @@ function renderLista() {
   function popularModelosEmpresa(selecionados) {
     const box = document.getElementById("thEmpresaModelos");
     if (!box) return;
-    const modelos = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list() : [];
-    if (!modelos.length) {
+    /* Usa listFull() (objetos com nome + tipo_icao). Fallback para list() se necessário. */
+    const modelosFull = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.listFull)
+      ? ModelosAeronave.listFull()
+      : ((typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list().map(n => ({ nome: n, tipo_icao: "" })) : []);
+    if (!modelosFull.length) {
       box.innerHTML = '<p class="hint" style="margin:0;padding:6px">Nenhum modelo cadastrado. Use "📋 Modelos" em Aeronaves.</p>';
       return;
     }
@@ -19738,18 +19741,22 @@ function renderLista() {
       if (typeof m === "string") linkMap[m] = "";
       else if (m && m.nome) linkMap[m.nome] = m.vinculado_a || "";
     });
-    const sorted = [...modelos].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    box.innerHTML = sorted.map(m => {
+    const sorted = [...modelosFull].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    box.innerHTML = sorted.map(mObj => {
+      const m = mObj.nome;
+      const icao = mObj.tipo_icao || "";
       const checked = linkMap.hasOwnProperty(m) ? " checked" : "";
       const linked = linkMap[m] || "";
       const options = '<option value="">— sem vínculo —</option>' +
-        sorted.filter(x => x !== m).map(x =>
-          '<option value="' + esc(x) + '"' + (x === linked ? " selected" : "") + '>' + esc(x) + '</option>'
+        sorted.filter(x => x.nome !== m).map(x =>
+          '<option value="' + esc(x.nome) + '"' + (x.nome === linked ? " selected" : "") + '>' + esc(x.nome) + '</option>'
         ).join("");
       return '<div class="thEmpModeloRow" data-modelo="' + esc(m) + '" style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--line)">'
         + '<label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0">'
         +   '<input type="checkbox" class="thEmpModeloChk"' + checked + '>'
-        +   '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span>'
+        +   '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m)
+        +     (icao ? ' <span style="color:#94a3b8;font-size:10px;font-weight:400;font-family:ui-monospace,monospace">(' + esc(icao) + ')</span>' : '')
+        +   '</span>'
         + '</label>'
         + '<select class="thEmpModeloLink" title="Vincular a qual modelo nosso" style="font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card);max-width:180px">' + options + '</select>'
         + '</div>';
@@ -20278,11 +20285,37 @@ function renderLista() {
 
     const minConsumidos = Math.round(minAbatidos / taxa);
 
+    // === FASE 0: ler ICAO canônico dos modelos ===
+    const _getIcao = (nome) => {
+      if (!nome) return "";
+      if (typeof ModelosAeronave !== "undefined" && ModelosAeronave.getIcao) {
+        return ModelosAeronave.getIcao(nome) || "";
+      }
+      return "";
+    };
+    const _icaoCred = _getIcao(modeloCred);
+    const _icaoDeb = _getIcao(modeloDeb);
+
+    // Aviso (não bloqueante): modelos sem ICAO não podem ser transferidos entre empresas
+    if (!_icaoCred || !_icaoDeb) {
+      const faltam = [];
+      if (!_icaoCred) faltam.push('"' + modeloCred + '"');
+      if (!_icaoDeb) faltam.push('"' + modeloDeb + '"');
+      const ok = confirm(
+        "⚠️ Atenção: os seguintes modelos não têm Tipo ICAO cadastrado:\n\n" +
+        faltam.map(f => "  • " + f).join("\n") +
+        "\n\nO link será criado, mas NÃO poderá ser transferido entre empresas até que você cadastre o ICAO desses modelos em \"Aeronaves → 📋 Modelos\".\n\nDeseja continuar?"
+      );
+      if (!ok) return;
+    }
+
     const links = lerLinks();
     const base = {
       empresa_id: empId,
       modelo_credito: modeloCred,
       modelo_debito: modeloDeb,
+      modelo_credito_icao: _icaoCred || null,
+      modelo_debito_icao: _icaoDeb || null,
       taxa: taxa,
       minutos_abatidos: minAbatidos,
       minutos_consumidos: minConsumidos
@@ -20293,7 +20326,8 @@ function renderLista() {
       if (i >= 0) links[i] = Object.assign({}, links[i], base, { atualizado_em: new Date().toISOString() });
       __linkEditandoId = null;
     } else {
-      links.push(Object.assign({ id: "th-l-" + Date.now() }, base, { criado_em: new Date().toISOString() }));
+      const _newId = "th-l-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10)));
+      links.push(Object.assign({ id: _newId }, base, { criado_em: new Date().toISOString() }));
     }
     salvarLinks(links);
 
@@ -21175,38 +21209,75 @@ const ModelosAeronave = (() => {
     "Learjet 45"
   ];
 
-  function list() {
+  const DEFAULT_ICAO = {
+    "Pilatus PC-12": "PC12",
+    "King Air B200": "B200",
+    "King Air 360": "B350",
+    "Cessna Grand Caravan": "C208",
+    "Embraer Phenom 100": "E50P",
+    "Embraer Phenom 300": "E55P",
+    "Cessna Citation CJ1": "C525",
+    "Cessna Citation CJ2": "C525A",
+    "Hawker 800XP": "H25B",
+    "Learjet 45": "LJ45"
+  };
+
+  function _normalize(item) {
+    if (typeof item === "string") return { nome: item, tipo_icao: DEFAULT_ICAO[item] || "" };
+    if (item && typeof item === "object" && item.nome) {
+      return { nome: String(item.nome), tipo_icao: String(item.tipo_icao || DEFAULT_ICAO[item.nome] || "") };
+    }
+    return null;
+  }
+
+  function listFull() {
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) {
-        /* Primeira vez: salva defaults */
-        localStorage.setItem(KEY, JSON.stringify(DEFAULTS.slice()));
-        return DEFAULTS.slice();
+        const defaults = DEFAULTS.map(n => ({ nome: n, tipo_icao: DEFAULT_ICAO[n] || "" }));
+        localStorage.setItem(KEY, JSON.stringify(defaults));
+        return defaults;
       }
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
+      if (!Array.isArray(arr)) return [];
+      return arr.map(_normalize).filter(Boolean);
     } catch(e) { return []; }
   }
 
-  function save(arr) {
-    try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch(e){}
+  function list() { return listFull().map(m => m.nome); }
+
+  function getIcao(nome) {
+    const m = listFull().find(x => x.nome === nome);
+    return m ? m.tipo_icao : "";
   }
 
-  function add(nome) {
+  function save(arr) {
+    try {
+      const normalized = arr.map(m => typeof m === "string" ? { nome: m, tipo_icao: DEFAULT_ICAO[m] || "" } : m);
+      localStorage.setItem(KEY, JSON.stringify(normalized));
+    } catch(e){}
+  }
+
+  function add(nome, tipo_icao) {
     const n = String(nome || "").trim();
+    const icao = String(tipo_icao || "").trim().toUpperCase();
     if (!n) return { ok: false, msg: "Digite o nome do modelo." };
-    const arr = list();
-    if (arr.some(m => m.toLowerCase() === n.toLowerCase())) {
+    if (!icao) return { ok: false, msg: "Informe o Tipo ICAO (4 caracteres). Consulte o site da ANAC." };
+    if (!/^[A-Z0-9]{4}$/.test(icao)) {
+      return { ok: false, msg: "O Tipo ICAO deve ter 4 caracteres alfanuméricos (ex: B350, PC12, TBM7). Use ZZZZ se não souber." };
+    }
+    const arr = listFull();
+    if (arr.some(m => m.nome.toLowerCase() === n.toLowerCase())) {
       return { ok: false, msg: "Esse modelo já está cadastrado." };
     }
-    arr.push(n);
-    arr.sort((a,b) => a.localeCompare(b));
+    arr.push({ nome: n, tipo_icao: icao });
+    arr.sort((a,b) => a.nome.localeCompare(b.nome, "pt-BR"));
     save(arr);
     return { ok: true };
   }
 
   function remove(nome) {
-    const arr = list().filter(m => m !== nome);
+    const arr = listFull().filter(m => m.nome !== nome);
     save(arr);
   }
 
@@ -21214,19 +21285,24 @@ const ModelosAeronave = (() => {
   function renderLista() {
     const box = document.getElementById("modLista");
     if (!box) return;
-    const arr = list();
+    const arr = listFull();
     if (!arr.length) {
       box.innerHTML = '<p class="hint" style="margin:0;padding:12px;text-align:center">Nenhum modelo cadastrado.</p>';
       return;
     }
-    box.innerHTML = arr.map(m => {
+    box.innerHTML = arr.map(mObj => {
+      const m = mObj.nome;
+      const icao = mObj.tipo_icao || "";
       const count = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get().filter(a => (a.model || "") === m).length : 0;
+      const esc = (v) => String(v == null ? "" : v).replace(/[<>&"']/g, ch => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#039;"}[ch]));
       return '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)">'
         + '<div style="flex:1;min-width:0">'
-        +   '<div style="font-size:13px;font-weight:600">' + String(m).replace(/[<>&"']/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#039;"}[c])) + '</div>'
+        +   '<div style="font-size:13px;font-weight:600">' + esc(m)
+        +     (icao ? ' <span style="color:#94a3b8;font-size:11px;font-weight:400;font-family:ui-monospace,monospace">(' + esc(icao) + ')</span>' : ' <span style="color:#f59e0b;font-size:10px;font-weight:600">⚠ sem ICAO</span>')
+        +   '</div>'
         +   (count > 0 ? '<div style="font-size:11px;color:var(--muted)">Usado em ' + count + ' aeronave' + (count > 1 ? 's' : '') + '</div>' : '')
         + '</div>'
-        + '<button type="button" class="event__btn event__btn--danger" data-mod-del="' + String(m).replace(/"/g, "&quot;") + '" title="Excluir" style="width:28px;height:28px;font-size:12px">🗑️</button>'
+        + '<button type="button" class="event__btn event__btn--danger" data-mod-del="' + esc(m) + '" title="Excluir" style="width:28px;height:28px;font-size:12px">🗑️</button>'
         + '</div>';
     }).join("");
     box.querySelectorAll("[data-mod-del]").forEach(btn => {
@@ -21245,6 +21321,8 @@ const ModelosAeronave = (() => {
     renderLista();
     const inp = document.getElementById("modNovoNome");
     if (inp) inp.value = "";
+    const inpIcao = document.getElementById("modNovoIcao");
+    if (inpIcao) inpIcao.value = "";
     modal.classList.add("is-open");
   }
 
@@ -21276,9 +21354,11 @@ const ModelosAeronave = (() => {
       if (e.target.closest("#modAddBtn")) {
         e.preventDefault();
         const inp = document.getElementById("modNovoNome");
-        const r = add(inp?.value);
+        const inpIcao = document.getElementById("modNovoIcao");
+        const r = add(inp?.value, inpIcao?.value);
         if (!r.ok) { alert(r.msg); return; }
         if (inp) { inp.value = ""; inp.focus(); }
+        if (inpIcao) inpIcao.value = "";
         renderLista();
         return;
       }
@@ -21296,14 +21376,14 @@ const ModelosAeronave = (() => {
 
     /* Enter no input de nome */
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.target.id === "modNovoNome") {
+      if (e.key === "Enter" && (e.target.id === "modNovoNome" || e.target.id === "modNovoIcao")) {
         e.preventDefault();
         document.getElementById("modAddBtn")?.click();
       }
     });
   }
 
-  return { list, add, remove, abrir, initListeners, renderLista };
+  return { list, listFull, getIcao, add, remove, abrir, initListeners, renderLista };
 })();
 
 
@@ -23749,9 +23829,13 @@ Router.init();
 <div class="modal" id="modelosModal"><div class="dialog">
 <h2>📋 Modelos de aeronave</h2>
 <p class="hint" style="margin-top:-14px;margin-bottom:14px">Cadastro padronizado de modelos. Usado no cadastro de aeronaves, empresas e troca de horas.</p>
-<div style="display:flex;gap:8px;margin-bottom:14px">
-  <input id="modNovoNome" placeholder="Ex: Pilatus PC-12" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit">
+<div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+  <input id="modNovoNome" placeholder="Nome comercial (ex: TBM 960)" style="flex:1;min-width:160px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit">
+  <input id="modNovoIcao" placeholder="Tipo ICAO (ex: TBM7)" maxlength="4" style="width:150px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:1px">
   <button type="button" class="btn" id="modAddBtn">+ Adicionar</button>
+</div>
+<div style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.4">
+  ℹ️ O <b>Tipo ICAO</b> é o código oficial de 4 caracteres. Consulte em <a href="https://aeronaves.anac.gov.br/aeronaves/" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;font-weight:600">aeronaves.anac.gov.br</a> → busque o prefixo da aeronave → clique em <b>Detalhes Técnicos</b> → localize o campo <b>"Tipo ICAO"</b>.
 </div>
 <div id="modLista" class="list" style="max-height:320px;overflow-y:auto"></div>
 <div class="dialog__actions">
