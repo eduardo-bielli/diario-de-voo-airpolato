@@ -6332,15 +6332,24 @@ const Registros = (() => {
 
     box.innerHTML = itens.map(x => {
       const { data, hora } = fmtDataHora(x.ts);
-      return '<div class="list__row" style="align-items:flex-start">'
+      
+      // --- DESTAQUE VISUAL PARA ERROS DE JAVASCRIPT ---
+      const isErro = (x.tipo === 'erro_js' || x.acao === 'crash');
+      const rowStyle = isErro 
+        ? 'align-items:flex-start; background:#fef2f2 !important; border-left: 3px solid #ef4444; padding-left: 10px; margin-bottom: 4px;' 
+        : 'align-items:flex-start';
+      const textColor = isErro ? '#b91c1c' : 'var(--text)';
+      const quemColor = isErro ? '#991b1b' : 'inherit';
+
+      return '<div class="list__row" style="' + rowStyle + '">'
         + '<div style="flex:1">'
-        +   '<div style="font-size:13px">'
+        +   '<div style="font-size:13px; color:' + textColor + ';">'
         +     '<span style="font-family:ui-monospace,monospace;color:var(--muted);font-size:11px;margin-right:8px">' + esc(data) + ' ' + esc(hora) + '</span>'
-        +     '<b>' + esc(x.quem) + '</b> '
-        +     (acaoIco[x.acao] || "") + ' ' + esc(x.acao) + ' '
-        +     '<span style="color:var(--text)">' + esc(x.alvo) + '</span>'
+        +     '<b style="color:' + quemColor + ';">' + esc(x.quem) + '</b> '
+        +     (isErro ? '🚨 ' : (acaoIco[x.acao] || "")) + ' ' + esc(x.acao) + ' '
+        +     '<span style="color:' + textColor + '">' + esc(x.alvo) + '</span>'
         +   '</div>'
-        +   (x.detalhe ? '<small style="display:block;color:var(--muted);margin-top:4px;font-size:11px">' + (icones[x.tipo]||"") + ' ' + esc(x.detalhe) + '</small>' : '')
+        +   (x.detalhe ? '<small style="display:block; color:' + (isErro ? '#b91c1c' : 'var(--muted)') + '; margin-top:4px;font-size:11px">' + (icones[x.tipo]||"") + ' ' + esc(x.detalhe) + '</small>' : '')
         + '</div>'
         + '</div>';
     }).join("");
@@ -27955,3 +27964,67 @@ body #revisaoModal .mobile-revisao-body {
     .day-list__body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 }
 </style>
+
+<script>
+/* ==================================================== */
+/* MONITORAMENTO DE ERROS GLOBAL - OPÇÃO 1 (LOGS)       */
+/* ==================================================== */
+(function() {
+    var errosEnviados = 0;
+    var MAX_ERROS = 5; // Proteção contra loop infinito / Egress no Supabase
+
+    function reportarErro(mensagem, url, linha, coluna, erroObj) {
+        if (errosEnviados >= MAX_ERROS) return;
+        errosEnviados++;
+
+        try {
+            // Tenta pegar o usuário logado para saber quem sofreu o erro
+            var emailUser = "anonimo";
+            if (typeof Session !== 'undefined' && Session.get && Session.get()) {
+                var sess = Session.get();
+                emailUser = sess.email || sess.nome || "sem-email";
+            }
+
+            // Monta o payload exatamente como o sistema espera
+            var payload = {
+                tipo: "erro_js",
+                acao: "crash",
+                alvo: window.location.hash || "/",
+                detalhe: {
+                    msg: mensagem,
+                    url: url || window.location.href,
+                    linha: linha || 0,
+                    coluna: coluna || 0,
+                    stack: (erroObj && erroObj.stack) ? erroObj.stack : "Sem stack trace",
+                    ua: navigator.userAgent,
+                    usuario: emailUser
+                }
+            };
+
+            // Envia para o Supabase (Fire-and-forget)
+            if (typeof Log !== 'undefined' && Log.gravar) {
+                Log.gravar(payload);
+                console.log("[Monitor] Erro reportado ao Supabase:", mensagem);
+            } else {
+                console.warn("[Monitor] Módulo Log não encontrado para registrar o erro.");
+            }
+        } catch(e) {
+            // Falha silenciosa para não gerar loop
+        }
+    }
+
+    // 1. Captura erros de código síncronos
+    window.onerror = function(msg, url, line, col, error) {
+        reportarErro(msg, url, line, col, error);
+        return false; 
+    };
+
+    // 2. Captura erros de Promises (falhas de rede, Supabase, etc.)
+    window.addEventListener("unhandledrejection", function(event) {
+        var msg = event.reason ? (event.reason.message || String(event.reason)) : "Promise Rejection Desconhecido";
+        reportarErro(msg, window.location.href, 0, 0, event.reason);
+    });
+
+    console.log("[Monitor] Observador global de erros instalado com sucesso.");
+})();
+</script>
