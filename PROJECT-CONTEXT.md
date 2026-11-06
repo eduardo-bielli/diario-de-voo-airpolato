@@ -45,3 +45,20 @@ Nesta sessão, o foco foi a modernização da interface mobile e a correção de
 ## 🚀 Próximos Passos (Backlog)
 - [ ] **Alerta de Erros via E-mail/Telegram:** Configurar um Database Webhook no Supabase para notificar o admin sempre que um novo log do tipo `erro_js` cair na tabela.
 - [ ] **Exportação de Dados (Integração):** Desenhar a API (Edge Function) ou formato XLSX para enviar voos executados ao sistema da empresa.
+
+## 🔑 Decisão: Tipo ICAO (ANAC) como chave canônica para Troca de Horas
+- **Cadastro obrigatório:** toda aeronave precisa do campo `tipo_icao_anac` (4 caracteres, ex: `B350`, `PC12`, `TBM7`).
+- **Nome comercial livre:** o usuário pode cadastrar "TBM Lindo", "King Air do João", etc. O sistema não se importa com o nome — usa o `tipo_icao_anac` para casar modelos.
+- **Fonte de verdade:** o usuário consulta o código no portal da ANAC → https://aeronaves.anac.gov.br/aeronaves/ (campo "Tipo ICAO" em Detalhes Técnicos). Adicionar um link "Consultar na ANAC" ao lado do campo no modal de cadastro.
+- **Validação:** 4 caracteres alfanuméricos. Bloquear o cadastro se o campo estiver vazio ou com formato inválido.
+- **Fonte é a ANAC, não a ICAO global:** em casos como o TBM 960, a ANAC classifica como `TBM7` (não `TBM9`, que é a classificação FAA). Para um sistema brasileiro, ANAC manda.
+- **Envelope de transferência (futuro hub):** leva `company_id` + `prefixo` + `tipo_icao_anac` + `nome_comercial`. B vê o nome, mas o sistema casa pelo `tipo_icao_anac`.
+- **Válvula de escape (acordos entre empresas):** o botão de vinculação manual (`vinculado_a`) continua existindo. Ex: se A tem `PC12` e B tem `TBM7`, o admin de B pode vincular `PC12 → TBM7` com taxa `1.0`. A partir daí, toda transferência de `PC12` é convertida automaticamente em débito de `TBM7` no lado de B.
+- **Caso especial `ZZZZ`:** aeronaves não homologadas/experimentais usam `ZZZZ` na ANAC. O cadastro aceita, mas a transferência automática por ICAO é bloqueada — exige vinculação manual.
+
+## 🗺️ Mapeamento inicial das aeronaves em teste
+| Aeronave | Empresa | Modelo Comercial | Tipo ICAO (ANAC) |
+|---|---|---|---|
+| PS-LKS | Air Locks | King Air 360 | `B350` |
+| PS-STA | Air Polato | Pilatus PC-12 | `PC12` |
+| (TBM) | Air Polato | TBM 960 | `TBM7` |
