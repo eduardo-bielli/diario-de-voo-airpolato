@@ -4942,6 +4942,9 @@ body.is-booting .app {
             <span style="color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Empresa:</span>
             <select id="thFiltroEmpresa" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text);font-family:inherit;font-weight:600;min-width:180px"></select>
           </label>
+          <span id="thEnvelopeStatus" title="Selecione uma empresa" style="font-size:18px;line-height:1;cursor:help">⚪</span>
+          <button type="button" class="btn btn--secondary" id="thBtnEnviar" disabled style="font-size:12px;padding:6px 12px;opacity:.5;cursor:not-allowed" title="Gerar envelope com lançamentos pendentes">📤 Enviar</button>
+          <button type="button" class="btn btn--secondary" id="thBtnReceber" style="font-size:12px;padding:6px 12px" title="Receber envelope de outra empresa">📥 Receber</button>
         </div>
         <div id="thDashboard" style="padding:16px 20px;border-bottom:1px solid var(--line)">
           <p class="hint" style="margin:0">Carregando…</p>
@@ -18773,6 +18776,270 @@ const TrocaHoras = (() => {
     if (modal) modal.classList.add("is-open");
   }
 
+function atualizarStatusEnvelope() {
+    const statusEl = document.getElementById("thEnvelopeStatus");
+    const btnEnviar = document.getElementById("thBtnEnviar");
+    if (!statusEl || !btnEnviar) return;
+    
+    const empId = _thEmpresaFiltroId();
+    
+    if (!empId) {
+      statusEl.textContent = "⚪";
+      statusEl.title = "Selecione uma empresa para ver o status";
+      btnEnviar.disabled = true;
+      btnEnviar.style.opacity = ".5";
+      btnEnviar.style.cursor = "not-allowed";
+      return;
+    }
+    
+    const lancamentos = lerLancamentos().filter(l => {
+      const lid = l.empresa_id || l.empresa_emprestada_id;
+      return String(lid) === String(empId);
+    });
+    
+    const pendentes = lancamentos.filter(l => l.enviado === false);
+    
+    if (!lancamentos.length) {
+      statusEl.textContent = "⚪";
+      statusEl.title = "Nenhum lançamento com esta empresa";
+      btnEnviar.disabled = true;
+      btnEnviar.style.opacity = ".5";
+      btnEnviar.style.cursor = "not-allowed";
+    } else if (pendentes.length === 0) {
+      statusEl.textContent = "🟢";
+      statusEl.title = "Tudo sincronizado — " + lancamentos.length + " lançamento(s) já enviado(s)";
+      btnEnviar.disabled = true;
+      btnEnviar.style.opacity = ".5";
+      btnEnviar.style.cursor = "not-allowed";
+    } else {
+      statusEl.textContent = "🟡";
+      statusEl.title = pendentes.length + " pendente(s) de envio (de " + lancamentos.length + " total)";
+      btnEnviar.disabled = false;
+      btnEnviar.style.opacity = "1";
+      btnEnviar.style.cursor = "pointer";
+    }
+  }
+
+async function gerarEnvelope(empId) {
+    if (!empId) return { ok: false, msg: "Selecione uma empresa primeiro." };
+    const empresa = lerEmpresas().find(e => String(e.id) === String(empId));
+    if (!empresa) return { ok: false, msg: "Empresa não encontrada." };
+    
+    const todos = lerLancamentos();
+    const pendentes = todos.filter(l => {
+      const lid = l.empresa_id || l.empresa_emprestada_id;
+      return String(lid) === String(empId) && l.enviado === false;
+    });
+    if (!pendentes.length) return { ok: false, msg: "Nenhum lançamento pendente para esta empresa." };
+    
+    const now = new Date();
+    const year = now.getFullYear();
+    const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const transferCode = "TH-" + year + "-" + rand;
+    
+    const settings = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}");
+    const fromCompanyName = settings.companyName || "Empresa";
+    const fromTenantId = "local-" + fromCompanyName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    
+    const toCompany = {
+      empresa_id: empresa.id,
+      name: empresa.nome,
+      cnpj: empresa.cnpj || null,
+      logo: empresa.logo || null
+    };
+    
+    const items = pendentes.map(l => {
+      if (l.tipo === "credito") {
+        return {
+          id: l.id,
+          tipo: "credito",
+          modelo: l.modelo,
+          modelo_icao: l.modelo_icao || null,
+          minutos: tempoParaMinutos(l.tempo_voo),
+          tempo_voo: l.tempo_voo,
+          data: l.data,
+          aeronave_tail: l.aeronave_tail,
+          ev_id: l.ev_id || null,
+          responsavel: l.responsavel || null,
+          criado_em: l.criado_em || null
+        };
+      }
+      const minutos = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
+      return {
+        id: l.id,
+        tipo: "debito",
+        modelo: l.modelo,
+        modelo_icao: l.modelo_icao || null,
+        minutos: minutos,
+        trechos: (l.trechos || []).map(t => ({ data: t.data, origem: t.origem, destino: t.destino, hora: t.hora, duracao: t.duracao })),
+        aeronave_prefixo: l.aeronave_prefixo || null,
+        solicitante_id: l.solicitante_id || null,
+        criado_em: l.criado_em || null
+      };
+    });
+    
+    const icaosEnvolvidos = new Set(items.map(i => i.modelo_icao).filter(Boolean));
+    const linksAplicados = lerLinks().filter(l => {
+      return String(l.empresa_id) === String(empId)
+        && icaosEnvolvidos.has(l.modelo_credito_icao)
+        && icaosEnvolvidos.has(l.modelo_debito_icao);
+    }).map(l => ({
+      link_id: l.id,
+      modelo_credito: l.modelo_credito,
+      modelo_credito_icao: l.modelo_credito_icao,
+      modelo_debito: l.modelo_debito,
+      modelo_debito_icao: l.modelo_debito_icao,
+      taxa: l.taxa,
+      minutos_abatidos: l.minutos_abatidos,
+      minutos_consumidos: l.minutos_consumidos
+    }));
+    
+    const totais = {};
+    items.forEach(item => {
+      const icao = item.modelo_icao || "SEM-ICAO";
+      if (!totais[icao]) totais[icao] = { credito_min: 0, debito_min: 0 };
+      if (item.tipo === "credito") totais[icao].credito_min += item.minutos;
+      else totais[icao].debito_min += item.minutos;
+    });
+    
+    const envelopeBase = {
+      envelope_id: "env-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6),
+      transfer_code: transferCode,
+      schema_version: 1,
+      from_company: { tenant_id: fromTenantId, name: fromCompanyName, logo: settings.logo || null },
+      to_company: toCompany,
+      items: items,
+      links_aplicados: linksAplicados,
+      totais: totais,
+      created_at: now.toISOString()
+    };
+    
+    let hash = "sha256:pending";
+    try {
+      if (typeof crypto !== "undefined" && crypto.subtle) {
+        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(envelopeBase)));
+        const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+        hash = "sha256:" + hex;
+      }
+    } catch(err) { console.warn("[gerarEnvelope] hash falhou", err); }
+    
+    const envelope = Object.assign({}, envelopeBase, { hash: hash, signature: "TODO" });
+    
+    const idsEnviados = new Set(pendentes.map(p => p.id));
+    const novosLancamentos = todos.map(l => {
+      if (idsEnviados.has(l.id)) {
+        return Object.assign({}, l, { enviado: true, envelope_id: envelope.envelope_id, enviado_em: now.toISOString() });
+      }
+      return l;
+    });
+    salvarLancamentos(novosLancamentos);
+    
+    const envelopes = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopes.v1") || "[]");
+    envelopes.push(envelope);
+    localStorage.setItem("dv.trocaHoras.envelopes.v1", JSON.stringify(envelopes));
+    
+    console.log("[gerarEnvelope] Envelope gerado:", envelope);
+    return { ok: true, envelope: envelope };
+  }
+
+  function injectModalEnvelope() {
+    if (document.getElementById("thEnvelopeModal")) return;
+    var html = '<div class="modal" id="thEnvelopeModal">'
+      + '<div class="dialog" style="max-width:560px">'
+      +   '<h2 style="margin:0">📤 Envelope gerado</h2>'
+      +   '<p class="hint" style="margin-top:4px">Compartilhe o código ou o arquivo JSON com a empresa parceira.</p>'
+      +   '<div style="margin:16px 0;padding:16px;background:var(--bg);border:1px solid var(--line);border-radius:10px;text-align:center">'
+      +     '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:6px;letter-spacing:.06em">Código de transferência</div>'
+      +     '<div id="thEnvelopeCode" style="font-family:ui-monospace,monospace;font-size:22px;font-weight:800;letter-spacing:1.5px;color:var(--accent)">TH-2026-XXXXXX</div>'
+      +     '<button type="button" class="btn btn--secondary" id="thEnvelopeCopy" style="margin-top:12px;font-size:12px;padding:6px 14px">📋 Copiar código</button>'
+      +   '</div>'
+      +   '<div id="thEnvelopeSummary" style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px;padding:0 4px"></div>'
+      +   '<div class="dialog__actions">'
+      +     '<button type="button" class="btn btn--secondary" id="thEnvelopeDownload">⬇️ Baixar JSON</button>'
+      +     '<button type="button" class="btn" id="thEnvelopeClose">Fechar</button>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+    document.body.insertAdjacentHTML("beforeend", html);
+    var closeBtn = document.getElementById("thEnvelopeClose");
+    if (closeBtn) closeBtn.onclick = function() { document.getElementById("thEnvelopeModal").classList.remove("is-open"); };
+  }
+
+  document.addEventListener("click", async function(e) {
+    if (e.target.closest("#thBtnEnviar")) {
+      e.preventDefault();
+      var empId = _thEmpresaFiltroId();
+      if (!empId) { alert("Selecione uma empresa primeiro."); return; }
+      var btn = document.getElementById("thBtnEnviar");
+      btn.disabled = true;
+      var originalText = btn.textContent;
+      btn.textContent = "Gerando...";
+      try {
+        var r = await gerarEnvelope(empId);
+        btn.textContent = originalText;
+        if (!r.ok) { alert(r.msg); btn.disabled = false; return; }
+        injectModalEnvelope();
+        var codeEl = document.getElementById("thEnvelopeCode");
+        var summaryEl = document.getElementById("thEnvelopeSummary");
+        if (codeEl) codeEl.textContent = r.envelope.transfer_code;
+        if (summaryEl) {
+          var cred = r.envelope.items.filter(function(i) { return i.tipo === "credito"; }).length;
+          var deb = r.envelope.items.filter(function(i) { return i.tipo === "debito"; }).length;
+          var linksQtd = r.envelope.links_aplicados.length;
+          var sum = "✓ <b>" + r.envelope.items.length + "</b> lançamento(s) incluído(s) (<b>" + cred + "</b> crédito" + (cred !== 1 ? "s" : "") + ", <b>" + deb + "</b> débito" + (deb !== 1 ? "s" : "") + ")<br>";
+          if (linksQtd) sum += "✓ <b>" + linksQtd + "</b> link(s) aplicado(s) automaticamente<br>";
+          sum += "✓ Destinatário: <b>" + r.envelope.to_company.name + "</b><br>";
+          sum += "✓ Envelope ID: <code style=\"font-size:11px\">" + r.envelope.envelope_id + "</code>";
+          summaryEl.innerHTML = sum;
+        }
+        var dlBtn = document.getElementById("thEnvelopeDownload");
+        if (dlBtn) dlBtn.onclick = function() {
+          var blob = new Blob([JSON.stringify(r.envelope, null, 2)], { type: "application/json" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = r.envelope.transfer_code + "-envelope.json";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+        var copyBtn = document.getElementById("thEnvelopeCopy");
+        if (copyBtn) copyBtn.onclick = function() {
+          var codigo = r.envelope.transfer_code;
+          var done = function() {
+            copyBtn.textContent = "✅ Copiado!";
+            setTimeout(function() { copyBtn.textContent = "📋 Copiar código"; }, 2000);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(codigo).then(done).catch(function() { alert("Copie manualmente: " + codigo); });
+          } else {
+            var ta = document.createElement("textarea");
+            ta.value = codigo;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); done(); } catch(err) { alert("Copie manualmente: " + codigo); }
+            document.body.removeChild(ta);
+          }
+        };
+        var modal = document.getElementById("thEnvelopeModal");
+        if (modal) modal.classList.add("is-open");
+        if (typeof render === "function") render();
+      } catch(err) {
+        console.error("[Enviar] erro:", err);
+        alert("Erro ao gerar envelope: " + err.message);
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+      return;
+    }
+    if (e.target.closest("#thBtnReceber")) {
+      e.preventDefault();
+      alert("📥 Receber envelope será implementado na Fase 2.");
+      return;
+    }
+  });
+
 function renderLista() {
     const box = document.getElementById("thLista");
     if (!box) return;
@@ -18928,7 +19195,7 @@ function renderLista() {
   }
 
 
-  function render() { popularSelectFiltroEmpresa(); limparLinksOrfaos(); renderDashboard(); renderLista(); }
+  function render() { popularSelectFiltroEmpresa(); limparLinksOrfaos(); renderDashboard(); renderLista(); try { atualizarStatusEnvelope(); } catch(e) { console.warn("[atualizarStatusEnvelope]", e); } }
 
   /* ---------- Ações (placeholder Fase 2-5) ---------- */
   /* ============ FASE 2: CRÉDITO ============ */
