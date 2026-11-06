@@ -119,3 +119,58 @@ Nesta sessão, o foco foi a modernização da interface mobile e a correção de
 - ⚠️ 2 empresas sem CNPJ (AMAGGI, Teste) — opcional preencher via UI
 
 **Fix aplicado (Nov/2026):** `id` de empresa nova trocado de `"th-e-" + Date.now()` para `"th-e-" + crypto.randomUUID()`. Backup: `teste-cache.html.bak-fix-company-id` em ambos os projetos.
+
+## 📤 Fase 1 — Envelope de Transferência (Implementada Nov/2026)
+
+### Princípio
+O credor cria o link e gera o envelope. O devedor recebe e aplica. Nada é apagado — sempre estorno.
+
+### Regras implementadas
+- Mesmo ICAO: automático (sem link manual)
+- ICAO diferente: credor cria link via "Aeronaves diferentes"
+- Envelope carrega apenas lançamentos pendentes (enviado: false) da empresa selecionada
+- Cada lançamento vai em um único envelope (campo envelope_id)
+- Código único: TH-YYYY-XXXXXX (ex: TH-2026-VT5YQG)
+- Hash SHA-256 calculado no momento da geração
+
+### Estrutura do envelope
+- envelope_id, transfer_code, schema_version
+- from_company: tenant_id, name, logo
+- to_company: empresa_id, name, cnpj, logo
+- items: [{ id, tipo, modelo, modelo_icao, minutos }]
+- links_aplicados: [{ link_id, modelo_credito_icao, modelo_debito_icao, taxa }]
+- totais: { ICAO: { credito_min, debito_min } }
+- hash (sha256), signature (TODO), created_at
+
+### Fluxo implementado
+1. Admin seleciona empresa no filtro
+2. Bolinha indica estado: verde (tudo enviado) / amarela (tem pendente) / cinza (sem empresa ou sem lançamento)
+3. Botão Enviar gera envelope com pendentes, abre modal com código + resumo
+4. Botão Histórico lista envelopes já gerados (re-download)
+5. Botão Receber é stub (Fase 2)
+6. Botões/bolinha escondidos quando empresa não tem lançamento
+
+### Alterações no código
+- Migração: campo enviado, envelope_id, enviado_em, modelo_icao nos 10 lançamentos existentes
+- Novos lançamentos: nascem com esses 4 campos + UUID (não mais Date.now)
+- Função gerarEnvelope(empId): filtra pendentes, agrupa por ICAO, calcula hash, salva em dv.trocaHoras.envelopes.v1, marca enviado: true
+- Modal injectModalEnvelope(): código + resumo + Copiar + Baixar JSON + Fechar
+- abrirHistoricoEnvelopes(empId): lista de envelopes com re-download
+- atualizarStatusEnvelope(): calcula bolinha e mostra/esconde botões
+
+### Storage keys novos
+- dv.trocaHoras.envelopes.v1 (array de envelopes gerados)
+- dv.trocaHoras.v1.bak-pre-migracao-envelope (backup)
+
+### Fase 2 (próxima)
+- Receber envelope: modal para colar código/upload JSON
+- D3: bloqueio total se envelope.to_company nao for a empresa logada
+- Validacao: hash + idempotencia (envelope_id ja aplicado?)
+- Preview: mostra itens antes de aplicar
+- Aplicar: cria espelhos invertidos (enviado: true, origem: importacao, envelope_origem: TH-2026-XXXX)
+- Divergencia: se totais nao batem, mostra lado a lado + 3 opcoes
+- Sem envelope de retorno (ack) - recebimento implicito
+
+### Cleanup (futuro)
+- Dados de teste criados em 06/11/2026 precisarao ser removidos
+- Script: filtrar por criado_em >= data_ancora, backup antes, confirmacao dupla
