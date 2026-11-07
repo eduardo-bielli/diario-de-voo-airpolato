@@ -5268,6 +5268,8 @@ body.is-booting .app {
 </div><p class="hint" id="customHint">Ajuste as cores abaixo — o tema muda para <strong>Personalizado</strong>.</p></div>
 <div class="settings-section"><h3>Identidade</h3><div class="formgrid">
 <label class="field"><span>Nome da empresa</span><input id="setCompanyName" placeholder="Nome da empresa"></label>
+
+<label class="field"><span>Código da empresa</span><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input id="setCompanyCode" readonly placeholder="Gerado automaticamente" style="font-family:ui-monospace,monospace;font-weight:700;letter-spacing:.05em;flex:1;min-width:180px"><button type="button" class="btn btn--secondary" id="setCompanyCodeCopy" title="Copiar código" style="padding:6px 10px;font-size:12px">📋</button></div><span class="hint" style="font-size:11px;margin-top:4px;display:block">Forneça aos parceiros para receber envelopes. Este código é fixo — entre em contato com o suporte se precisar trocá-lo.</span></label>
 <label class="field"><span>Logo Principal</span><input id="setCompanyLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><div class="logo-preview"><img id="logoPreview" alt="" hidden></div></label>
 <label class="field"><span>Ícone da Aba (Favicon)</span><input id="setCompanyFavicon" type="file" accept="image/png,image/x-icon,image/jpeg,image/svg+xml"><div class="logo-preview"><img id="faviconPreview" alt="" hidden></div></label>
 </div></div>
@@ -8340,6 +8342,7 @@ const Theme = (() => {
     const g = (id) => document.getElementById(id)?.value ?? "";
     const next = { ...settings,
       companyName: g("setCompanyName").trim(),
+      companyCode: (g("setCompanyCode") || "").trim() || (window.obterCompanyCode ? window.obterCompanyCode() : settings.companyCode || ""),
       iconColor: g("setIconColor"), accent: g("setAccentColor"),
       bg: g("setBgColor"), panel: g("setPanelColor"),
       sidebarBg: g("setSidebarBg"), line: g("setLineColor"),
@@ -8382,11 +8385,13 @@ const Theme = (() => {
   function openModal() {
     const g = (id) => document.getElementById(id);
     g("setCompanyName").value = settings.companyName || "";
+    g("setCompanyCode").value = (window.obterCompanyCode ? window.obterCompanyCode() : settings.companyCode || "");
     syncForm();
     const prev = g("logoPreview");
     if (settings.logo) { prev.src = settings.logo; prev.hidden = false; } else prev.hidden = true;
     mark();
     g("settingsModal").classList.add("is-open");
+    if (window.bindCompanyCodeButtons) window.bindCompanyCodeButtons();
   }
   function liveInputs() {
     VARS.forEach(([key,,inputId]) => {
@@ -18497,6 +18502,7 @@ const TrocaHoras = (() => {
   function popularSelectFiltroEmpresa() {
     const sel = document.getElementById("thFiltroEmpresa");
     if (!sel) return;
+    try { _thRenderCompanyCodeBadge(sel); } catch (_) {}
     const empresas = lerEmpresas();
     let html = '<option value="">Todas as empresas</option>';
     html += empresas.map(e =>
@@ -18526,6 +18532,105 @@ const TrocaHoras = (() => {
     try { return JSON.parse(localStorage.getItem(KEYS.EMPRESAS) || "[]"); }
     catch(e){ return []; }
   }
+
+
+  /* ===== INÍCIO COMPANY CODE (COMMIT 1) ===== */
+  var __CC_ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  function gerarCompanyCode() {
+    var bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    var c = Array.from(bytes).map(function (b) { return __CC_ALPHA[b % 32]; });
+    return "EMP-" + c.slice(0, 4).join("") + "-" + c.slice(4, 8).join("");
+  }
+  function normalizarCompanyCode(s) {
+    return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+  function obterCompanyCode() {
+    var st = {};
+    try { st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); } catch (_) {}
+    var _normCC = String(st.companyCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (_normCC && _normCC.indexOf("EMP") === 0 && _normCC.length >= 7) return st.companyCode;
+    st.companyCode = gerarCompanyCode();
+    localStorage.setItem("dv.settings.v3", JSON.stringify(st));
+    if (window.Store && typeof Store.saveSettings === "function") {
+      try { Store.saveSettings(st).catch(function(){}); } catch (_) {}
+    }
+    console.log("[companyCode] gerado:", st.companyCode);
+    return st.companyCode;
+  }
+  function _thEscLocal(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
+    });
+  }
+  function _thRenderCompanyCodeBadge(sel) {
+    if (!sel) return;
+    var badge = document.getElementById("thCompanyCodeBadge");
+    var code = obterCompanyCode();
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = "thCompanyCodeBadge";
+      badge.style.cssText = "font-size:11px;color:var(--muted);font-family:ui-monospace,monospace;padding:6px 10px;margin-bottom:8px;display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:6px";
+      var row = sel.parentElement;
+      if (row && row.parentElement) row.parentElement.insertBefore(badge, row);
+      else if (row) row.insertBefore(badge, row.firstChild);
+    }
+    badge.innerHTML = 'Seu código: <strong style="color:var(--text);font-weight:700">' + _thEscLocal(code) + '</strong>';
+  }
+  function bindCompanyCodeButtons() {
+    var copy = document.getElementById("setCompanyCodeCopy");
+    var inp = document.getElementById("setCompanyCode");
+    if (inp && !inp.value) { try { inp.value = obterCompanyCode(); } catch (_) {} }
+    if (copy && !copy.__bound) {
+      copy.__bound = true;
+      copy.addEventListener("click", function () {
+        var code = (document.getElementById("setCompanyCode") || {}).value || "";
+        if (!code) return;
+        var done = function () { copy.textContent = "✅"; setTimeout(function () { copy.textContent = "📋"; }, 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(done).catch(function () { prompt("Copie:", code); });
+        } else {
+          prompt("Copie:", code);
+        }
+      });
+    }
+  }
+
+
+
+  window.gerarCompanyCode = gerarCompanyCode;
+  window.normalizarCompanyCode = normalizarCompanyCode;
+  window.obterCompanyCode = obterCompanyCode;
+  window.bindCompanyCodeButtons = bindCompanyCodeButtons;
+  /* Intercepta salvarEmpresas para injetar company_code do form */
+  (function () {
+    var _origSalvar = window.salvarEmpresas;
+    if (typeof _origSalvar !== "function") {
+      // (interceptor legado removido — salvarEmpresa cuida do company_code)
+      return;
+    }
+    window.salvarEmpresas = function (lista) {
+      try {
+        if (!Array.isArray(lista) || !lista.length) return _origSalvar.apply(this, arguments);
+        var inp = document.getElementById("thEmpresaCode");
+        if (inp) {
+          var code = (inp.value || "").trim();
+          var idEl = document.getElementById("thEmpresaId");
+          var id = idEl ? idEl.value : "";
+          var target = id ? lista.find(function (x) { return x.id === id; }) : lista[lista.length - 1];
+          if (target) {
+            target.company_code = code;
+            console.log("[company_code] setado:", target.nome, "→", code || "(vazio)");
+          }
+        }
+      } catch (err) {
+        console.warn("[company_code interceptor]", err);
+      }
+      return _origSalvar.apply(this, arguments);
+    };
+  })();
+  /* ===== FIM COMPANY CODE (COMMIT 1) ===== */
+
   function salvarEmpresas(list) {
     localStorage.setItem(KEYS.EMPRESAS, JSON.stringify(list));
   }
@@ -18902,10 +19007,419 @@ function _temEnvelopesParaEmpresa(empId) {
     modal.classList.add("is-open");
   }
 
+
+// ===== INÍCIO FASE 2 (RECEBER ENVELOPE) =====
+(function () {
+  "use strict";
+
+  var _esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
+    });
+  };
+  var _thReceiveState = { env: null, validacao: null, arquivoNome: null };
+
+  function _normNome(s) {
+    return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  }
+  function _uuid() {
+    return (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+  function _fecharReceiveModal() {
+    var m = document.getElementById("thReceiveModal");
+    if (m) m.classList.remove("is-open");
+  }
+
+  function injectModalReceive() {
+    if (document.getElementById("thReceiveModal")) return;
+    var modal = document.createElement("div");
+    modal.className = "modal";
+    modal.id = "thReceiveModal";
+    modal.innerHTML =
+      '<div class="dialog" style="max-width:680px">' +
+        '<h2>📥 Receber envelope</h2>' +
+        '<p class="hint">Cole o código ou faça upload do arquivo .json do envelope.</p>' +
+        '<div class="field"><label>Código do envelope</label>' +
+          '<input type="text" id="thReceiveCode" placeholder="TH-2026-XXXXXX" autocomplete="off"></div>' +
+        '<div class="field"><label>Arquivo .json</label>' +
+          '<input type="file" id="thReceiveFile" accept=".json,application/json"></div>' +
+        '<div id="thReceiveStatus" class="hint" style="margin-top:8px"></div>' +
+        '<div id="thReceivePreview"></div>' +
+        '<div class="dialog__actions">' +
+          '<button class="btn btn--secondary" id="thReceiveCancel">Cancelar</button>' +
+          '<button class="btn" id="thReceiveConfirm" disabled>Aplicar</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    document.getElementById("thReceiveCancel").addEventListener("click", _fecharReceiveModal);
+    document.getElementById("thReceiveFile").addEventListener("change", _onReceiveFileChange);
+    document.getElementById("thReceiveCode").addEventListener("input", function () {
+      if (_thReceiveState.env) _revalidar();
+    });
+    document.getElementById("thReceiveConfirm").addEventListener("click", _onReceiveConfirm);
+  }
+
+  function abrirModalReceive() {
+    injectModalReceive();
+    _thReceiveState = { env: null, validacao: null, arquivoNome: null };
+    document.getElementById("thReceiveCode").value = "";
+    document.getElementById("thReceiveFile").value = "";
+    document.getElementById("thReceiveStatus").innerHTML = "";
+    document.getElementById("thReceivePreview").innerHTML = "";
+    document.getElementById("thReceiveConfirm").disabled = true;
+    document.getElementById("thReceiveModal").classList.add("is-open");
+  }
+
+  async function _onReceiveFileChange(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var status = document.getElementById("thReceiveStatus");
+    status.textContent = "Lendo arquivo...";
+    try {
+      var env = JSON.parse(await file.text());
+      _thReceiveState.env = env;
+      _thReceiveState.arquivoNome = file.name;
+      var codeInput = document.getElementById("thReceiveCode");
+      if (!codeInput.value.trim()) codeInput.value = env.transfer_code || "";
+      await _revalidar();
+    } catch (err) {
+      console.error(err);
+      status.innerHTML = '<div style="color:var(--red)">❌ Arquivo inválido: ' + _esc(err.message) + '</div>';
+      _thReceiveState.env = null;
+      document.getElementById("thReceiveConfirm").disabled = true;
+      document.getElementById("thReceivePreview").innerHTML = "";
+    }
+  }
+
+  async function _revalidar() {
+    var env = _thReceiveState.env;
+    if (!env) return;
+    var codigo = document.getElementById("thReceiveCode").value.trim();
+    var v = await _validarEnvelope(env, codigo);
+    _thReceiveState.validacao = v;
+    _renderPreviewEnvelope(env, v);
+    document.getElementById("thReceiveConfirm").disabled = !v.ok;
+  }
+
+  async function _validarHashEnvelope(env) {
+    var clone = JSON.parse(JSON.stringify(env));
+    var hashRecebido = clone.hash;
+    delete clone.hash; delete clone.signature;
+    var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(clone)));
+    var hex = Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    return "sha256:" + hex === hashRecebido;
+  }
+
+  async function _validarEnvelope(env, codigoDigitado) {
+    var erros = [], avisos = [];
+    ["envelope_id","transfer_code","schema_version","from_company","to_company","items","totais","created_at","hash"]
+      .forEach(function (c) { if (!(c in env)) erros.push("Campo ausente: " + c); });
+    if (erros.length) return { ok: false, erros: erros, avisos: avisos, diff: null };
+
+    if (codigoDigitado && String(codigoDigitado).toUpperCase() !== String(env.transfer_code).toUpperCase()) {
+      erros.push("Código informado (" + codigoDigitado + ") não bate com o arquivo (" + env.transfer_code + ").");
+    }
+
+    // Rejeita envelopes legados (v1) — formato antigo, sem company_code
+    if (Number(env.schema_version) < 2) {
+      erros.push("Envelope no formato antigo (v1). Peça ao parceiro para gerar um novo envelope no sistema atualizado.");
+    } else {
+      // v2: D3 por company_code (match exato)
+      var _nc = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+      var _myCode = _nc(window.obterCompanyCode ? window.obterCompanyCode() : (function () {
+        try { return JSON.parse(localStorage.getItem("dv.settings.v3") || "{}").companyCode || ""; } catch (_) { return ""; }
+      })());
+      var _envCode = _nc(env.to_company && env.to_company.company_code);
+      if (!_envCode) {
+        // v2 sem company_code — fallback defensivo por nome
+        var settings = {};
+        try { settings = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); } catch (_) {}
+        if (_normNome(env.to_company.name) !== _normNome(settings.companyName || "")) {
+          erros.push("Este envelope é destinado a " + env.to_company.name + ". Você não pode importá-lo.");
+        }
+      } else if (_envCode !== _myCode) {
+        erros.push("Este envelope é destinado ao código " + env.to_company.company_code + ", mas seu código é " + _myCode + ". Você não pode importá-lo.");
+      }
+    }
+
+    try {
+      var hashOk = await _validarHashEnvelope(env);
+      if (!hashOk) erros.push("Hash do envelope não confere. O arquivo pode estar corrompido ou ter sido alterado.");
+    } catch (e) {
+      erros.push("Não foi possível validar o hash: " + e.message);
+    }
+
+    var aplicados = [];
+    try { aplicados = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopesAplicados.v1") || "[]"); } catch (_) {}
+    var ja = aplicados.find(function (a) { return a.envelope_id === env.envelope_id || a.transfer_code === env.transfer_code; });
+    if (ja) {
+      var data = ja.applied_at ? new Date(ja.applied_at).toLocaleString("pt-BR") : "—";
+      erros.push("Este envelope já foi aplicado em " + data + ". Não pode ser aplicado novamente.");
+    }
+
+    var empresas = [];
+    try { empresas = JSON.parse(localStorage.getItem("dv.trocaHoras.empresas.v1") || "[]"); } catch (_) {}
+    var empresaA = empresas.find(function (e) {
+      if (env.from_company.company_code && e.company_code) {
+        var _nc2 = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+        return _nc2(e.company_code) === _nc2(env.from_company.company_code);
+      }
+      return _normNome(e.nome) === _normNome(env.from_company.name);
+    });
+    if (!empresaA) avisos.push("A empresa " + env.from_company.name + " ainda não está cadastrada. Será criada automaticamente.");
+
+    var diff = _compararTotais(env);
+    return { ok: erros.length === 0, erros: erros, avisos: avisos, diff: diff };
+  }
+
+  function _compararTotais(env) {
+    var lanc = [], empresas = [];
+    try { lanc = JSON.parse(localStorage.getItem("dv.trocaHoras.v1") || "[]"); } catch (_) {}
+    try { empresas = JSON.parse(localStorage.getItem("dv.trocaHoras.empresas.v1") || "[]"); } catch (_) {}
+    var empresaA = empresas.find(function (e) {
+      if (env.from_company.company_code && e.company_code) {
+        var _nc2 = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+        return _nc2(e.company_code) === _nc2(env.from_company.company_code);
+      }
+      return _normNome(e.nome) === _normNome(env.from_company.name);
+    });
+
+    var local = {};
+    function conta(icao, campo, min) {
+      if (!local[icao]) local[icao] = { credito_min: 0, debito_min: 0 };
+      local[icao][campo] += min;
+    }
+    if (empresaA) {
+      lanc.forEach(function (l) {
+        var icao = l.modelo_icao;
+        if (!icao) return;
+        if (l.tipo === "credito" && l.empresa_emprestada_id === empresaA.id) {
+          var min = (l.trechos || []).reduce(function (s, t) { return s + tempoParaMinutos(t.duracao); }, 0) || tempoParaMinutos(l.tempo_voo || "0:00");
+          conta(icao, "credito_min", min);
+        } else if (l.tipo === "debito" && l.empresa_id === empresaA.id) {
+          var min = (l.trechos || []).reduce(function (s, t) { return s + tempoParaMinutos(t.duracao); }, 0);
+          conta(icao, "debito_min", min);
+        }
+      });
+    }
+
+    var icaos = {};
+    Object.keys(env.totais || {}).forEach(function (k) { icaos[k] = 1; });
+    Object.keys(local).forEach(function (k) { icaos[k] = 1; });
+    var diff = [];
+    Object.keys(icaos).forEach(function (icao) {
+      var envC = (env.totais && env.totais[icao]) || { credito_min: 0, debito_min: 0 };
+      var esperado = { credito_min: envC.debito_min, debito_min: envC.credito_min };
+      var loc = local[icao] || { credito_min: 0, debito_min: 0 };
+      if (esperado.credito_min !== loc.credito_min || esperado.debito_min !== loc.debito_min) {
+        diff.push({ icao: icao, esperado: esperado, local: loc });
+      }
+    });
+    return { bate: diff.length === 0, diff: diff };
+  }
+
+  function _renderPreviewEnvelope(env, v) {
+    var status = document.getElementById("thReceiveStatus");
+    var preview = document.getElementById("thReceivePreview");
+
+    if (v.erros.length) {
+      status.innerHTML = v.erros.map(function (e) { return '<div style="color:var(--red)">❌ ' + _esc(e) + '</div>'; }).join("");
+      preview.innerHTML = "";
+      return;
+    }
+
+    var hs = ['<div style="color:var(--green)">✅ Envelope válido</div>'];
+    v.avisos.forEach(function (a) { hs.push('<div style="color:var(--muted)">⚠️ ' + _esc(a) + '</div>'); });
+    if (v.diff && v.diff.bate) hs.push('<div style="color:var(--green)">✅ Totais consistentes</div>');
+    else if (v.diff && v.diff.diff.length) hs.push('<div style="color:var(--red)">⚠️ Totais divergentes — ver diff abaixo</div>');
+    status.innerHTML = hs.join("");
+
+    var itemsHtml = (env.items || []).map(function (it) {
+      return '<tr><td>' + _esc(it.modelo) + ' <span class="hint">(' + _esc(it.modelo_icao) + ')</span></td>' +
+        '<td>' + (it.tipo === "credito" ? "Crédito" : "Débito") + '</td>' +
+        '<td style="text-align:right">' + _esc(minutosParaHHMM(it.minutos || 0)) + '</td></tr>';
+    }).join("");
+
+    var linksHtml = "";
+    if ((env.links_aplicados || []).length) {
+      linksHtml = '<div style="margin-top:8px"><strong>Links já aplicados em ' + _esc(env.from_company.name) + ':</strong>' +
+        '<ul style="margin:4px 0 0 18px;font-size:12px">' +
+        env.links_aplicados.map(function (l) {
+          return '<li>' + _esc(l.modelo_credito) + ' → ' + _esc(l.modelo_debito) +
+            ' · ' + _esc(l.minutos_abatidos) + ' min · taxa ' + _esc(l.taxa) + '</li>';
+        }).join("") + '</ul></div>';
+    }
+
+    var diffHtml = "";
+    if (v.diff && v.diff.diff.length) {
+      diffHtml = '<div style="margin-top:12px;border:1px solid var(--line);padding:8px">' +
+        '<h4 style="margin:0 0 6px 0">Divergência de totais</h4>' +
+        '<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr>' +
+        '<th style="text-align:left">ICAO</th><th style="text-align:left">Esperado em ' + _esc(env.to_company.name) + '</th>' +
+        '<th style="text-align:left">Ledger local</th></tr></thead><tbody>' +
+        v.diff.diff.map(function (d) {
+          return '<tr><td>' + _esc(d.icao) + '</td>' +
+            '<td>Créd ' + _esc(minutosParaHHMM(d.esperado.credito_min)) + ' / Déb ' + _esc(minutosParaHHMM(d.esperado.debito_min)) + '</td>' +
+            '<td>Créd ' + _esc(minutosParaHHMM(d.local.credito_min)) + ' / Déb ' + _esc(minutosParaHHMM(d.local.debito_min)) + '</td></tr>';
+        }).join("") + '</tbody></table>' +
+        '<p class="hint" style="margin:6px 0 0 0">Não bloqueia a aplicação.</p></div>';
+    }
+
+    preview.innerHTML = '<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:12px">' +
+      '<div><strong>De:</strong> ' + _esc(env.from_company.name) + '</div>' +
+      '<div><strong>Para:</strong> ' + _esc(env.to_company.name) + '</div>' +
+      '<div><strong>Código:</strong> ' + _esc(env.transfer_code) + '</div>' +
+      '<div><strong>Gerado em:</strong> ' + new Date(env.created_at).toLocaleString("pt-BR") + '</div>' +
+      '<div><strong>Itens:</strong> ' + env.items.length + '</div>' + linksHtml +
+      '<table style="width:100%;margin-top:12px;font-size:12px;border-collapse:collapse"><thead><tr>' +
+      '<th style="text-align:left">Modelo</th><th style="text-align:left">Tipo</th><th style="text-align:right">Minutos</th>' +
+      '</tr></thead><tbody>' + itemsHtml + '</tbody></table>' +
+      '<div style="margin-top:8px" class="hint"><strong>Totais declarados (visão de ' + _esc(env.from_company.name) + '):</strong> ' +
+      Object.keys(env.totais || {}).map(function (icao) {
+        var t = env.totais[icao];
+        return '<span style="margin-right:12px">' + _esc(icao) + ': +' + _esc(minutosParaHHMM(t.credito_min)) + ' / -' + _esc(minutosParaHHMM(t.debito_min)) + '</span>';
+      }).join("") + '</div>' + diffHtml + '</div>';
+  }
+
+  async function _onReceiveConfirm() {
+    var env = _thReceiveState.env, v = _thReceiveState.validacao;
+    if (!env || !v || !v.ok) return;
+    if (!confirm("Aplicar envelope " + env.transfer_code + "?\\nSerão criados " + env.items.length + " lançamentos espelho.")) return;
+    try {
+      var r = await _aplicarEnvelope(env);
+      if (r.ok) {
+        alert("✅ Envelope aplicado.\\n" + r.criados + " lançamentos espelho criados.");
+        _fecharReceiveModal();
+        if (typeof atualizarStatusEnvelope === "function") atualizarStatusEnvelope();
+      } else {
+        alert("❌ Erro: " + r.erro);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Erro inesperado: " + err.message);
+    }
+  }
+
+  async function _aplicarEnvelope(env) {
+    var empresas = [];
+    try { empresas = JSON.parse(localStorage.getItem("dv.trocaHoras.empresas.v1") || "[]"); } catch (_) {}
+    var empresaA = empresas.find(function (e) {
+      if (env.from_company.company_code && e.company_code) {
+        var _nc2 = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+        return _nc2(e.company_code) === _nc2(env.from_company.company_code);
+      }
+      return _normNome(e.nome) === _normNome(env.from_company.name);
+    });
+    var empresasNovas = empresas.slice();
+    if (!empresaA) {
+      empresaA = {
+        id: "th-e-" + _uuid(),
+        nome: env.from_company.name,
+        cnpj: "", contato: "",
+        obs: "Criada automaticamente via importação de envelope " + env.transfer_code,
+        logo: env.from_company.logo || "",
+        modelos: [],
+        company_code: env.from_company.company_code || "",
+        criado_em: new Date().toISOString()
+      };
+      empresasNovas.push(empresaA);
+    }
+
+    var lanc = [];
+    try { lanc = JSON.parse(localStorage.getItem("dv.trocaHoras.v1") || "[]"); } catch (_) {}
+    var agora = new Date().toISOString();
+    var criados = [];
+
+    env.items.forEach(function (item) {
+      var min = item.minutos || 0;
+      if (item.tipo === "credito") {
+        var trechoSint = {
+          data: item.data || (item.criado_em ? item.criado_em.slice(0, 10) : agora.slice(0, 10)),
+          origem: env.from_company.name,
+          destino: env.to_company.name,
+          hora: "",
+          duracao: minutosParaHHMM(min),
+          _sintetico: true
+        };
+        criados.push({
+          id: "th-d-" + _uuid(),
+          tipo: "debito",
+          enviado: true, enviado_em: agora,
+          envelope_id: env.envelope_id, envelope_origem: env.transfer_code,
+          origem: "importacao", aplicado_em: agora,
+          modelo: item.modelo, modelo_icao: item.modelo_icao,
+          aeronave_prefixo: item.aeronave_tail || "",
+          _prefixo_origem: item.aeronave_tail || "",
+          empresa_id: empresaA.id,
+          empresa_nome: empresaA.nome,
+          empresa_logo_snapshot: env.from_company.logo || "",
+          solicitante_id: item.solicitante_id || null,
+          responsavel: item.responsavel || "",
+          responsavel_id: item.responsavel_id || null,
+          trechos: [trechoSint],
+          _origem_minutos: min,
+          observacoes: "Importado via envelope " + env.transfer_code,
+          criado_em: agora
+        });
+      } else if (item.tipo === "debito") {
+        criados.push({
+          id: "th-c-" + _uuid(),
+          tipo: "credito",
+          enviado: true, enviado_em: agora,
+          envelope_id: env.envelope_id, envelope_origem: env.transfer_code,
+          origem: "importacao", aplicado_em: agora,
+          modelo: item.modelo, modelo_icao: item.modelo_icao,
+          aeronave_tail: item.aeronave_prefixo || "",
+          _prefixo_origem: item.aeronave_prefixo || "",
+          empresa_emprestada: empresaA.nome,
+          empresa_emprestada_id: empresaA.id,
+          empresa_logo_snapshot: env.from_company.logo || "",
+          tempo_voo: minutosParaHHMM(min),
+          data: item.data || (item.criado_em ? item.criado_em.slice(0, 10) : agora.slice(0, 10)),
+          solicitante_id: item.solicitante_id || null,
+          responsavel: item.responsavel || "",
+          responsavel_id: item.responsavel_id || null,
+          ev_id: null,
+          passageiros: item.passageiros || null,
+          _origem_minutos: min,
+          observacoes: "Importado via envelope " + env.transfer_code,
+          criado_em: agora
+        });
+      }
+    });
+
+    if (empresasNovas.length !== empresas.length) {
+      localStorage.setItem("dv.trocaHoras.empresas.v1", JSON.stringify(empresasNovas));
+      if (typeof salvarEmpresas === "function") { try { salvarEmpresas(empresasNovas); } catch (_) {} }
+    }
+    localStorage.setItem("dv.trocaHoras.v1", JSON.stringify(lanc.concat(criados)));
+
+    var aplicados = [];
+    try { aplicados = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopesAplicados.v1") || "[]"); } catch (_) {}
+    aplicados.push({
+      envelope_id: env.envelope_id, transfer_code: env.transfer_code,
+      from_company: env.from_company.name, to_company: env.to_company.name,
+      applied_at: agora, items_aplicados: criados.length
+    });
+    localStorage.setItem("dv.trocaHoras.envelopesAplicados.v1", JSON.stringify(aplicados));
+
+    return { ok: true, criados: criados.length };
+  }
+
+  window.abrirModalReceive = abrirModalReceive;
+  window.injectModalReceive = injectModalReceive;
+})();
+// ===== FIM FASE 2 (RECEBER ENVELOPE) =====
   async function gerarEnvelope(empId) {
     if (!empId) return { ok: false, msg: "Selecione uma empresa primeiro." };
     const empresa = lerEmpresas().find(e => String(e.id) === String(empId));
     if (!empresa) return { ok: false, msg: "Empresa não encontrada." };
+    if (!empresa.company_code || !normalizarCompanyCode(empresa.company_code)) {
+      return { ok: false, msg: "A empresa \"" + empresa.nome + "\" ainda não tem Código da Empresa cadastrado. Peça o código ao parceiro e cadastre antes de gerar envelope." };
+    }
     
     const todos = lerLancamentos();
     const pendentes = todos.filter(l => {
@@ -18927,7 +19441,8 @@ function _temEnvelopesParaEmpresa(empId) {
       empresa_id: empresa.id,
       name: empresa.nome,
       cnpj: empresa.cnpj || null,
-      logo: empresa.logo || null
+      logo: empresa.logo || null,
+      company_code: normalizarCompanyCode(empresa.company_code)
     };
     
     const items = pendentes.map(l => {
@@ -18987,8 +19502,8 @@ function _temEnvelopesParaEmpresa(empId) {
     const envelopeBase = {
       envelope_id: "env-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6),
       transfer_code: transferCode,
-      schema_version: 1,
-      from_company: { tenant_id: fromTenantId, name: fromCompanyName, logo: settings.logo || null },
+      schema_version: 2,
+      from_company: { tenant_id: fromTenantId, name: fromCompanyName, logo: settings.logo || null, company_code: obterCompanyCode() },
       to_company: toCompany,
       items: items,
       links_aplicados: linksAplicados,
@@ -19124,7 +19639,7 @@ function _temEnvelopesParaEmpresa(empId) {
     }
     if (e.target.closest("#thBtnReceber")) {
       e.preventDefault();
-      alert("📥 Receber envelope será implementado na Fase 2.");
+      abrirModalReceive();
       return;
     }
   });
@@ -20007,6 +20522,7 @@ function renderLista() {
       + '<input type="hidden" id="thEmpresaId">'
       + '<label class="field" style="margin-bottom:10px"><span>Nome da empresa *</span><input id="thEmpresaNome" placeholder="Ex: Aero Taxi XYZ"></label>'
       + '<label class="field" style="margin-bottom:10px"><span>CNPJ / Documento</span><input id="thEmpresaCnpj" placeholder="00.000.000/0000-00"></label>'
+      + '<label class="field" style="margin-bottom:10px"><span>Código da empresa <small class="hint" style="font-weight:400;font-size:10px">(opcional)</small></span><input id="thEmpresaCode" placeholder="EMP-XXXX-XXXX" style="font-family:ui-monospace,monospace;text-transform:uppercase"><small class="hint" style="font-size:10px;display:block;margin-top:2px">Código que a parceira forneceu. Necessário para receber envelopes dela.</small></label>'
       + '<label class="field" style="margin-bottom:10px"><span>Contato</span><input id="thEmpresaContato" placeholder="Nome / Telefone / Email"></label>'
       + '<label class="field"><span>Observações</span><textarea id="thEmpresaObs" rows="2" placeholder="Opcional"></textarea></label>'
       + '<div style="margin:14px 0 10px;padding:10px;background:var(--panel);border-radius:8px">'
@@ -20144,6 +20660,7 @@ function renderLista() {
     if (g("thEmpresaId")) g("thEmpresaId").value = "";
     if (g("thEmpresaNome")) g("thEmpresaNome").value = "";
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
+          if (g("thEmpresaCode")) g("thEmpresaCode").value = "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
     if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = "";
@@ -20172,6 +20689,7 @@ function renderLista() {
         + '<button type="button" data-th-emp-edit="' + esc(e.id) + '" style="flex:1;min-width:0;text-align:left;border:0;background:transparent;cursor:pointer;padding:0;font-family:inherit;color:inherit">'
         +   '<div style="font-size:13px;font-weight:700;color:var(--text)">' + esc(e.nome) + (ativa ? ' <span style="font-size:10px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.05em">· editando</span>' : '') + '</div>'
         +   (e.cnpj ? '<div style="font-size:11px;color:var(--muted)">' + esc(e.cnpj) + '</div>' : '')
+        +   (e.company_code ? '<div style="font-size:11px;color:var(--muted);font-family:ui-monospace,monospace">' + esc(e.company_code) + '</div>' : '')
         + '</button>'
         + '<button type="button" class="event__btn" data-th-emp-del="' + esc(e.id) + '" title="Excluir">🗑️</button>'
         + '</div>';
@@ -20190,6 +20708,7 @@ function renderLista() {
           if (g("thEmpresaId")) g("thEmpresaId").value = "";
           if (g("thEmpresaNome")) g("thEmpresaNome").value = "";
           if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
+          if (g("thEmpresaCode")) g("thEmpresaCode").value = "";
           if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
           if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
           if (g("thEmpresaModalTitle")) g("thEmpresaModalTitle").textContent = "Cadastrar empresa";
@@ -20208,6 +20727,7 @@ function renderLista() {
     if (g("thEmpresaId")) g("thEmpresaId").value = e.id;
     if (g("thEmpresaNome")) g("thEmpresaNome").value = e.nome || "";
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = e.cnpj || "";
+    if (g("thEmpresaCode")) g("thEmpresaCode").value = e.company_code || "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = e.contato || "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = e.obs || "";
     if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = e.logo || "";
@@ -20240,15 +20760,16 @@ function renderLista() {
     const idEdit = (document.getElementById("thEmpresaId").value || "").trim();
     const logo = (document.getElementById("thEmpresaLogoData")?.value || "").trim();
     const modelos = capturarModelosEmpresa();
+    const company_code = (document.getElementById("thEmpresaCode")?.value || "").trim().toUpperCase();
 
     const lista = lerEmpresas();
     if (idEdit) {
       const i = lista.findIndex(e => e.id === idEdit);
-      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, logo, modelos };
+      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, logo, modelos, company_code };
     } else {
       lista.push({
         id: "th-e-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10))),
-        nome, cnpj, contato, obs, logo, modelos,
+        nome, cnpj, contato, obs, logo, modelos, company_code,
         criado_em: new Date().toISOString()
       });
     }
@@ -20259,6 +20780,7 @@ function renderLista() {
     if (g("thEmpresaId")) g("thEmpresaId").value = "";
     if (g("thEmpresaNome")) g("thEmpresaNome").value = "";
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
+          if (g("thEmpresaCode")) g("thEmpresaCode").value = "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
     renderListaEmpresas();
