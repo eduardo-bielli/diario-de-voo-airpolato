@@ -18677,19 +18677,28 @@ const TrocaHoras = (() => {
     }
     const lancamentos = _lancs;
     const links = lerLinks();
+    const empresa = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
+    const _resolverVinculo = (mod) => {
+      if (!mod || !empresa || !Array.isArray(empresa.modelos)) return mod;
+      for (const m of empresa.modelos) {
+        if (!m || typeof m === "string") continue;
+        if (m.nome === mod && m.vinculado_a) return m.vinculado_a;
+      }
+      return mod;
+    };
     const modeloMap = {};
     const criarEntry = (modelo) => ({ modelo, credito_min: 0, debito_min: 0, itens: [] });
 
     /* Soma bruta por modelo (sem consumo por lançamento) */
     lancamentos.forEach(l => {
       if (l.tipo === "credito") {
-        const mod = l.modelo || "—";
+        const mod = _resolverVinculo(l.modelo || "—");
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = tempoParaMinutos(l.tempo_voo);
         modeloMap[mod].credito_min += minTotal;
         modeloMap[mod].itens.push({ id: l.id, tipo: "credito", total: minTotal });
       } else if (l.tipo === "debito") {
-        const mod = l.modelo_linkado || l.modelo || "—";
+        const mod = _resolverVinculo(l.modelo_linkado || l.modelo || "—");
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
         modeloMap[mod].debito_min += minTotal;
