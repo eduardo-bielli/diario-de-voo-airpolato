@@ -5269,7 +5269,6 @@ body.is-booting .app {
 <div class="settings-section"><h3>Identidade</h3><div class="formgrid">
 <label class="field"><span>Nome da empresa</span><input id="setCompanyName" placeholder="Nome da empresa"></label>
 
-<label class="field"><span>Código da empresa</span><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input id="setCompanyCode" readonly placeholder="Gerado automaticamente" style="font-family:ui-monospace,monospace;font-weight:700;letter-spacing:.05em;flex:1;min-width:180px"><button type="button" class="btn btn--secondary" id="setCompanyCodeCopy" title="Copiar código" style="padding:6px 10px;font-size:12px">📋</button></div><span class="hint" style="font-size:11px;margin-top:4px;display:block">Forneça aos parceiros para receber envelopes. Este código é fixo — entre em contato com o suporte se precisar trocá-lo.</span></label>
 <label class="field"><span>Logo Principal</span><input id="setCompanyLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><div class="logo-preview"><img id="logoPreview" alt="" hidden></div></label>
 <label class="field"><span>Ícone da Aba (Favicon)</span><input id="setCompanyFavicon" type="file" accept="image/png,image/x-icon,image/jpeg,image/svg+xml"><div class="logo-preview"><img id="faviconPreview" alt="" hidden></div></label>
 </div></div>
@@ -8385,7 +8384,6 @@ const Theme = (() => {
   function openModal() {
     const g = (id) => document.getElementById(id);
     g("setCompanyName").value = settings.companyName || "";
-    g("setCompanyCode").value = (window.obterCompanyCode ? window.obterCompanyCode() : settings.companyCode || "");
     syncForm();
     const prev = g("logoPreview");
     if (settings.logo) { prev.src = settings.logo; prev.hidden = false; } else prev.hidden = true;
@@ -18571,11 +18569,23 @@ const TrocaHoras = (() => {
       badge = document.createElement("div");
       badge.id = "thCompanyCodeBadge";
       badge.style.cssText = "font-size:11px;color:var(--muted);font-family:ui-monospace,monospace;padding:6px 10px;margin-bottom:8px;display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:6px";
+      badge.addEventListener("click", function (e) {
+        if (!e.target || e.target.id !== "thCompanyCodeBadgeCopy") return;
+        e.stopPropagation();
+        var btn = e.target;
+        var c = obterCompanyCode();
+        var done = function () { btn.textContent = "✅"; setTimeout(function () { btn.textContent = "📋"; }, 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(c).then(done).catch(function () { prompt("Copie:", c); });
+        } else {
+          prompt("Copie:", c);
+        }
+      });
       var row = sel.parentElement;
       if (row && row.parentElement) row.parentElement.insertBefore(badge, row);
       else if (row) row.insertBefore(badge, row.firstChild);
     }
-    badge.innerHTML = 'Seu código: <strong style="color:var(--text);font-weight:700">' + _thEscLocal(code) + '</strong>';
+    badge.innerHTML = 'Seu código: <strong style="color:var(--text);font-weight:700">' + _thEscLocal(code) + '</strong> <button type="button" id="thCompanyCodeBadgeCopy" title="Copiar código" style="background:transparent;border:0;cursor:pointer;padding:0 4px;font-size:12px;color:var(--muted)">📋</button>';
   }
   function bindCompanyCodeButtons() {
     var copy = document.getElementById("setCompanyCodeCopy");
