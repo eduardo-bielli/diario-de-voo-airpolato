@@ -4942,6 +4942,10 @@ body.is-booting .app {
             <span style="color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Empresa:</span>
             <select id="thFiltroEmpresa" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text);font-family:inherit;font-weight:600;min-width:180px"></select>
           </label>
+          <span id="thEnvelopeStatus" title="Selecione uma empresa" style="font-size:18px;line-height:1;cursor:help">⚪</span>
+          <button type="button" class="btn btn--secondary" id="thBtnEnviar" disabled style="font-size:12px;padding:6px 12px;opacity:.5;cursor:not-allowed" title="Gerar envelope com lançamentos pendentes">📤 Enviar</button>
+          <button type="button" class="btn btn--secondary" id="thBtnHistorico" style="font-size:12px;padding:6px 12px;display:none" title="Ver envelopes já gerados">📋 Histórico</button>
+          <button type="button" class="btn btn--secondary" id="thBtnReceber" style="font-size:12px;padding:6px 12px" title="Receber envelope de outra empresa">📥 Receber</button>
         </div>
         <div id="thDashboard" style="padding:16px 20px;border-bottom:1px solid var(--line)">
           <p class="hint" style="margin:0">Carregando…</p>
@@ -5264,6 +5268,7 @@ body.is-booting .app {
 </div><p class="hint" id="customHint">Ajuste as cores abaixo — o tema muda para <strong>Personalizado</strong>.</p></div>
 <div class="settings-section"><h3>Identidade</h3><div class="formgrid">
 <label class="field"><span>Nome da empresa</span><input id="setCompanyName" placeholder="Nome da empresa"></label>
+
 <label class="field"><span>Logo Principal</span><input id="setCompanyLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><div class="logo-preview"><img id="logoPreview" alt="" hidden></div></label>
 <label class="field"><span>Ícone da Aba (Favicon)</span><input id="setCompanyFavicon" type="file" accept="image/png,image/x-icon,image/jpeg,image/svg+xml"><div class="logo-preview"><img id="faviconPreview" alt="" hidden></div></label>
 </div></div>
@@ -8336,6 +8341,7 @@ const Theme = (() => {
     const g = (id) => document.getElementById(id)?.value ?? "";
     const next = { ...settings,
       companyName: g("setCompanyName").trim(),
+      companyCode: (g("setCompanyCode") || "").trim() || (window.obterCompanyCode ? window.obterCompanyCode() : settings.companyCode || ""),
       iconColor: g("setIconColor"), accent: g("setAccentColor"),
       bg: g("setBgColor"), panel: g("setPanelColor"),
       sidebarBg: g("setSidebarBg"), line: g("setLineColor"),
@@ -8383,6 +8389,7 @@ const Theme = (() => {
     if (settings.logo) { prev.src = settings.logo; prev.hidden = false; } else prev.hidden = true;
     mark();
     g("settingsModal").classList.add("is-open");
+    if (window.bindCompanyCodeButtons) window.bindCompanyCodeButtons();
   }
   function liveInputs() {
     VARS.forEach(([key,,inputId]) => {
@@ -18493,6 +18500,7 @@ const TrocaHoras = (() => {
   function popularSelectFiltroEmpresa() {
     const sel = document.getElementById("thFiltroEmpresa");
     if (!sel) return;
+    try { _thRenderCompanyCodeBadge(sel); } catch (_) {}
     const empresas = lerEmpresas();
     let html = '<option value="">Todas as empresas</option>';
     html += empresas.map(e =>
@@ -18522,6 +18530,117 @@ const TrocaHoras = (() => {
     try { return JSON.parse(localStorage.getItem(KEYS.EMPRESAS) || "[]"); }
     catch(e){ return []; }
   }
+
+
+  /* ===== INÍCIO COMPANY CODE (COMMIT 1) ===== */
+  var __CC_ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  function gerarCompanyCode() {
+    var bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    var c = Array.from(bytes).map(function (b) { return __CC_ALPHA[b % 32]; });
+    return "EMP-" + c.slice(0, 4).join("") + "-" + c.slice(4, 8).join("");
+  }
+  function normalizarCompanyCode(s) {
+    return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+  function obterCompanyCode() {
+    var st = {};
+    try { st = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); } catch (_) {}
+    var _normCC = String(st.companyCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (_normCC && _normCC.indexOf("EMP") === 0 && _normCC.length >= 7) return st.companyCode;
+    st.companyCode = gerarCompanyCode();
+    localStorage.setItem("dv.settings.v3", JSON.stringify(st));
+    if (window.Store && typeof Store.saveSettings === "function") {
+      try { Store.saveSettings(st).catch(function(){}); } catch (_) {}
+    }
+    console.log("[companyCode] gerado:", st.companyCode);
+    return st.companyCode;
+  }
+  function _thEscLocal(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
+    });
+  }
+  function _thRenderCompanyCodeBadge(sel) {
+    if (!sel) return;
+    var badge = document.getElementById("thCompanyCodeBadge");
+    var code = obterCompanyCode();
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = "thCompanyCodeBadge";
+      badge.style.cssText = "font-size:11px;color:var(--muted);font-family:ui-monospace,monospace;padding:6px 10px;margin-bottom:8px;display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:6px";
+      badge.addEventListener("click", function (e) {
+        if (!e.target || e.target.id !== "thCompanyCodeBadgeCopy") return;
+        e.stopPropagation();
+        var btn = e.target;
+        var c = obterCompanyCode();
+        var done = function () { btn.textContent = "✅"; setTimeout(function () { btn.textContent = "📋"; }, 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(c).then(done).catch(function () { prompt("Copie:", c); });
+        } else {
+          prompt("Copie:", c);
+        }
+      });
+      var row = sel.parentElement;
+      if (row && row.parentElement) row.parentElement.insertBefore(badge, row);
+      else if (row) row.insertBefore(badge, row.firstChild);
+    }
+    badge.innerHTML = 'Seu código: <strong style="color:var(--text);font-weight:700">' + _thEscLocal(code) + '</strong> <button type="button" id="thCompanyCodeBadgeCopy" title="Copiar código" style="background:transparent;border:0;cursor:pointer;padding:0 4px;font-size:12px;color:var(--muted)">📋</button>';
+  }
+  function bindCompanyCodeButtons() {
+    var copy = document.getElementById("setCompanyCodeCopy");
+    var inp = document.getElementById("setCompanyCode");
+    if (inp && !inp.value) { try { inp.value = obterCompanyCode(); } catch (_) {} }
+    if (copy && !copy.__bound) {
+      copy.__bound = true;
+      copy.addEventListener("click", function () {
+        var code = (document.getElementById("setCompanyCode") || {}).value || "";
+        if (!code) return;
+        var done = function () { copy.textContent = "✅"; setTimeout(function () { copy.textContent = "📋"; }, 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(done).catch(function () { prompt("Copie:", code); });
+        } else {
+          prompt("Copie:", code);
+        }
+      });
+    }
+  }
+
+
+
+  window.gerarCompanyCode = gerarCompanyCode;
+  window.normalizarCompanyCode = normalizarCompanyCode;
+  window.obterCompanyCode = obterCompanyCode;
+  window.bindCompanyCodeButtons = bindCompanyCodeButtons;
+  /* Intercepta salvarEmpresas para injetar company_code do form */
+  (function () {
+    var _origSalvar = window.salvarEmpresas;
+    if (typeof _origSalvar !== "function") {
+      // (interceptor legado removido — salvarEmpresa cuida do company_code)
+      return;
+    }
+    window.salvarEmpresas = function (lista) {
+      try {
+        if (!Array.isArray(lista) || !lista.length) return _origSalvar.apply(this, arguments);
+        var inp = document.getElementById("thEmpresaCode");
+        if (inp) {
+          var code = (inp.value || "").trim();
+          var idEl = document.getElementById("thEmpresaId");
+          var id = idEl ? idEl.value : "";
+          var target = id ? lista.find(function (x) { return x.id === id; }) : lista[lista.length - 1];
+          if (target) {
+            target.company_code = code;
+            console.log("[company_code] setado:", target.nome, "→", code || "(vazio)");
+          }
+        }
+      } catch (err) {
+        console.warn("[company_code interceptor]", err);
+      }
+      return _origSalvar.apply(this, arguments);
+    };
+  })();
+  /* ===== FIM COMPANY CODE (COMMIT 1) ===== */
+
   function salvarEmpresas(list) {
     localStorage.setItem(KEYS.EMPRESAS, JSON.stringify(list));
   }
@@ -18568,19 +18687,28 @@ const TrocaHoras = (() => {
     }
     const lancamentos = _lancs;
     const links = lerLinks();
+    const empresa = empresaId ? lerEmpresas().find(e => e.id === empresaId) : null;
+    const _resolverVinculo = (mod) => {
+      if (!mod || !empresa || !Array.isArray(empresa.modelos)) return mod;
+      for (const m of empresa.modelos) {
+        if (!m || typeof m === "string") continue;
+        if (m.nome === mod && m.vinculado_a) return m.vinculado_a;
+      }
+      return mod;
+    };
     const modeloMap = {};
     const criarEntry = (modelo) => ({ modelo, credito_min: 0, debito_min: 0, itens: [] });
 
     /* Soma bruta por modelo (sem consumo por lançamento) */
     lancamentos.forEach(l => {
       if (l.tipo === "credito") {
-        const mod = l.modelo || "—";
+        const mod = _resolverVinculo(l.modelo || "—");
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = tempoParaMinutos(l.tempo_voo);
         modeloMap[mod].credito_min += minTotal;
         modeloMap[mod].itens.push({ id: l.id, tipo: "credito", total: minTotal });
       } else if (l.tipo === "debito") {
-        const mod = l.modelo_linkado || l.modelo || "—";
+        const mod = _resolverVinculo(l.modelo_linkado || l.modelo || "—");
         if (!modeloMap[mod]) modeloMap[mod] = criarEntry(mod);
         const minTotal = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
         modeloMap[mod].debito_min += minTotal;
@@ -18773,6 +18901,768 @@ const TrocaHoras = (() => {
     if (modal) modal.classList.add("is-open");
   }
 
+function _temEnvelopesParaEmpresa(empId) {
+    try {
+      const envelopes = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopes.v1") || "[]");
+      return envelopes.some(e => e.to_company && String(e.to_company.empresa_id) === String(empId));
+    } catch(e) { return false; }
+  }
+  
+  function atualizarStatusEnvelope() {
+    const statusEl = document.getElementById("thEnvelopeStatus");
+    const btnEnviar = document.getElementById("thBtnEnviar");
+    const btnHistorico = document.getElementById("thBtnHistorico");
+    const btnReceber = document.getElementById("thBtnReceber");
+    if (!statusEl || !btnEnviar) return;
+    
+    const empId = _thEmpresaFiltroId();
+    
+    if (!empId) {
+      statusEl.style.display = "none";
+      btnEnviar.style.display = "none";
+      if (btnHistorico) btnHistorico.style.display = "none";
+      if (btnReceber) btnReceber.style.display = "none";
+      return;
+    }
+    
+    const lancamentos = lerLancamentos().filter(l => {
+      const lid = l.empresa_id || l.empresa_emprestada_id;
+      return String(lid) === String(empId);
+    });
+    
+    const pendentes = lancamentos.filter(l => l.enviado === false);
+    const temEnvelopes = _temEnvelopesParaEmpresa(empId);
+    
+    if (!lancamentos.length) {
+      statusEl.style.display = "none";
+      btnEnviar.style.display = "none";
+      if (btnHistorico) btnHistorico.style.display = "none";
+      if (btnReceber) btnReceber.style.display = "none";
+      return;
+    }
+    
+    statusEl.style.display = "";
+    if (btnReceber) btnReceber.style.display = "";
+    
+    if (pendentes.length === 0) {
+      statusEl.textContent = "🟢";
+      statusEl.title = "Tudo sincronizado — " + lancamentos.length + " lançamento(s) já enviado(s)";
+      btnEnviar.style.display = "none";
+      if (btnHistorico) btnHistorico.style.display = temEnvelopes ? "" : "none";
+    } else {
+      statusEl.textContent = "🟡";
+      statusEl.title = pendentes.length + " pendente(s) de envio (de " + lancamentos.length + " total)";
+      btnEnviar.style.display = "";
+      btnEnviar.disabled = false;
+      btnEnviar.style.opacity = "1";
+      btnEnviar.style.cursor = "pointer";
+      if (btnHistorico) btnHistorico.style.display = temEnvelopes ? "" : "none";
+    }
+  }
+  
+  function abrirHistoricoEnvelopes(empId) {
+    injectModalEnvelope();
+    // Ajusta o título do modal para "Histórico de envelopes"
+    var _tituloModal = document.querySelector("#thEnvelopeModal h2");
+    if (_tituloModal) _tituloModal.textContent = "📋 Histórico de envelopes";
+    const envelopes = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopes.v1") || "[]")
+      .filter(e => e.to_company && String(e.to_company.empresa_id) === String(empId));
+    
+    const modal = document.getElementById("thEnvelopeModal");
+    if (!modal) return;
+    
+    const codeEl = document.getElementById("thEnvelopeCode");
+    const summaryEl = document.getElementById("thEnvelopeSummary");
+    const copyBtn = document.getElementById("thEnvelopeCopy");
+    const dlBtn = document.getElementById("thEnvelopeDownload");
+    
+    if (copyBtn) copyBtn.style.display = "none";
+    if (dlBtn) dlBtn.style.display = "none";
+    // Ajusta o subtítulo
+    var _subModal = document.querySelector("#thEnvelopeModal p.hint");
+    if (_subModal) _subModal.textContent = "Envelopes já gerados para esta empresa. Baixe novamente se precisar.";
+    if (codeEl) {
+      codeEl.textContent = "📋 " + envelopes.length + " envelope(s)";
+      codeEl.style.fontSize = "16px";
+    }
+    
+    if (!envelopes.length) {
+      if (summaryEl) summaryEl.innerHTML = "Nenhum envelope gerado para esta empresa.";
+    } else {
+      const listaHtml = envelopes.slice().reverse().map(function(env) {
+        const data = new Date(env.created_at).toLocaleString("pt-BR");
+        const cred = env.items.filter(function(i) { return i.tipo === "credito"; }).length;
+        const deb = env.items.filter(function(i) { return i.tipo === "debito"; }).length;
+        return '<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+          + '<div style="flex:1;min-width:0">'
+          +   '<div style="font-family:ui-monospace,monospace;font-size:14px;font-weight:800;color:var(--accent)">' + env.transfer_code + '</div>'
+          +   '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + data + ' · ' + env.items.length + ' items (' + cred + '↑ ' + deb + '↓)' + (env.links_aplicados.length ? ' · ' + env.links_aplicados.length + ' link(s)' : '') + '</div>'
+          + '</div>'
+          + '<button type="button" class="btn btn--secondary" data-env-download="' + env.envelope_id + '" style="font-size:11px;padding:4px 10px">⬇️ Baixar</button>'
+          + '</div>';
+      }).join("");
+      if (summaryEl) summaryEl.innerHTML = '<div style="max-height:300px;overflow-y:auto">' + listaHtml + '</div>';
+      
+      setTimeout(function() {
+        modal.querySelectorAll("[data-env-download]").forEach(function(btn) {
+          btn.onclick = function() {
+            const envId = btn.dataset.envDownload;
+            const env = envelopes.find(function(e) { return e.envelope_id === envId; });
+            if (!env) return;
+            const blob = new Blob([JSON.stringify(env, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = env.transfer_code + "-envelope.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          };
+        });
+      }, 50);
+    }
+    
+    modal.classList.add("is-open");
+  }
+
+
+// ===== INÍCIO FASE 2 (RECEBER ENVELOPE) =====
+(function () {
+  "use strict";
+
+  var _esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
+    });
+  };
+  var _thReceiveState = { env: null, validacao: null, arquivoNome: null };
+
+  function _normNome(s) {
+    return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  }
+  function _uuid() {
+    return (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+  function _fecharReceiveModal() {
+    var m = document.getElementById("thReceiveModal");
+    if (m) m.classList.remove("is-open");
+  }
+
+  function injectModalReceive() {
+    if (document.getElementById("thReceiveModal")) return;
+    var modal = document.createElement("div");
+    modal.className = "modal";
+    modal.id = "thReceiveModal";
+    modal.innerHTML =
+      '<div class="dialog" style="max-width:680px">' +
+        '<h2>📥 Receber envelope</h2>' +
+        '<p class="hint">Cole o código ou faça upload do arquivo .json do envelope.</p>' +
+        '<div class="field"><label>Código do envelope</label>' +
+          '<input type="text" id="thReceiveCode" placeholder="TH-2026-XXXXXX" autocomplete="off"></div>' +
+        '<div class="field"><label>Arquivo .json</label>' +
+          '<input type="file" id="thReceiveFile" accept=".json,application/json"></div>' +
+        '<div id="thReceiveStatus" class="hint" style="margin-top:8px"></div>' +
+        '<div id="thReceivePreview"></div>' +
+        '<div class="dialog__actions">' +
+          '<button class="btn btn--secondary" id="thReceiveCancel">Cancelar</button>' +
+          '<button class="btn" id="thReceiveConfirm" disabled>Aplicar</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    document.getElementById("thReceiveCancel").addEventListener("click", _fecharReceiveModal);
+    document.getElementById("thReceiveFile").addEventListener("change", _onReceiveFileChange);
+    document.getElementById("thReceiveCode").addEventListener("input", function () {
+      if (_thReceiveState.env) _revalidar();
+    });
+    document.getElementById("thReceiveConfirm").addEventListener("click", _onReceiveConfirm);
+  }
+
+  function abrirModalReceive() {
+    injectModalReceive();
+    _thReceiveState = { env: null, validacao: null, arquivoNome: null };
+    document.getElementById("thReceiveCode").value = "";
+    document.getElementById("thReceiveFile").value = "";
+    document.getElementById("thReceiveStatus").innerHTML = "";
+    document.getElementById("thReceivePreview").innerHTML = "";
+    document.getElementById("thReceiveConfirm").disabled = true;
+    document.getElementById("thReceiveModal").classList.add("is-open");
+  }
+
+  async function _onReceiveFileChange(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var status = document.getElementById("thReceiveStatus");
+    status.textContent = "Lendo arquivo...";
+    try {
+      var env = JSON.parse(await file.text());
+      _thReceiveState.env = env;
+      _thReceiveState.arquivoNome = file.name;
+      var codeInput = document.getElementById("thReceiveCode");
+      if (!codeInput.value.trim()) codeInput.value = env.transfer_code || "";
+      await _revalidar();
+    } catch (err) {
+      console.error(err);
+      status.innerHTML = '<div style="color:var(--red)">❌ Arquivo inválido: ' + _esc(err.message) + '</div>';
+      _thReceiveState.env = null;
+      document.getElementById("thReceiveConfirm").disabled = true;
+      document.getElementById("thReceivePreview").innerHTML = "";
+    }
+  }
+
+  async function _revalidar() {
+    var env = _thReceiveState.env;
+    if (!env) return;
+    var codigo = document.getElementById("thReceiveCode").value.trim();
+    var v = await _validarEnvelope(env, codigo);
+    _thReceiveState.validacao = v;
+    _renderPreviewEnvelope(env, v);
+    document.getElementById("thReceiveConfirm").disabled = !v.ok;
+  }
+
+  async function _validarHashEnvelope(env) {
+    var clone = JSON.parse(JSON.stringify(env));
+    var hashRecebido = clone.hash;
+    delete clone.hash; delete clone.signature;
+    var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(clone)));
+    var hex = Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    return "sha256:" + hex === hashRecebido;
+  }
+
+  async function _validarEnvelope(env, codigoDigitado) {
+    var erros = [], avisos = [];
+    ["envelope_id","transfer_code","schema_version","from_company","to_company","items","totais","created_at","hash"]
+      .forEach(function (c) { if (!(c in env)) erros.push("Campo ausente: " + c); });
+    if (erros.length) return { ok: false, erros: erros, avisos: avisos, diff: null };
+
+    if (codigoDigitado && String(codigoDigitado).toUpperCase() !== String(env.transfer_code).toUpperCase()) {
+      erros.push("Código informado (" + codigoDigitado + ") não bate com o arquivo (" + env.transfer_code + ").");
+    }
+
+    // Rejeita envelopes legados (v1) — formato antigo, sem company_code
+    if (Number(env.schema_version) < 2) {
+      erros.push("Envelope no formato antigo (v1). Peça ao parceiro para gerar um novo envelope no sistema atualizado.");
+    } else {
+      // v2: D3 por company_code (match exato)
+      var _nc = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+      var _myCode = _nc(window.obterCompanyCode ? window.obterCompanyCode() : (function () {
+        try { return JSON.parse(localStorage.getItem("dv.settings.v3") || "{}").companyCode || ""; } catch (_) { return ""; }
+      })());
+      var _envCode = _nc(env.to_company && env.to_company.company_code);
+      if (!_envCode) {
+        // v2 sem company_code — fallback defensivo por nome
+        var settings = {};
+        try { settings = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}"); } catch (_) {}
+        if (_normNome(env.to_company.name) !== _normNome(settings.companyName || "")) {
+          erros.push("Este envelope é destinado a " + env.to_company.name + ". Você não pode importá-lo.");
+        }
+      } else if (_envCode !== _myCode) {
+        erros.push("Este envelope é destinado ao código " + env.to_company.company_code + ", mas seu código é " + _myCode + ". Você não pode importá-lo.");
+      }
+    }
+
+    try {
+      var hashOk = await _validarHashEnvelope(env);
+      if (!hashOk) erros.push("Hash do envelope não confere. O arquivo pode estar corrompido ou ter sido alterado.");
+    } catch (e) {
+      erros.push("Não foi possível validar o hash: " + e.message);
+    }
+
+    var aplicados = [];
+    try { aplicados = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopesAplicados.v1") || "[]"); } catch (_) {}
+    var ja = aplicados.find(function (a) { return a.envelope_id === env.envelope_id || a.transfer_code === env.transfer_code; });
+    if (ja) {
+      var data = ja.applied_at ? new Date(ja.applied_at).toLocaleString("pt-BR") : "—";
+      erros.push("Este envelope já foi aplicado em " + data + ". Não pode ser aplicado novamente.");
+    }
+
+    var empresas = [];
+    try { empresas = JSON.parse(localStorage.getItem("dv.trocaHoras.empresas.v1") || "[]"); } catch (_) {}
+    var empresaA = empresas.find(function (e) {
+      if (env.from_company.company_code && e.company_code) {
+        var _nc2 = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+        return _nc2(e.company_code) === _nc2(env.from_company.company_code);
+      }
+      return _normNome(e.nome) === _normNome(env.from_company.name);
+    });
+    if (!empresaA) avisos.push("A empresa " + env.from_company.name + " ainda não está cadastrada. Será criada automaticamente.");
+
+    var diff = _compararTotais(env);
+    return { ok: erros.length === 0, erros: erros, avisos: avisos, diff: diff };
+  }
+
+  function _compararTotais(env) {
+    var lanc = [], empresas = [];
+    try { lanc = JSON.parse(localStorage.getItem("dv.trocaHoras.v1") || "[]"); } catch (_) {}
+    try { empresas = JSON.parse(localStorage.getItem("dv.trocaHoras.empresas.v1") || "[]"); } catch (_) {}
+    var empresaA = empresas.find(function (e) {
+      if (env.from_company.company_code && e.company_code) {
+        var _nc2 = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+        return _nc2(e.company_code) === _nc2(env.from_company.company_code);
+      }
+      return _normNome(e.nome) === _normNome(env.from_company.name);
+    });
+
+    var local = {};
+    function conta(icao, campo, min) {
+      if (!local[icao]) local[icao] = { credito_min: 0, debito_min: 0 };
+      local[icao][campo] += min;
+    }
+    if (empresaA) {
+      lanc.forEach(function (l) {
+        var icao = l.modelo_icao;
+        if (!icao) return;
+        if (l.tipo === "credito" && l.empresa_emprestada_id === empresaA.id) {
+          var min = (l.trechos || []).reduce(function (s, t) { return s + tempoParaMinutos(t.duracao); }, 0) || tempoParaMinutos(l.tempo_voo || "0:00");
+          conta(icao, "credito_min", min);
+        } else if (l.tipo === "debito" && l.empresa_id === empresaA.id) {
+          var min = (l.trechos || []).reduce(function (s, t) { return s + tempoParaMinutos(t.duracao); }, 0);
+          conta(icao, "debito_min", min);
+        }
+      });
+    }
+
+    var icaos = {};
+    Object.keys(env.totais || {}).forEach(function (k) { icaos[k] = 1; });
+    Object.keys(local).forEach(function (k) { icaos[k] = 1; });
+    var diff = [];
+    Object.keys(icaos).forEach(function (icao) {
+      var envC = (env.totais && env.totais[icao]) || { credito_min: 0, debito_min: 0 };
+      var esperado = { credito_min: envC.debito_min, debito_min: envC.credito_min };
+      var loc = local[icao] || { credito_min: 0, debito_min: 0 };
+      if (esperado.credito_min !== loc.credito_min || esperado.debito_min !== loc.debito_min) {
+        diff.push({ icao: icao, esperado: esperado, local: loc });
+      }
+    });
+    return { bate: diff.length === 0, diff: diff };
+  }
+
+  function _renderPreviewEnvelope(env, v) {
+    var status = document.getElementById("thReceiveStatus");
+    var preview = document.getElementById("thReceivePreview");
+
+    if (v.erros.length) {
+      status.innerHTML = v.erros.map(function (e) { return '<div style="color:var(--red)">❌ ' + _esc(e) + '</div>'; }).join("");
+      preview.innerHTML = "";
+      return;
+    }
+
+    var hs = ['<div style="color:var(--green)">✅ Envelope válido</div>'];
+    v.avisos.forEach(function (a) { hs.push('<div style="color:var(--muted)">⚠️ ' + _esc(a) + '</div>'); });
+    if (v.diff && v.diff.bate) hs.push('<div style="color:var(--green)">✅ Totais consistentes</div>');
+    else if (v.diff && v.diff.diff.length) hs.push('<div style="color:var(--red)">⚠️ Totais divergentes — ver diff abaixo</div>');
+    status.innerHTML = hs.join("");
+
+    var itemsHtml = (env.items || []).map(function (it) {
+      return '<tr><td>' + _esc(it.modelo) + ' <span class="hint">(' + _esc(it.modelo_icao) + ')</span></td>' +
+        '<td>' + (it.tipo === "credito" ? "Crédito" : "Débito") + '</td>' +
+        '<td style="text-align:right">' + _esc(minutosParaHHMM(it.minutos || 0)) + '</td></tr>';
+    }).join("");
+
+    var linksHtml = "";
+    if ((env.links_aplicados || []).length) {
+      linksHtml = '<div style="margin-top:8px"><strong>Links já aplicados em ' + _esc(env.from_company.name) + ':</strong>' +
+        '<ul style="margin:4px 0 0 18px;font-size:12px">' +
+        env.links_aplicados.map(function (l) {
+          return '<li>' + _esc(l.modelo_credito) + ' → ' + _esc(l.modelo_debito) +
+            ' · ' + _esc(l.minutos_abatidos) + ' min · taxa ' + _esc(l.taxa) + '</li>';
+        }).join("") + '</ul></div>';
+    }
+
+    var diffHtml = "";
+    if (v.diff && v.diff.diff.length) {
+      diffHtml = '<div style="margin-top:12px;border:1px solid var(--line);padding:8px">' +
+        '<h4 style="margin:0 0 6px 0">Divergência de totais</h4>' +
+        '<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr>' +
+        '<th style="text-align:left">ICAO</th><th style="text-align:left">Esperado em ' + _esc(env.to_company.name) + '</th>' +
+        '<th style="text-align:left">Ledger local</th></tr></thead><tbody>' +
+        v.diff.diff.map(function (d) {
+          return '<tr><td>' + _esc(d.icao) + '</td>' +
+            '<td>Créd ' + _esc(minutosParaHHMM(d.esperado.credito_min)) + ' / Déb ' + _esc(minutosParaHHMM(d.esperado.debito_min)) + '</td>' +
+            '<td>Créd ' + _esc(minutosParaHHMM(d.local.credito_min)) + ' / Déb ' + _esc(minutosParaHHMM(d.local.debito_min)) + '</td></tr>';
+        }).join("") + '</tbody></table>' +
+        '<p class="hint" style="margin:6px 0 0 0">Não bloqueia a aplicação.</p></div>';
+    }
+
+    preview.innerHTML = '<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:12px">' +
+      '<div><strong>De:</strong> ' + _esc(env.from_company.name) + '</div>' +
+      '<div><strong>Para:</strong> ' + _esc(env.to_company.name) + '</div>' +
+      '<div><strong>Código:</strong> ' + _esc(env.transfer_code) + '</div>' +
+      '<div><strong>Gerado em:</strong> ' + new Date(env.created_at).toLocaleString("pt-BR") + '</div>' +
+      '<div><strong>Itens:</strong> ' + env.items.length + '</div>' + linksHtml +
+      '<table style="width:100%;margin-top:12px;font-size:12px;border-collapse:collapse"><thead><tr>' +
+      '<th style="text-align:left">Modelo</th><th style="text-align:left">Tipo</th><th style="text-align:right">Minutos</th>' +
+      '</tr></thead><tbody>' + itemsHtml + '</tbody></table>' +
+      '<div style="margin-top:8px" class="hint"><strong>Totais declarados (visão de ' + _esc(env.from_company.name) + '):</strong> ' +
+      Object.keys(env.totais || {}).map(function (icao) {
+        var t = env.totais[icao];
+        return '<span style="margin-right:12px">' + _esc(icao) + ': +' + _esc(minutosParaHHMM(t.credito_min)) + ' / -' + _esc(minutosParaHHMM(t.debito_min)) + '</span>';
+      }).join("") + '</div>' + diffHtml + '</div>';
+  }
+
+  async function _onReceiveConfirm() {
+    var env = _thReceiveState.env, v = _thReceiveState.validacao;
+    if (!env || !v || !v.ok) return;
+    if (!confirm("Aplicar envelope " + env.transfer_code + "?\\nSerão criados " + env.items.length + " lançamentos espelho.")) return;
+    try {
+      var r = await _aplicarEnvelope(env);
+      if (r.ok) {
+        alert("✅ Envelope aplicado.\\n" + r.criados + " lançamentos espelho criados.");
+        _fecharReceiveModal();
+        if (typeof atualizarStatusEnvelope === "function") atualizarStatusEnvelope();
+      } else {
+        alert("❌ Erro: " + r.erro);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Erro inesperado: " + err.message);
+    }
+  }
+
+  async function _aplicarEnvelope(env) {
+    var empresas = [];
+    try { empresas = JSON.parse(localStorage.getItem("dv.trocaHoras.empresas.v1") || "[]"); } catch (_) {}
+    var empresaA = empresas.find(function (e) {
+      if (env.from_company.company_code && e.company_code) {
+        var _nc2 = window.normalizarCompanyCode || function (s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+        return _nc2(e.company_code) === _nc2(env.from_company.company_code);
+      }
+      return _normNome(e.nome) === _normNome(env.from_company.name);
+    });
+    var empresasNovas = empresas.slice();
+    if (!empresaA) {
+      empresaA = {
+        id: "th-e-" + _uuid(),
+        nome: env.from_company.name,
+        cnpj: "", contato: "",
+        obs: "Criada automaticamente via importação de envelope " + env.transfer_code,
+        logo: env.from_company.logo || "",
+        modelos: [],
+        company_code: env.from_company.company_code || "",
+        criado_em: new Date().toISOString()
+      };
+      empresasNovas.push(empresaA);
+    }
+
+    var lanc = [];
+    try { lanc = JSON.parse(localStorage.getItem("dv.trocaHoras.v1") || "[]"); } catch (_) {}
+    var agora = new Date().toISOString();
+    var criados = [];
+
+    env.items.forEach(function (item) {
+      var min = item.minutos || 0;
+      if (item.tipo === "credito") {
+        var trechoSint = {
+          data: item.data || (item.criado_em ? item.criado_em.slice(0, 10) : agora.slice(0, 10)),
+          origem: env.from_company.name,
+          destino: env.to_company.name,
+          hora: "",
+          duracao: minutosParaHHMM(min),
+          _sintetico: true
+        };
+        criados.push({
+          id: "th-d-" + _uuid(),
+          tipo: "debito",
+          enviado: true, enviado_em: agora,
+          envelope_id: env.envelope_id, envelope_origem: env.transfer_code,
+          origem: "importacao", aplicado_em: agora,
+          modelo: item.modelo, modelo_icao: item.modelo_icao,
+          aeronave_prefixo: item.aeronave_tail || "",
+          _prefixo_origem: item.aeronave_tail || "",
+          empresa_id: empresaA.id,
+          empresa_nome: empresaA.nome,
+          empresa_logo_snapshot: env.from_company.logo || "",
+          solicitante_id: item.solicitante_id || null,
+          responsavel: item.responsavel || "",
+          responsavel_id: item.responsavel_id || null,
+          trechos: [trechoSint],
+          _origem_minutos: min,
+          observacoes: "Importado via envelope " + env.transfer_code,
+          criado_em: agora
+        });
+      } else if (item.tipo === "debito") {
+        criados.push({
+          id: "th-c-" + _uuid(),
+          tipo: "credito",
+          enviado: true, enviado_em: agora,
+          envelope_id: env.envelope_id, envelope_origem: env.transfer_code,
+          origem: "importacao", aplicado_em: agora,
+          modelo: item.modelo, modelo_icao: item.modelo_icao,
+          aeronave_tail: item.aeronave_prefixo || "",
+          _prefixo_origem: item.aeronave_prefixo || "",
+          empresa_emprestada: empresaA.nome,
+          empresa_emprestada_id: empresaA.id,
+          empresa_logo_snapshot: env.from_company.logo || "",
+          tempo_voo: minutosParaHHMM(min),
+          data: item.data || (item.criado_em ? item.criado_em.slice(0, 10) : agora.slice(0, 10)),
+          solicitante_id: item.solicitante_id || null,
+          responsavel: item.responsavel || "",
+          responsavel_id: item.responsavel_id || null,
+          ev_id: null,
+          passageiros: item.passageiros || null,
+          _origem_minutos: min,
+          observacoes: "Importado via envelope " + env.transfer_code,
+          criado_em: agora
+        });
+      }
+    });
+
+    if (empresasNovas.length !== empresas.length) {
+      localStorage.setItem("dv.trocaHoras.empresas.v1", JSON.stringify(empresasNovas));
+      if (typeof salvarEmpresas === "function") { try { salvarEmpresas(empresasNovas); } catch (_) {} }
+    }
+    localStorage.setItem("dv.trocaHoras.v1", JSON.stringify(lanc.concat(criados)));
+
+    var aplicados = [];
+    try { aplicados = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopesAplicados.v1") || "[]"); } catch (_) {}
+    aplicados.push({
+      envelope_id: env.envelope_id, transfer_code: env.transfer_code,
+      from_company: env.from_company.name, to_company: env.to_company.name,
+      applied_at: agora, items_aplicados: criados.length
+    });
+    localStorage.setItem("dv.trocaHoras.envelopesAplicados.v1", JSON.stringify(aplicados));
+
+    return { ok: true, criados: criados.length };
+  }
+
+  window.abrirModalReceive = abrirModalReceive;
+  window.injectModalReceive = injectModalReceive;
+})();
+// ===== FIM FASE 2 (RECEBER ENVELOPE) =====
+  async function gerarEnvelope(empId) {
+    if (!empId) return { ok: false, msg: "Selecione uma empresa primeiro." };
+    const empresa = lerEmpresas().find(e => String(e.id) === String(empId));
+    if (!empresa) return { ok: false, msg: "Empresa não encontrada." };
+    if (!empresa.company_code || !normalizarCompanyCode(empresa.company_code)) {
+      return { ok: false, msg: "A empresa \"" + empresa.nome + "\" ainda não tem Código da Empresa cadastrado. Peça o código ao parceiro e cadastre antes de gerar envelope." };
+    }
+    
+    const todos = lerLancamentos();
+    const pendentes = todos.filter(l => {
+      const lid = l.empresa_id || l.empresa_emprestada_id;
+      return String(lid) === String(empId) && l.enviado === false;
+    });
+    if (!pendentes.length) return { ok: false, msg: "Nenhum lançamento pendente para esta empresa." };
+    
+    const now = new Date();
+    const year = now.getFullYear();
+    const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const transferCode = "TH-" + year + "-" + rand;
+    
+    const settings = JSON.parse(localStorage.getItem("dv.settings.v3") || "{}");
+    const fromCompanyName = settings.companyName || "Empresa";
+    const fromTenantId = "local-" + fromCompanyName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    
+    const toCompany = {
+      empresa_id: empresa.id,
+      name: empresa.nome,
+      cnpj: empresa.cnpj || null,
+      logo: empresa.logo || null,
+      company_code: normalizarCompanyCode(empresa.company_code)
+    };
+    
+    const items = pendentes.map(l => {
+      if (l.tipo === "credito") {
+        return {
+          id: l.id,
+          tipo: "credito",
+          modelo: l.modelo,
+          modelo_icao: l.modelo_icao || null,
+          minutos: tempoParaMinutos(l.tempo_voo),
+          tempo_voo: l.tempo_voo,
+          data: l.data,
+          aeronave_tail: l.aeronave_tail,
+          ev_id: l.ev_id || null,
+          responsavel: l.responsavel || null,
+          criado_em: l.criado_em || null
+        };
+      }
+      const minutos = (l.trechos || []).reduce((s, t) => s + tempoParaMinutos(t.duracao), 0);
+      return {
+        id: l.id,
+        tipo: "debito",
+        modelo: l.modelo,
+        modelo_icao: l.modelo_icao || null,
+        minutos: minutos,
+        trechos: (l.trechos || []).map(t => ({ data: t.data, origem: t.origem, destino: t.destino, hora: t.hora, duracao: t.duracao })),
+        aeronave_prefixo: l.aeronave_prefixo || null,
+        solicitante_id: l.solicitante_id || null,
+        criado_em: l.criado_em || null
+      };
+    });
+    
+    const icaosEnvolvidos = new Set(items.map(i => i.modelo_icao).filter(Boolean));
+    const linksAplicados = lerLinks().filter(l => {
+      return String(l.empresa_id) === String(empId)
+        && icaosEnvolvidos.has(l.modelo_credito_icao)
+        && icaosEnvolvidos.has(l.modelo_debito_icao);
+    }).map(l => ({
+      link_id: l.id,
+      modelo_credito: l.modelo_credito,
+      modelo_credito_icao: l.modelo_credito_icao,
+      modelo_debito: l.modelo_debito,
+      modelo_debito_icao: l.modelo_debito_icao,
+      taxa: l.taxa,
+      minutos_abatidos: l.minutos_abatidos,
+      minutos_consumidos: l.minutos_consumidos
+    }));
+    
+    const totais = {};
+    items.forEach(item => {
+      const icao = item.modelo_icao || "SEM-ICAO";
+      if (!totais[icao]) totais[icao] = { credito_min: 0, debito_min: 0 };
+      if (item.tipo === "credito") totais[icao].credito_min += item.minutos;
+      else totais[icao].debito_min += item.minutos;
+    });
+    
+    const envelopeBase = {
+      envelope_id: "env-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6),
+      transfer_code: transferCode,
+      schema_version: 2,
+      from_company: { tenant_id: fromTenantId, name: fromCompanyName, logo: settings.logo || null, company_code: obterCompanyCode() },
+      to_company: toCompany,
+      items: items,
+      links_aplicados: linksAplicados,
+      totais: totais,
+      created_at: now.toISOString()
+    };
+    
+    let hash = "sha256:pending";
+    try {
+      if (typeof crypto !== "undefined" && crypto.subtle) {
+        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(envelopeBase)));
+        const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+        hash = "sha256:" + hex;
+      }
+    } catch(err) { console.warn("[gerarEnvelope] hash falhou", err); }
+    
+    const envelope = Object.assign({}, envelopeBase, { hash: hash, signature: "TODO" });
+    
+    const idsEnviados = new Set(pendentes.map(p => p.id));
+    const novosLancamentos = todos.map(l => {
+      if (idsEnviados.has(l.id)) {
+        return Object.assign({}, l, { enviado: true, envelope_id: envelope.envelope_id, enviado_em: now.toISOString() });
+      }
+      return l;
+    });
+    salvarLancamentos(novosLancamentos);
+    
+    const envelopes = JSON.parse(localStorage.getItem("dv.trocaHoras.envelopes.v1") || "[]");
+    envelopes.push(envelope);
+    localStorage.setItem("dv.trocaHoras.envelopes.v1", JSON.stringify(envelopes));
+    
+    console.log("[gerarEnvelope] Envelope gerado:", envelope);
+    return { ok: true, envelope: envelope };
+  }
+
+  function injectModalEnvelope() {
+    if (document.getElementById("thEnvelopeModal")) return;
+    var html = '<div class="modal" id="thEnvelopeModal">'
+      + '<div class="dialog" style="max-width:560px">'
+      +   '<h2 style="margin:0">📤 Envelope gerado</h2>'
+      +   '<p class="hint" style="margin-top:4px">Compartilhe o código ou o arquivo JSON com a empresa parceira.</p>'
+      +   '<div style="margin:16px 0;padding:16px;background:var(--bg);border:1px solid var(--line);border-radius:10px;text-align:center">'
+      +     '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:6px;letter-spacing:.06em">Código de transferência</div>'
+      +     '<div id="thEnvelopeCode" style="font-family:ui-monospace,monospace;font-size:22px;font-weight:800;letter-spacing:1.5px;color:var(--accent)">TH-2026-XXXXXX</div>'
+      +     '<button type="button" class="btn btn--secondary" id="thEnvelopeCopy" style="margin-top:12px;font-size:12px;padding:6px 14px">📋 Copiar código</button>'
+      +   '</div>'
+      +   '<div id="thEnvelopeSummary" style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px;padding:0 4px"></div>'
+      +   '<div class="dialog__actions">'
+      +     '<button type="button" class="btn btn--secondary" id="thEnvelopeDownload">⬇️ Baixar JSON</button>'
+      +     '<button type="button" class="btn" id="thEnvelopeClose">Fechar</button>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+    document.body.insertAdjacentHTML("beforeend", html);
+    var closeBtn = document.getElementById("thEnvelopeClose");
+    if (closeBtn) closeBtn.onclick = function() { document.getElementById("thEnvelopeModal").classList.remove("is-open"); };
+  }
+
+  document.addEventListener("click", async function(e) {
+    if (e.target.closest("#thBtnEnviar")) {
+      e.preventDefault();
+      var empId = _thEmpresaFiltroId();
+      if (!empId) { alert("Selecione uma empresa primeiro."); return; }
+      var btn = document.getElementById("thBtnEnviar");
+      btn.disabled = true;
+      var originalText = btn.textContent;
+      btn.textContent = "Gerando...";
+      try {
+        var r = await gerarEnvelope(empId);
+        btn.textContent = originalText;
+        if (!r.ok) { alert(r.msg); btn.disabled = false; return; }
+        injectModalEnvelope();
+        var codeEl = document.getElementById("thEnvelopeCode");
+        var summaryEl = document.getElementById("thEnvelopeSummary");
+        if (codeEl) codeEl.textContent = r.envelope.transfer_code;
+        if (summaryEl) {
+          var cred = r.envelope.items.filter(function(i) { return i.tipo === "credito"; }).length;
+          var deb = r.envelope.items.filter(function(i) { return i.tipo === "debito"; }).length;
+          var linksQtd = r.envelope.links_aplicados.length;
+          var sum = "✓ <b>" + r.envelope.items.length + "</b> lançamento(s) incluído(s) (<b>" + cred + "</b> crédito" + (cred !== 1 ? "s" : "") + ", <b>" + deb + "</b> débito" + (deb !== 1 ? "s" : "") + ")<br>";
+          if (linksQtd) sum += "✓ <b>" + linksQtd + "</b> link(s) aplicado(s) automaticamente<br>";
+          sum += "✓ Destinatário: <b>" + r.envelope.to_company.name + "</b><br>";
+          sum += "✓ Envelope ID: <code style=\"font-size:11px\">" + r.envelope.envelope_id + "</code>";
+          summaryEl.innerHTML = sum;
+        }
+        var dlBtn = document.getElementById("thEnvelopeDownload");
+        if (dlBtn) dlBtn.onclick = function() {
+          var blob = new Blob([JSON.stringify(r.envelope, null, 2)], { type: "application/json" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = r.envelope.transfer_code + "-envelope.json";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+        var copyBtn = document.getElementById("thEnvelopeCopy");
+        if (copyBtn) copyBtn.onclick = function() {
+          var codigo = r.envelope.transfer_code;
+          var done = function() {
+            copyBtn.textContent = "✅ Copiado!";
+            setTimeout(function() { copyBtn.textContent = "📋 Copiar código"; }, 2000);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(codigo).then(done).catch(function() { alert("Copie manualmente: " + codigo); });
+          } else {
+            var ta = document.createElement("textarea");
+            ta.value = codigo;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); done(); } catch(err) { alert("Copie manualmente: " + codigo); }
+            document.body.removeChild(ta);
+          }
+        };
+        var modal = document.getElementById("thEnvelopeModal");
+        if (modal) modal.classList.add("is-open");
+        if (typeof render === "function") render();
+      } catch(err) {
+        console.error("[Enviar] erro:", err);
+        alert("Erro ao gerar envelope: " + err.message);
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+      return;
+    }
+    if (e.target.closest("#thBtnHistorico")) {
+      e.preventDefault();
+      var empIdHist = _thEmpresaFiltroId();
+      if (!empIdHist) { alert("Selecione uma empresa."); return; }
+      abrirHistoricoEnvelopes(empIdHist);
+      return;
+    }
+    if (e.target.closest("#thBtnReceber")) {
+      e.preventDefault();
+      abrirModalReceive();
+      return;
+    }
+  });
+
 function renderLista() {
     const box = document.getElementById("thLista");
     if (!box) return;
@@ -18928,7 +19818,7 @@ function renderLista() {
   }
 
 
-  function render() { popularSelectFiltroEmpresa(); limparLinksOrfaos(); renderDashboard(); renderLista(); }
+  function render() { popularSelectFiltroEmpresa(); limparLinksOrfaos(); renderDashboard(); renderLista(); try { atualizarStatusEnvelope(); } catch(e) { console.warn("[atualizarStatusEnvelope]", e); } }
 
   /* ---------- Ações (placeholder Fase 2-5) ---------- */
   /* ============ FASE 2: CRÉDITO ============ */
@@ -19136,8 +20026,12 @@ function renderLista() {
     const aero = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get().find(a => a.tail === ev.aeronave_tail) : null;
 
     const lancamento = {
-      id: "th-c-" + Date.now(),
+      id: "th-c-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10))),
       tipo: "credito",
+      enviado: false,
+      envelope_id: null,
+      enviado_em: null,
+      modelo_icao: (typeof ModelosAeronave !== "undefined" && ModelosAeronave.getIcao) ? (ModelosAeronave.getIcao(aero?.model) || null) : null,
       data: primeira.data || "",
       aeronave_tail: ev.aeronave_tail || "",
       modelo: aero?.model || "—",
@@ -19606,8 +20500,12 @@ function renderLista() {
     })();
 
     const lancamento = {
-      id: "th-d-" + Date.now(),
+      id: "th-d-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10))),
       tipo: "debito",
+      enviado: false,
+      envelope_id: null,
+      enviado_em: null,
+      modelo_icao: (typeof ModelosAeronave !== "undefined" && ModelosAeronave.getIcao) ? (ModelosAeronave.getIcao(modelo) || null) : null,
       aeronave_prefixo: prefixo,
       modelo: modelo,
       modelo_linkado: modeloVinculado,
@@ -19643,6 +20541,7 @@ function renderLista() {
       + '<input type="hidden" id="thEmpresaId">'
       + '<label class="field" style="margin-bottom:10px"><span>Nome da empresa *</span><input id="thEmpresaNome" placeholder="Ex: Aero Taxi XYZ"></label>'
       + '<label class="field" style="margin-bottom:10px"><span>CNPJ / Documento</span><input id="thEmpresaCnpj" placeholder="00.000.000/0000-00"></label>'
+      + '<label class="field" style="margin-bottom:10px"><span>Código da empresa <small class="hint" style="font-weight:400;font-size:10px">(opcional)</small></span><input id="thEmpresaCode" placeholder="EMP-XXXX-XXXX" style="font-family:ui-monospace,monospace;text-transform:uppercase"><small class="hint" style="font-size:10px;display:block;margin-top:2px">Código que a parceira forneceu. Necessário para receber envelopes dela.</small></label>'
       + '<label class="field" style="margin-bottom:10px"><span>Contato</span><input id="thEmpresaContato" placeholder="Nome / Telefone / Email"></label>'
       + '<label class="field"><span>Observações</span><textarea id="thEmpresaObs" rows="2" placeholder="Opcional"></textarea></label>'
       + '<div style="margin:14px 0 10px;padding:10px;background:var(--panel);border-radius:8px">'
@@ -19727,8 +20626,11 @@ function renderLista() {
   function popularModelosEmpresa(selecionados) {
     const box = document.getElementById("thEmpresaModelos");
     if (!box) return;
-    const modelos = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list() : [];
-    if (!modelos.length) {
+    /* Usa listFull() (objetos com nome + tipo_icao). Fallback para list() se necessário. */
+    const modelosFull = (typeof ModelosAeronave !== "undefined" && ModelosAeronave.listFull)
+      ? ModelosAeronave.listFull()
+      : ((typeof ModelosAeronave !== "undefined" && ModelosAeronave.list) ? ModelosAeronave.list().map(n => ({ nome: n, tipo_icao: "" })) : []);
+    if (!modelosFull.length) {
       box.innerHTML = '<p class="hint" style="margin:0;padding:6px">Nenhum modelo cadastrado. Use "📋 Modelos" em Aeronaves.</p>';
       return;
     }
@@ -19738,18 +20640,22 @@ function renderLista() {
       if (typeof m === "string") linkMap[m] = "";
       else if (m && m.nome) linkMap[m.nome] = m.vinculado_a || "";
     });
-    const sorted = [...modelos].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    box.innerHTML = sorted.map(m => {
+    const sorted = [...modelosFull].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    box.innerHTML = sorted.map(mObj => {
+      const m = mObj.nome;
+      const icao = mObj.tipo_icao || "";
       const checked = linkMap.hasOwnProperty(m) ? " checked" : "";
       const linked = linkMap[m] || "";
       const options = '<option value="">— sem vínculo —</option>' +
-        sorted.filter(x => x !== m).map(x =>
-          '<option value="' + esc(x) + '"' + (x === linked ? " selected" : "") + '>' + esc(x) + '</option>'
+        sorted.filter(x => x.nome !== m).map(x =>
+          '<option value="' + esc(x.nome) + '"' + (x.nome === linked ? " selected" : "") + '>' + esc(x.nome) + '</option>'
         ).join("");
       return '<div class="thEmpModeloRow" data-modelo="' + esc(m) + '" style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--line)">'
         + '<label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0">'
         +   '<input type="checkbox" class="thEmpModeloChk"' + checked + '>'
-        +   '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m) + '</span>'
+        +   '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m)
+        +     (icao ? ' <span style="color:#94a3b8;font-size:10px;font-weight:400;font-family:ui-monospace,monospace">(' + esc(icao) + ')</span>' : '')
+        +   '</span>'
         + '</label>'
         + '<select class="thEmpModeloLink" title="Vincular a qual modelo nosso" style="font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card);max-width:180px">' + options + '</select>'
         + '</div>';
@@ -19773,6 +20679,7 @@ function renderLista() {
     if (g("thEmpresaId")) g("thEmpresaId").value = "";
     if (g("thEmpresaNome")) g("thEmpresaNome").value = "";
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
+          if (g("thEmpresaCode")) g("thEmpresaCode").value = "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
     if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = "";
@@ -19801,6 +20708,7 @@ function renderLista() {
         + '<button type="button" data-th-emp-edit="' + esc(e.id) + '" style="flex:1;min-width:0;text-align:left;border:0;background:transparent;cursor:pointer;padding:0;font-family:inherit;color:inherit">'
         +   '<div style="font-size:13px;font-weight:700;color:var(--text)">' + esc(e.nome) + (ativa ? ' <span style="font-size:10px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.05em">· editando</span>' : '') + '</div>'
         +   (e.cnpj ? '<div style="font-size:11px;color:var(--muted)">' + esc(e.cnpj) + '</div>' : '')
+        +   (e.company_code ? '<div style="font-size:11px;color:var(--muted);font-family:ui-monospace,monospace">' + esc(e.company_code) + '</div>' : '')
         + '</button>'
         + '<button type="button" class="event__btn" data-th-emp-del="' + esc(e.id) + '" title="Excluir">🗑️</button>'
         + '</div>';
@@ -19819,6 +20727,7 @@ function renderLista() {
           if (g("thEmpresaId")) g("thEmpresaId").value = "";
           if (g("thEmpresaNome")) g("thEmpresaNome").value = "";
           if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
+          if (g("thEmpresaCode")) g("thEmpresaCode").value = "";
           if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
           if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
           if (g("thEmpresaModalTitle")) g("thEmpresaModalTitle").textContent = "Cadastrar empresa";
@@ -19837,6 +20746,7 @@ function renderLista() {
     if (g("thEmpresaId")) g("thEmpresaId").value = e.id;
     if (g("thEmpresaNome")) g("thEmpresaNome").value = e.nome || "";
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = e.cnpj || "";
+    if (g("thEmpresaCode")) g("thEmpresaCode").value = e.company_code || "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = e.contato || "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = e.obs || "";
     if (g("thEmpresaLogoData")) g("thEmpresaLogoData").value = e.logo || "";
@@ -19869,15 +20779,16 @@ function renderLista() {
     const idEdit = (document.getElementById("thEmpresaId").value || "").trim();
     const logo = (document.getElementById("thEmpresaLogoData")?.value || "").trim();
     const modelos = capturarModelosEmpresa();
+    const company_code = (document.getElementById("thEmpresaCode")?.value || "").trim().toUpperCase();
 
     const lista = lerEmpresas();
     if (idEdit) {
       const i = lista.findIndex(e => e.id === idEdit);
-      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, logo, modelos };
+      if (i >= 0) lista[i] = { ...lista[i], nome, cnpj, contato, obs, logo, modelos, company_code };
     } else {
       lista.push({
-        id: "th-e-" + Date.now(),
-        nome, cnpj, contato, obs, logo, modelos,
+        id: "th-e-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10))),
+        nome, cnpj, contato, obs, logo, modelos, company_code,
         criado_em: new Date().toISOString()
       });
     }
@@ -19888,6 +20799,7 @@ function renderLista() {
     if (g("thEmpresaId")) g("thEmpresaId").value = "";
     if (g("thEmpresaNome")) g("thEmpresaNome").value = "";
     if (g("thEmpresaCnpj")) g("thEmpresaCnpj").value = "";
+          if (g("thEmpresaCode")) g("thEmpresaCode").value = "";
     if (g("thEmpresaContato")) g("thEmpresaContato").value = "";
     if (g("thEmpresaObs")) g("thEmpresaObs").value = "";
     renderListaEmpresas();
@@ -20278,11 +21190,37 @@ function renderLista() {
 
     const minConsumidos = Math.round(minAbatidos / taxa);
 
+    // === FASE 0: ler ICAO canônico dos modelos ===
+    const _getIcao = (nome) => {
+      if (!nome) return "";
+      if (typeof ModelosAeronave !== "undefined" && ModelosAeronave.getIcao) {
+        return ModelosAeronave.getIcao(nome) || "";
+      }
+      return "";
+    };
+    const _icaoCred = _getIcao(modeloCred);
+    const _icaoDeb = _getIcao(modeloDeb);
+
+    // Aviso (não bloqueante): modelos sem ICAO não podem ser transferidos entre empresas
+    if (!_icaoCred || !_icaoDeb) {
+      const faltam = [];
+      if (!_icaoCred) faltam.push('"' + modeloCred + '"');
+      if (!_icaoDeb) faltam.push('"' + modeloDeb + '"');
+      const ok = confirm(
+        "⚠️ Atenção: os seguintes modelos não têm Tipo ICAO cadastrado:\n\n" +
+        faltam.map(f => "  • " + f).join("\n") +
+        "\n\nO link será criado, mas NÃO poderá ser transferido entre empresas até que você cadastre o ICAO desses modelos em \"Aeronaves → 📋 Modelos\".\n\nDeseja continuar?"
+      );
+      if (!ok) return;
+    }
+
     const links = lerLinks();
     const base = {
       empresa_id: empId,
       modelo_credito: modeloCred,
       modelo_debito: modeloDeb,
+      modelo_credito_icao: _icaoCred || null,
+      modelo_debito_icao: _icaoDeb || null,
       taxa: taxa,
       minutos_abatidos: minAbatidos,
       minutos_consumidos: minConsumidos
@@ -20293,7 +21231,8 @@ function renderLista() {
       if (i >= 0) links[i] = Object.assign({}, links[i], base, { atualizado_em: new Date().toISOString() });
       __linkEditandoId = null;
     } else {
-      links.push(Object.assign({ id: "th-l-" + Date.now() }, base, { criado_em: new Date().toISOString() }));
+      const _newId = "th-l-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10)));
+      links.push(Object.assign({ id: _newId }, base, { criado_em: new Date().toISOString() }));
     }
     salvarLinks(links);
 
@@ -21175,38 +22114,75 @@ const ModelosAeronave = (() => {
     "Learjet 45"
   ];
 
-  function list() {
+  const DEFAULT_ICAO = {
+    "Pilatus PC-12": "PC12",
+    "King Air B200": "B200",
+    "King Air 360": "B350",
+    "Cessna Grand Caravan": "C208",
+    "Embraer Phenom 100": "E50P",
+    "Embraer Phenom 300": "E55P",
+    "Cessna Citation CJ1": "C525",
+    "Cessna Citation CJ2": "C525A",
+    "Hawker 800XP": "H25B",
+    "Learjet 45": "LJ45"
+  };
+
+  function _normalize(item) {
+    if (typeof item === "string") return { nome: item, tipo_icao: DEFAULT_ICAO[item] || "" };
+    if (item && typeof item === "object" && item.nome) {
+      return { nome: String(item.nome), tipo_icao: String(item.tipo_icao || DEFAULT_ICAO[item.nome] || "") };
+    }
+    return null;
+  }
+
+  function listFull() {
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) {
-        /* Primeira vez: salva defaults */
-        localStorage.setItem(KEY, JSON.stringify(DEFAULTS.slice()));
-        return DEFAULTS.slice();
+        const defaults = DEFAULTS.map(n => ({ nome: n, tipo_icao: DEFAULT_ICAO[n] || "" }));
+        localStorage.setItem(KEY, JSON.stringify(defaults));
+        return defaults;
       }
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
+      if (!Array.isArray(arr)) return [];
+      return arr.map(_normalize).filter(Boolean);
     } catch(e) { return []; }
   }
 
-  function save(arr) {
-    try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch(e){}
+  function list() { return listFull().map(m => m.nome); }
+
+  function getIcao(nome) {
+    const m = listFull().find(x => x.nome === nome);
+    return m ? m.tipo_icao : "";
   }
 
-  function add(nome) {
+  function save(arr) {
+    try {
+      const normalized = arr.map(m => typeof m === "string" ? { nome: m, tipo_icao: DEFAULT_ICAO[m] || "" } : m);
+      localStorage.setItem(KEY, JSON.stringify(normalized));
+    } catch(e){}
+  }
+
+  function add(nome, tipo_icao) {
     const n = String(nome || "").trim();
+    const icao = String(tipo_icao || "").trim().toUpperCase();
     if (!n) return { ok: false, msg: "Digite o nome do modelo." };
-    const arr = list();
-    if (arr.some(m => m.toLowerCase() === n.toLowerCase())) {
+    if (!icao) return { ok: false, msg: "Informe o Tipo ICAO (4 caracteres). Consulte o site da ANAC." };
+    if (!/^[A-Z0-9]{4}$/.test(icao)) {
+      return { ok: false, msg: "O Tipo ICAO deve ter 4 caracteres alfanuméricos (ex: B350, PC12, TBM7). Use ZZZZ se não souber." };
+    }
+    const arr = listFull();
+    if (arr.some(m => m.nome.toLowerCase() === n.toLowerCase())) {
       return { ok: false, msg: "Esse modelo já está cadastrado." };
     }
-    arr.push(n);
-    arr.sort((a,b) => a.localeCompare(b));
+    arr.push({ nome: n, tipo_icao: icao });
+    arr.sort((a,b) => a.nome.localeCompare(b.nome, "pt-BR"));
     save(arr);
     return { ok: true };
   }
 
   function remove(nome) {
-    const arr = list().filter(m => m !== nome);
+    const arr = listFull().filter(m => m.nome !== nome);
     save(arr);
   }
 
@@ -21214,19 +22190,24 @@ const ModelosAeronave = (() => {
   function renderLista() {
     const box = document.getElementById("modLista");
     if (!box) return;
-    const arr = list();
+    const arr = listFull();
     if (!arr.length) {
       box.innerHTML = '<p class="hint" style="margin:0;padding:12px;text-align:center">Nenhum modelo cadastrado.</p>';
       return;
     }
-    box.innerHTML = arr.map(m => {
+    box.innerHTML = arr.map(mObj => {
+      const m = mObj.nome;
+      const icao = mObj.tipo_icao || "";
       const count = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get().filter(a => (a.model || "") === m).length : 0;
+      const esc = (v) => String(v == null ? "" : v).replace(/[<>&"']/g, ch => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#039;"}[ch]));
       return '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)">'
         + '<div style="flex:1;min-width:0">'
-        +   '<div style="font-size:13px;font-weight:600">' + String(m).replace(/[<>&"']/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#039;"}[c])) + '</div>'
+        +   '<div style="font-size:13px;font-weight:600">' + esc(m)
+        +     (icao ? ' <span style="color:#94a3b8;font-size:11px;font-weight:400;font-family:ui-monospace,monospace">(' + esc(icao) + ')</span>' : ' <span style="color:#f59e0b;font-size:10px;font-weight:600">⚠ sem ICAO</span>')
+        +   '</div>'
         +   (count > 0 ? '<div style="font-size:11px;color:var(--muted)">Usado em ' + count + ' aeronave' + (count > 1 ? 's' : '') + '</div>' : '')
         + '</div>'
-        + '<button type="button" class="event__btn event__btn--danger" data-mod-del="' + String(m).replace(/"/g, "&quot;") + '" title="Excluir" style="width:28px;height:28px;font-size:12px">🗑️</button>'
+        + '<button type="button" class="event__btn event__btn--danger" data-mod-del="' + esc(m) + '" title="Excluir" style="width:28px;height:28px;font-size:12px">🗑️</button>'
         + '</div>';
     }).join("");
     box.querySelectorAll("[data-mod-del]").forEach(btn => {
@@ -21245,6 +22226,8 @@ const ModelosAeronave = (() => {
     renderLista();
     const inp = document.getElementById("modNovoNome");
     if (inp) inp.value = "";
+    const inpIcao = document.getElementById("modNovoIcao");
+    if (inpIcao) inpIcao.value = "";
     modal.classList.add("is-open");
   }
 
@@ -21276,9 +22259,11 @@ const ModelosAeronave = (() => {
       if (e.target.closest("#modAddBtn")) {
         e.preventDefault();
         const inp = document.getElementById("modNovoNome");
-        const r = add(inp?.value);
+        const inpIcao = document.getElementById("modNovoIcao");
+        const r = add(inp?.value, inpIcao?.value);
         if (!r.ok) { alert(r.msg); return; }
         if (inp) { inp.value = ""; inp.focus(); }
+        if (inpIcao) inpIcao.value = "";
         renderLista();
         return;
       }
@@ -21296,14 +22281,14 @@ const ModelosAeronave = (() => {
 
     /* Enter no input de nome */
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.target.id === "modNovoNome") {
+      if (e.key === "Enter" && (e.target.id === "modNovoNome" || e.target.id === "modNovoIcao")) {
         e.preventDefault();
         document.getElementById("modAddBtn")?.click();
       }
     });
   }
 
-  return { list, add, remove, abrir, initListeners, renderLista };
+  return { list, listFull, getIcao, add, remove, abrir, initListeners, renderLista };
 })();
 
 
@@ -22768,6 +23753,83 @@ Router.init();
     });
   }
   document.getElementById("mtSaveBtn").addEventListener("click", () => Manutencao.salvar());
+
+  // ===== INÍCIO GUARD DOUBLE-SUBMIT =====
+  (function _bindSaveGuards() {
+    var _MODULES = [
+      "Agenda", "Aircraft", "Users", "Solicitantes", "Passengers",
+      "Locais", "Manutencao", "Custos", "Disponibilidade", "Tripulacao"
+    ];
+    var _saving = {};  // { "Agenda": true/false, "Aircraft": true/false, ... }
+
+    function _resetAfter(moduleName) {
+      setTimeout(function () { _saving[moduleName] = false; }, 1500);
+    }
+
+    // Camada 1 — Wrapper no submitForm (semântica)
+    _MODULES.forEach(function (name) {
+      var mod = window[name];
+      if (!mod || typeof mod !== "object") return;
+      if (typeof mod.submitForm !== "function") return;
+      var _orig = mod.submitForm;
+      mod.submitForm = async function () {
+        if (_saving[name]) {
+          console.warn("[submitForm] " + name + " — save já em andamento, ignorando duplicata");
+          return;
+        }
+        _saving[name] = true;
+        try {
+          return await _orig.apply(this, arguments);
+        } catch (err) {
+          _saving[name] = false;
+          throw err;
+        }
+        finally {
+          _resetAfter(name);
+        }
+      };
+    });
+
+    // Camada 2 — Desabilita botão visualmente (UX)
+    var _BTNS = [
+      { id: "evSaveBtn", module: "Agenda" },
+      { id: "aircraftSaveBtn", module: "Aircraft" },
+      { id: "usSaveBtn", module: "Users" },
+      { id: "solSaveBtn", module: "Solicitantes" },
+      { id: "psSaveBtn", module: "Passengers" },
+      { id: "lcSaveBtn", module: "Locais" },
+      { id: "mtSaveBtn", module: "Manutencao" },
+      { id: "ccSaveBtn", module: "Custos" },
+      { id: "fcSaveBtn", module: "Custos" },
+      { id: "folgaSaveBtn", module: "Disponibilidade" },
+      { id: "alocSaveBtn", module: "Tripulacao" }
+    ];
+
+    _BTNS.forEach(function (item) {
+      var btn = document.getElementById(item.id);
+      if (!btn || btn.__saveGuarded) return;
+      btn.__saveGuarded = true;
+      // Usa capture:true para rodar ANTES do handler original
+      btn.addEventListener("click", function (e) {
+        if (_saving[item.module]) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return false;
+        }
+        var txtOriginal = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Salvando...";
+        // Restaura após 1.5s (suficiente para save completar)
+        setTimeout(function () {
+          btn.disabled = false;
+          btn.textContent = txtOriginal;
+        }, 1500);
+      }, true);
+    });
+
+    console.log("[Guard] Double-submit protegido em", _MODULES.length, "módulos +", _BTNS.length, "botões");
+  })();
+  // ===== FIM GUARD DOUBLE-SUBMIT =====
   document.getElementById("mtDeleteBtn").addEventListener("click", () => Manutencao.excluirDoModal());
   document.getElementById("mtAeronave").addEventListener("change", () => {
     Manutencao.popularCiclos();
@@ -23749,9 +24811,13 @@ Router.init();
 <div class="modal" id="modelosModal"><div class="dialog">
 <h2>📋 Modelos de aeronave</h2>
 <p class="hint" style="margin-top:-14px;margin-bottom:14px">Cadastro padronizado de modelos. Usado no cadastro de aeronaves, empresas e troca de horas.</p>
-<div style="display:flex;gap:8px;margin-bottom:14px">
-  <input id="modNovoNome" placeholder="Ex: Pilatus PC-12" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit">
+<div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+  <input id="modNovoNome" placeholder="Nome comercial (ex: TBM 960)" style="flex:1;min-width:160px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit">
+  <input id="modNovoIcao" placeholder="Tipo ICAO (ex: TBM7)" maxlength="4" style="width:150px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:1px">
   <button type="button" class="btn" id="modAddBtn">+ Adicionar</button>
+</div>
+<div style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.4">
+  ℹ️ O <b>Tipo ICAO</b> é o código oficial de 4 caracteres. Consulte em <a href="https://aeronaves.anac.gov.br/aeronaves/" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;font-weight:600">aeronaves.anac.gov.br</a> → busque o prefixo da aeronave → clique em <b>Detalhes Técnicos</b> → localize o campo <b>"Tipo ICAO"</b>.
 </div>
 <div id="modLista" class="list" style="max-height:320px;overflow-y:auto"></div>
 <div class="dialog__actions">
@@ -27013,6 +28079,43 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // ========== UPLOAD E PREVIEW DE DOCUMENTOS ==========
+
+  // ===== INÍCIO DOCS CLOUD SYNC =====
+  window.__syncDocsFromCloud = async function() {
+    try {
+      var local = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      if (local.length > 0) return local;
+      var sb = (typeof getSupabase === 'function') ? getSupabase() : (window.getSupabase ? window.getSupabase() : null);
+      if (!sb) return local;
+      var res = await sb.from('kv_store').select('value').eq('key', 'dv.documentos.v1').maybeSingle();
+      if (res && res.data && res.data.value) {
+        var pastas = typeof res.data.value === 'string' ? JSON.parse(res.data.value) : res.data.value;
+        if (Array.isArray(pastas) && pastas.length > 0) {
+          localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+          console.log('[documentos] ✅ Recuperado do Cloud:', pastas.length, 'pastas');
+          return pastas;
+        }
+      }
+    } catch (e) {
+      console.warn('[documentos] sync Cloud falhou:', e);
+    }
+    return [];
+  };
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(async function () {
+      try {
+        var loaded = await window.__syncDocsFromCloud();
+        if (loaded && loaded.length > 0) {
+          try {
+            if (typeof window.renderPastasDocumentos === 'function') window.renderPastasDocumentos();
+            else if (typeof renderPastasDocumentos === 'function') renderPastasDocumentos();
+          } catch (e) { console.warn('[documentos] render pós-sync falhou:', e); }
+        }
+      } catch (e) { console.warn('[documentos] boot sync falhou:', e); }
+    }, 1500);
+  });
+  // ===== FIM DOCS CLOUD SYNC =====
 
   window.__pilAbrirPreview = function(url, nome, tipo) {
     document.getElementById('pilPreviewTitle').textContent = nome;

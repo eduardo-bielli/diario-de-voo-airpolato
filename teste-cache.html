@@ -28080,6 +28080,43 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // ========== UPLOAD E PREVIEW DE DOCUMENTOS ==========
 
+  // ===== INÍCIO DOCS CLOUD SYNC =====
+  window.__syncDocsFromCloud = async function() {
+    try {
+      var local = JSON.parse(localStorage.getItem('dv.documentos.v1') || '[]');
+      if (local.length > 0) return local;
+      var sb = (typeof getSupabase === 'function') ? getSupabase() : (window.getSupabase ? window.getSupabase() : null);
+      if (!sb) return local;
+      var res = await sb.from('kv_store').select('value').eq('key', 'dv.documentos.v1').maybeSingle();
+      if (res && res.data && res.data.value) {
+        var pastas = typeof res.data.value === 'string' ? JSON.parse(res.data.value) : res.data.value;
+        if (Array.isArray(pastas) && pastas.length > 0) {
+          localStorage.setItem('dv.documentos.v1', JSON.stringify(pastas));
+          console.log('[documentos] ✅ Recuperado do Cloud:', pastas.length, 'pastas');
+          return pastas;
+        }
+      }
+    } catch (e) {
+      console.warn('[documentos] sync Cloud falhou:', e);
+    }
+    return [];
+  };
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(async function () {
+      try {
+        var loaded = await window.__syncDocsFromCloud();
+        if (loaded && loaded.length > 0) {
+          try {
+            if (typeof window.renderPastasDocumentos === 'function') window.renderPastasDocumentos();
+            else if (typeof renderPastasDocumentos === 'function') renderPastasDocumentos();
+          } catch (e) { console.warn('[documentos] render pós-sync falhou:', e); }
+        }
+      } catch (e) { console.warn('[documentos] boot sync falhou:', e); }
+    }, 1500);
+  });
+  // ===== FIM DOCS CLOUD SYNC =====
+
   window.__pilAbrirPreview = function(url, nome, tipo) {
     document.getElementById('pilPreviewTitle').textContent = nome;
     document.getElementById('pilPreviewDownload').href = url;
