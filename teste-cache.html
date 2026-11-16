@@ -23753,6 +23753,83 @@ Router.init();
     });
   }
   document.getElementById("mtSaveBtn").addEventListener("click", () => Manutencao.salvar());
+
+  // ===== INÍCIO GUARD DOUBLE-SUBMIT =====
+  (function _bindSaveGuards() {
+    var _MODULES = [
+      "Agenda", "Aircraft", "Users", "Solicitantes", "Passengers",
+      "Locais", "Manutencao", "Custos", "Disponibilidade", "Tripulacao"
+    ];
+    var _saving = {};  // { "Agenda": true/false, "Aircraft": true/false, ... }
+
+    function _resetAfter(moduleName) {
+      setTimeout(function () { _saving[moduleName] = false; }, 1500);
+    }
+
+    // Camada 1 — Wrapper no submitForm (semântica)
+    _MODULES.forEach(function (name) {
+      var mod = window[name];
+      if (!mod || typeof mod !== "object") return;
+      if (typeof mod.submitForm !== "function") return;
+      var _orig = mod.submitForm;
+      mod.submitForm = async function () {
+        if (_saving[name]) {
+          console.warn("[submitForm] " + name + " — save já em andamento, ignorando duplicata");
+          return;
+        }
+        _saving[name] = true;
+        try {
+          return await _orig.apply(this, arguments);
+        } catch (err) {
+          _saving[name] = false;
+          throw err;
+        }
+        finally {
+          _resetAfter(name);
+        }
+      };
+    });
+
+    // Camada 2 — Desabilita botão visualmente (UX)
+    var _BTNS = [
+      { id: "evSaveBtn", module: "Agenda" },
+      { id: "aircraftSaveBtn", module: "Aircraft" },
+      { id: "usSaveBtn", module: "Users" },
+      { id: "solSaveBtn", module: "Solicitantes" },
+      { id: "psSaveBtn", module: "Passengers" },
+      { id: "lcSaveBtn", module: "Locais" },
+      { id: "mtSaveBtn", module: "Manutencao" },
+      { id: "ccSaveBtn", module: "Custos" },
+      { id: "fcSaveBtn", module: "Custos" },
+      { id: "folgaSaveBtn", module: "Disponibilidade" },
+      { id: "alocSaveBtn", module: "Tripulacao" }
+    ];
+
+    _BTNS.forEach(function (item) {
+      var btn = document.getElementById(item.id);
+      if (!btn || btn.__saveGuarded) return;
+      btn.__saveGuarded = true;
+      // Usa capture:true para rodar ANTES do handler original
+      btn.addEventListener("click", function (e) {
+        if (_saving[item.module]) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return false;
+        }
+        var txtOriginal = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Salvando...";
+        // Restaura após 1.5s (suficiente para save completar)
+        setTimeout(function () {
+          btn.disabled = false;
+          btn.textContent = txtOriginal;
+        }, 1500);
+      }, true);
+    });
+
+    console.log("[Guard] Double-submit protegido em", _MODULES.length, "módulos +", _BTNS.length, "botões");
+  })();
+  // ===== FIM GUARD DOUBLE-SUBMIT =====
   document.getElementById("mtDeleteBtn").addEventListener("click", () => Manutencao.excluirDoModal());
   document.getElementById("mtAeronave").addEventListener("change", () => {
     Manutencao.popularCiclos();
