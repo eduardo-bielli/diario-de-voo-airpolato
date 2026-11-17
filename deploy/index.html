@@ -4258,6 +4258,7 @@ body.is-booting .app {
       <button class="nav__item" data-page="aircraft-crud"><span data-icon="plane"></span>Aeronaves</button>
       <button class="nav__item" data-page="airports"><span data-icon="target"></span>Aeroportos</button>
       <button class="nav__item" data-page="ciclos" data-role="admin,piloto"><span data-icon="chart"></span>Ciclos/ano</button>
+      <button class="nav__item" data-page="financeiro" data-role="admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>Financeiro</button>
       <button class="nav__item" data-page="maintenance"><span data-icon="wrench"></span>Manutenção</button>
       <button class="nav__item" data-page="passageiros"><span data-icon="user"></span>Passageiros</button>
       <button class="nav__item" data-page="piloto" data-role="admin,piloto"><span data-icon="user"></span>Pilotos</button>
@@ -4962,6 +4963,37 @@ body.is-booting .app {
         </div>
       </div>
     </section>
+    <section class="page" id="page-financeiro" hidden>
+      <div class="panel">
+        <header class="panel__head"><h3>Financeiro</h3></header>
+        <div style="padding:16px">
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn--secondary" id="finTabAeronave" type="button" style="padding:8px 16px;font-size:13px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg> Aeronave</button>
+            <button class="btn btn--secondary" id="finTabOperacoes" type="button" style="padding:8px 16px;font-size:13px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Operações</button>
+            <button class="btn btn--secondary" id="finTabTripulacao" type="button" style="padding:8px 16px;font-size:13px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> Tripulação</button>
+          </div>
+          <div id="finSecAeronave">
+            <div class="panel" style="background:var(--bg)">
+              <header class="panel__head"><h3>Aeronave</h3></header>
+              <div style="padding:20px;text-align:center;color:var(--muted)"><p style="margin:0;font-size:13px">Em construção.</p></div>
+            </div>
+          </div>
+          <div id="finSecOperacoes" hidden>
+            <div class="panel" style="background:var(--bg)">
+              <header class="panel__head"><h3>Operações</h3></header>
+              <div style="padding:20px;text-align:center;color:var(--muted)"><p style="margin:0;font-size:13px">Em construção.</p></div>
+            </div>
+          </div>
+          <div id="finSecTripulacao" hidden>
+            <div class="panel" style="background:var(--bg)">
+              <header class="panel__head"><h3>Tripulação</h3></header>
+              <div style="padding:20px;text-align:center;color:var(--muted)"><p style="margin:0;font-size:13px">Em construção.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="page" id="page-backup" hidden>
       <div class="panel" style="margin-bottom:14px">
         <header class="panel__head">
@@ -17992,8 +18024,8 @@ window.addEventListener("sessionUpdated", function(ev) {
 });
 
 const Router = (() => {
-  const PAGES = ["dashboard","inicio","config","agenda","piloto","ciclos","troca-horas","backup","users","passageiros","solicitantes","registros","airports","flights","map","maintenance","comprovantes"];
-  const TITLES = { dashboard:"Dashboard", inicio:"Início", config:"Configurações", agenda:"Agenda", piloto:"Pilotos", ciclos:"Ciclo/ano", "troca-horas":"Troca de Horas", backup:"Backup e Monitoramento", users:"Usuários", passageiros:"Passageiros", solicitantes:"Solicitantes", registros:"Registros", airports:"Aeroportos", flights:"Voos Executados", map:"Mapa / Posição", maintenance:"Manutenção", comprovantes:"Comprovantes" };
+  const PAGES = ["dashboard","inicio","config","agenda","piloto","ciclos","troca-horas","backup","users","passageiros","solicitantes","registros","financeiro","airports","flights","map","maintenance","comprovantes"];
+  const TITLES = { dashboard:"Dashboard", inicio:"Início", config:"Configurações", agenda:"Agenda", piloto:"Pilotos", ciclos:"Ciclo/ano", "troca-horas":"Troca de Horas", backup:"Backup e Monitoramento", users:"Usuários", passageiros:"Passageiros", solicitantes:"Solicitantes", registros:"Registros", airports:"Aeroportos", flights:"Voos Executados", map:"Mapa / Posição", maintenance:"Manutenção", comprovantes:"Comprovantes", financeiro:"Financeiro" };
   
   /* ============================================================
      MAPA DE PERMISSÕES: Quais perfis podem acessar cada página
@@ -18084,6 +18116,9 @@ const Router = (() => {
       } else if (page === "registros" && typeof Registros !== "undefined") {
         Registros.load();
       }
+      else if (page === "financeiro" && window.FinanceiroPage && window.FinanceiroPage.render) {
+        window.FinanceiroPage.render();
+      }
     } catch(e) { console.error("[Router.go]", e); }
   }
   function showSoon(title) {
@@ -18098,13 +18133,42 @@ const Router = (() => {
     if (t) t.textContent = title||"Em breve";
   }
   function init() { window.addEventListener("hashchange", () => go(current())); go(current()); }
-  return { init, go, showSoon, current };
+  var __Router = { init, go, showSoon, current };
+  window.Router = __Router;
+  window.go = go;
+  return __Router;
 })();
 
 /* ============================================================
    MÓDULO: PÁGINA "CICLO/ANO"
    Lista aeronaves para gerenciar ciclos de custo
    ============================================================ */
+/* ===== INÍCIO FINANCEIRO PAGE ===== */
+window.FinanceiroPage = (function() {
+  "use strict";
+  var _bound = false;
+  var ABAS = ["Aeronave", "Operacoes", "Tripulacao"];
+  function _mostrar(nome) {
+    ABAS.forEach(function(a) {
+      var sec = document.getElementById("finSec" + a);
+      var btn = document.getElementById("finTab" + a);
+      if (sec) sec.hidden = (a !== nome);
+      if (btn) btn.classList.toggle("is-active", a === nome);
+    });
+  }
+  function _bind() {
+    if (_bound) return;
+    _bound = true;
+    ABAS.forEach(function(nome) {
+      var btn = document.getElementById("finTab" + nome);
+      if (btn) btn.addEventListener("click", function() { _mostrar(nome); });
+    });
+  }
+  function render() { _bind(); _mostrar("Aeronave"); }
+  return { render: render };
+})();
+/* ===== FIM FINANCEIRO PAGE ===== */
+
 const CiclosPage = (() => {
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 
@@ -23513,7 +23577,7 @@ Router.init();
         Aircraft.openList();
         return;
       }
-      if (["dashboard","agenda","piloto","ciclos","troca-horas","backup","users","passageiros","solicitantes","registros","airports","flights","map","maintenance"].includes(p)) {
+      if (["dashboard","agenda","piloto","ciclos","troca-horas","backup","users","passageiros","solicitantes","registros","financeiro","airports","flights","map","maintenance"].includes(p)) {
         Router.go(p);
         if (p === "users") {
           Users.recarregarDaTabela ? Users.recarregarDaTabela() : Users.renderList();
