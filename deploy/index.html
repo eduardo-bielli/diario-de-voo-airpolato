@@ -5136,7 +5136,7 @@ body.is-booting .app {
 <div class="aviso-conflito aviso-conflito--block" id="evAvisoConflito"></div>
 <div class="formgrid">
 <label class="field"><span>Aeronave</span><select id="evAeronave"><option value="">— selecionar —</option></select></label>
-<label class="field"><span>Tipo</span><select id="evTipo"><option>Voo regular</option><option>Voo Extra</option><option>Manutenção</option><option value="Translado">Troca de Hr</option><option data-bloqueio="1">Bloquear aeronave</option></select></label>
+<label class="field"><span>Tipo</span><select id="evTipo"><option>Voo regular</option><option>Voo Extra</option><option>Manutenção</option><option value="Troca de Hr">Troca de Hr</option><option data-bloqueio="1">Bloquear aeronave</option></select></label>
 </div>
 <div class="settings-section" id="evBloqueioSection" style="display:none">
   <h3>Período do bloqueio</h3>
@@ -20206,9 +20206,19 @@ function renderLista() {
     let events = [];
     try { events = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]"); } catch(e){}
 
+    // IDs de voos que já viraram crédito (para esmaecer)
+    let evIdsCadastrados = {};
+    try {
+      const creditos = JSON.parse(localStorage.getItem("dv.trocaHoras.v1") || "[]")
+        .filter(l => l.tipo === "credito" && l.ev_id);
+      creditos.forEach(l => { evIdsCadastrados[l.ev_id] = true; });
+    } catch(e){}
+
     const finalizados = events.filter(ev => {
       const trs = ev.trechos || [];
       if (!trs.length) return false;
+      // Só voos de Troca de Hora
+      if (ev.tipo !== "Troca de Hr") return false;
       if (!trs.every(t => t.revisao && t.revisao.status === "concluido")) return false;
       if (prefixo && (ev.aeronave_tail || "").toUpperCase() !== prefixo) return false;
       if (data) {
@@ -20226,7 +20236,7 @@ function renderLista() {
     const box = document.getElementById("thCredResultados");
     if (!box) return;
     if (!finalizados.length) {
-      box.innerHTML = '<p class="hint" style="text-align:center;padding:14px">Nenhum voo finalizado encontrado.</p>';
+      box.innerHTML = '<p class="hint" style="text-align:center;padding:14px">Nenhum voo de Troca de Hora finalizado encontrado.</p>';
       return;
     }
 
@@ -20236,6 +20246,17 @@ function renderLista() {
           const primeira = trs[0];
           const tempo = somarTempos(trs);
           const cor = (typeof Aircraft !== "undefined" && Aircraft.get) ? (Aircraft.get().find(a => a.tail === ev.aeronave_tail)?.color || "#38a8ff") : "#38a8ff";
+          const jaCadastrado = !!evIdsCadastrados[ev.id];
+
+          if (jaCadastrado) {
+            return '<div style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);opacity:0.45;cursor:not-allowed;background:transparent">'
+              + '<span style="font-family:ui-monospace,monospace;font-size:11px;font-weight:800;color:#fff;background:' + cor + ';padding:3px 7px;border-radius:4px">' + esc(ev.aeronave_tail || "—") + '</span>'
+              + '<span style="flex:1;min-width:0"><span style="font-size:12px;font-weight:700;display:block">' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</span>'
+              + '<span style="font-size:11px;color:var(--muted)">' + esc(primeira.data || "") + ' · ' + tempo + ' · ' + trs.length + ' trecho' + (trs.length > 1 ? 's' : '') + '</span></span>'
+              + '<span style="font-size:10px;font-weight:800;color:var(--green);background:rgba(48,207,138,0.15);padding:3px 7px;border-radius:4px;white-space:nowrap">✓ Já cadastrado</span>'
+              + '</div>';
+          }
+
           return '<button type="button" data-ev-id="' + esc(ev.id) + '" style="width:100%;text-align:left;display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;font-family:inherit;color:var(--text)">'
             + '<span style="font-family:ui-monospace,monospace;font-size:11px;font-weight:800;color:#fff;background:' + cor + ';padding:3px 7px;border-radius:4px">' + esc(ev.aeronave_tail || "—") + '</span>'
             + '<span style="flex:1;min-width:0"><span style="font-size:12px;font-weight:700;display:block">' + (trs.length ? esc(trs[0].origem || "—") + trs.map(t => " → " + esc(t.destino || "—")).join("") : "—") + '</span>'
