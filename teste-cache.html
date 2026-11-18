@@ -4973,8 +4973,16 @@ body.is-booting .app {
           </div>
           <div id="finSecAeronave">
             <div class="panel" style="background:var(--bg)">
-              <header class="panel__head"><h3>Aeronave</h3></header>
-              <div style="padding:20px;text-align:center;color:var(--muted)"><p style="margin:0;font-size:13px">Em construção.</p></div>
+              <header class="panel__head">
+                <h3>🛩️ Itens Financeiros</h3>
+                
+              </header>
+              <div style="padding:16px">
+                <div id="finAeroCards"></div>
+                                <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);text-align:right;font-size:16px;font-weight:800">
+                  💰 TOTAL GERAL: <span id="finAeroTotalGeral" style="color:var(--accent)">R$ 0,00</span>
+                </div>
+              </div>
             </div>
           </div>
           <div id="finSecOperacoes" hidden>
@@ -17820,6 +17828,19 @@ const Alertas = (() => {
         });
     });
 
+    /* 6. FINANCEIRO — itens vencendo */
+    try {
+      if (window.FinanceiroAeronavePage && window.FinanceiroAeronavePage._itensVencendo) {
+        var _fDias = localStorage.getItem("dv.alertas.filtroDias") || "30";
+        var _fLim = parseInt(_fDias, 10) || 30;
+        window.FinanceiroAeronavePage._itensVencendo(_fLim).forEach(function(it) {
+          alertas.push({ tipo: "financeiro", aeronave: it.aeronave_tail, severidade: it.severidade,
+            titulo: "💰 " + it.nome,
+            sub: (it.dias_restantes < 0 ? "Vencido há " + Math.abs(it.dias_restantes) + " dias" : (it.dias_restantes === 0 ? "Vence hoje" : "Vence em " + it.dias_restantes + " dia" + (it.dias_restantes !== 1 ? "s" : ""))) + " · " + it.data_fmt });
+        });
+      }
+    } catch(e) { console.warn("[Financeiro alertas]", e); }
+
     return alertas.filter(function(a) { return !_alertaDispensado(_alertaId(a)); });
   }
 
@@ -17965,6 +17986,7 @@ const Alertas = (() => {
 
   return { render, calcular, dispensar };
 })();
+window.Alertas = Alertas;
 
 /* Helper global: re-renderiza a página ativa (usado pelo event system) */
 window.renderCurrentPage = function() {
@@ -18154,6 +18176,7 @@ window.FinanceiroPage = (function() {
       if (sec) sec.hidden = (a !== nome);
       if (btn) btn.classList.toggle("is-active", a === nome);
     });
+    if (nome === "Aeronave" && window.FinanceiroAeronavePage) window.FinanceiroAeronavePage.render();
   }
   function _bind() {
     if (_bound) return;
@@ -18167,6 +18190,214 @@ window.FinanceiroPage = (function() {
   return { render: render };
 })();
 /* ===== FIM FINANCEIRO PAGE ===== */
+
+/* ===== INÍCIO FINANCEIRO AERONAVE ===== */
+window.FinanceiroAeronavePage = (function() {
+  "use strict";
+  var KEY = "dv.financeiro.aeronaves.v1";
+  var ITENS_PADRAO = ["Seguro RETA", "Seguro Casco", "PBN", "RVSM"];
+  var _bound = false;
+  var _esc = function(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); };
+
+  function _reRenderAlertas() {
+    try {
+      if (window.Alertas && typeof window.Alertas.render === "function") window.Alertas.render();
+      else if (typeof renderAlertas === "function") renderAlertas();
+      else if (window.renderCurrentPage) window.renderCurrentPage();
+      window.dispatchEvent(new CustomEvent("financeiroAtualizado"));
+    } catch(e) { console.warn("[Financeiro re-render]", e); }
+  }
+  function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
+  function _salvar(d) {
+    localStorage.setItem(KEY, JSON.stringify(d));
+    try { var sb = (typeof getSupabase === "function") ? getSupabase() : null; if (sb) sb.from("kv_store").upsert({ key: KEY, value: d }, { onConflict: "key" }).then(); } catch(e) {}
+    _reRenderAlertas();
+  }
+  function _uuid() { return "fin-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2,8)); }
+  function _fmtValor(v) { var n = Number(v) || 0; return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+  function _fmtData(iso) { if (!iso) return "—"; var p = iso.split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; }
+  function _status(it) {
+    if (!it.data_validade) return { icon: "⚪", label: "sem data", color: "var(--muted)", dias: null };
+    var h = new Date(); h.setHours(0,0,0,0);
+    var v = new Date(it.data_validade + "T00:00:00");
+    var d = Math.floor((v - h) / 86400000);
+    if (d < 0) return { icon: "🔴", label: "Vencido há " + Math.abs(d) + "d", color: "var(--red)", dias: d };
+    if (d <= (it.alerta_dias || 60)) return { icon: "🟡", label: "Vence em " + d + "d", color: "var(--yellow)", dias: d };
+    return { icon: "🟢", label: "OK (" + d + "d)", color: "var(--green)", dias: d };
+  }
+  function _garantir(aeroId, tail) {
+    var dados = _ler();
+    var reg = dados.find(function(x) { return x.aeronave_id === aeroId; });
+    if (!reg) {
+      var agora = new Date().toISOString();
+      reg = { aeronave_id: aeroId, aeronave_tail: tail, itens: ITENS_PADRAO.map(function(n) { return { id: _uuid(), nome: n, valor: 0, data_validade: "", alerta_dias: 60, criado_em: agora, atualizado_em: agora }; }), atualizado_em: agora };
+      dados.push(reg); _salvar(dados);
+    }
+    return { dados: dados, reg: reg };
+  }
+  function _tabelaHtml(reg) {
+    var rows = reg.itens.map(function(it) {
+      var st = _status(it);
+      return '<tr style="border-bottom:1px solid var(--line)">'
+        + '<td style="padding:8px">' + _esc(it.nome) + '</td>'
+        + '<td style="padding:8px;text-align:right">' + _fmtValor(it.valor) + '</td>'
+        + '<td style="padding:8px">' + _fmtData(it.data_validade) + '</td>'
+        + '<td style="padding:8px">' + (it.alerta_dias || 60) + 'd</td>'
+        + '<td style="padding:8px;color:' + st.color + ';font-weight:700">' + st.icon + ' ' + st.label + '</td>'
+        + '<td style="padding:8px;text-align:right;white-space:nowrap">'
+        +   '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end">'
+        +     '<button type="button" data-fin-edit="' + _esc(it.id) + '" title="Editar" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">✏️</button>'
+        +     '<button type="button" data-fin-del="' + _esc(it.id) + '" title="Excluir" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">🗑️</button>'
+        +   '</div>'
+        + '</td>'
+        + '</tr>';
+    }).join("");
+    return '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff"><thead><tr style="border-bottom:2px solid var(--line);text-align:left"><th style="padding:8px">Item</th><th style="padding:8px;text-align:right">Valor</th><th style="padding:8px">Validade</th><th style="padding:8px">Alerta</th><th style="padding:8px">Status</th><th style="padding:8px;text-align:right">Ações</th></tr></thead><tbody>' + (rows || '<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--muted)">Nenhum item.</td></tr>') + '</tbody></table>';
+  }
+  function _renderCards() {
+    var box = document.getElementById("finAeroCards");
+    if (!box) return;
+    var a = (typeof Aircraft !== "undefined" && Aircraft.getAtivos) ? Aircraft.getAtivos() : ((typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : []);
+    if (!a.length) {
+      box.innerHTML = '<div class="panel" style="padding:40px;text-align:center;color:var(--muted)">Nenhuma aeronave cadastrada.</div>';
+      var tg0 = document.getElementById("finAeroTotalGeral"); if (tg0) tg0.textContent = _fmtValor(0);
+      return;
+    }
+    var totalGeral = 0;
+    box.innerHTML = a.map(function(aero) {
+      var r = _garantir(aero.id, aero.tail);
+      var totalAero = 0;
+      var nVencidos = 0, nProximos = 0;
+      r.reg.itens.forEach(function(it) {
+        totalAero += Number(it.valor) || 0;
+        var st = _status(it);
+        if (st.dias !== null) {
+          if (st.dias < 0) nVencidos++;
+          else if (st.dias <= (it.alerta_dias || 60)) nProximos++;
+        }
+      });
+      totalGeral += totalAero;
+
+      // Cor da borda esquerda pelo pior status
+      var bordaCor = "var(--green)";
+      var badgeAlert = "";
+      if (nVencidos > 0) {
+        bordaCor = "var(--red)";
+        badgeAlert = '<span style="background:rgba(239,68,68,0.15);color:var(--red);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-left:8px">🔴 ' + nVencidos + ' vencido' + (nVencidos !== 1 ? 's' : '') + '</span>';
+        if (nProximos > 0) badgeAlert += '<span style="background:rgba(234,179,8,0.15);color:var(--yellow);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-left:4px">🟡 ' + nProximos + '</span>';
+      } else if (nProximos > 0) {
+        bordaCor = "var(--yellow)";
+        badgeAlert = '<span style="background:rgba(234,179,8,0.15);color:var(--yellow);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-left:8px">🟡 ' + nProximos + ' próximo' + (nProximos !== 1 ? 's' : '') + '</span>';
+      } else {
+        badgeAlert = '<span style="background:rgba(48,207,138,0.15);color:var(--green);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-left:8px">✓ Em dia</span>';
+      }
+
+      return '<div class="panel" style="background:#fff !important;margin-bottom:16px;border-left:4px solid ' + bordaCor + ';border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">'
+        + '<header class="panel__head" style="background:#f8fafc !important;padding:14px 16px;border-bottom:1px solid var(--line)">'
+        +   '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
+        +     '<h3 style="margin:0">🛩️ ' + _esc(aero.tail) + ' — ' + _esc(aero.model || "") + '</h3>'
+        +     badgeAlert
+        +   '</div>'
+        +   '<span style="font-weight:800;color:var(--accent);font-size:15px;white-space:nowrap">' + _fmtValor(totalAero) + '</span>'
+        + '</header>'
+        + '<div style="padding:14px 16px">'
+        +   _tabelaHtml(r.reg)
+        +   '<button type="button" class="btn btn--secondary" data-fin-add="' + _esc(aero.id) + '" style="margin-top:12px">➕ Adicionar item</button>'
+        + '</div>'
+        + '</div>';
+    }).join("");
+    var tg = document.getElementById("finAeroTotalGeral"); if (tg) tg.textContent = _fmtValor(totalGeral);
+    box.querySelectorAll("[data-fin-add]").forEach(function(b) { b.addEventListener("click", function() { _modal(null, b.dataset.finAdd); }); });
+    box.querySelectorAll("[data-fin-edit]").forEach(function(b) { b.addEventListener("click", function() { _modal(b.dataset.finEdit); }); });
+    box.querySelectorAll("[data-fin-del]").forEach(function(b) { b.addEventListener("click", function() { _remove(b.dataset.finDel); }); });
+  }
+  function _modal(id, aeroIdOverride) {
+    var aeroId = aeroIdOverride || "";
+    var tail = "";
+    var dados = _ler();
+    if (id) {
+      for (var i = 0; i < dados.length; i++) {
+        var found = dados[i].itens.find(function(x) { return x.id === id; });
+        if (found) { aeroId = dados[i].aeronave_id; tail = dados[i].aeronave_tail; break; }
+      }
+    } else if (aeroId) {
+      var a = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
+      var aero = a.find(function(x) { return x.id === aeroId; });
+      if (aero) tail = aero.tail;
+    }
+    if (!aeroId) return;
+    var r = _garantir(aeroId, tail);
+    var it = id ? r.reg.itens.find(function(x) { return x.id === id; }) : null;
+    document.getElementById("finItemModalTitle").textContent = it ? "Editar item" : "Novo item";
+    document.getElementById("finItemId").value = it ? it.id : "";
+    document.getElementById("finItemAeroId").value = aeroId;
+    document.getElementById("finItemNome").value = it ? it.nome : "";
+    document.getElementById("finItemValor").value = it ? (it.valor || "") : "";
+    document.getElementById("finItemData").value = it ? (it.data_validade || "") : "";
+    document.getElementById("finItemAlerta").value = it ? String(it.alerta_dias || 60) : "60";
+    document.getElementById("finItemDelete").hidden = !it;
+    document.getElementById("finItemModal").classList.add("is-open");
+  }
+  function _save() {
+    var id = (document.getElementById("finItemId").value || "").trim();
+    var aeroId = (document.getElementById("finItemAeroId").value || "").trim();
+    var nome = (document.getElementById("finItemNome").value || "").trim();
+    var valor = Number(document.getElementById("finItemValor").value) || 0;
+    var data = (document.getElementById("finItemData").value || "").trim();
+    var alerta = Number(document.getElementById("finItemAlerta").value) || 60;
+    if (!nome) { alert("Informe o nome."); return; }
+    if (!aeroId) { alert("Aeronave não identificada. Recarregue."); return; }
+    var dados = _ler();
+    var reg = dados.find(function(x) { return x.aeronave_id === aeroId; });
+    if (!reg) {
+      var a = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
+      var aero = a.find(function(x) { return x.id === aeroId; });
+      reg = { aeronave_id: aeroId, aeronave_tail: aero ? aero.tail : "", itens: [] };
+      dados.push(reg);
+    }
+    var agora = new Date().toISOString();
+    if (id) { var it = reg.itens.find(function(x) { return x.id === id; }); if (it) { it.nome = nome; it.valor = valor; it.data_validade = data; it.alerta_dias = alerta; it.atualizado_em = agora; } }
+    else { reg.itens.push({ id: _uuid(), nome: nome, valor: valor, data_validade: data, alerta_dias: alerta, criado_em: agora, atualizado_em: agora }); }
+    reg.atualizado_em = agora; _salvar(dados);
+    document.getElementById("finItemModal").classList.remove("is-open");
+    _renderCards();
+  }
+  function _remove(id) {
+    if (!confirm("Excluir este item?")) return;
+    var dados = _ler(); var removido = false;
+    dados.forEach(function(reg) {
+      var antes = reg.itens.length;
+      reg.itens = reg.itens.filter(function(x) { return x.id !== id; });
+      if (reg.itens.length < antes) { reg.atualizado_em = new Date().toISOString(); removido = true; }
+    });
+    if (removido) _salvar(dados);
+    document.getElementById("finItemModal").classList.remove("is-open");
+    _renderCards();
+  }
+  function _bind() {
+    if (_bound) return; _bound = true;
+    var sav = document.getElementById("finItemSave"); if (sav) sav.addEventListener("click", _save);
+    var del = document.getElementById("finItemDelete"); if (del) del.addEventListener("click", function() { var id = (document.getElementById("finItemId").value || "").trim(); if (id) _remove(id); });
+  }
+  function render() { _bind(); _renderCards(); }
+  function _itensVencendo(limite) {
+    var lim = Number(limite) || 30;
+    var dados = _ler(); var result = [];
+    var hoje = new Date(); hoje.setHours(0,0,0,0);
+    dados.forEach(function(reg) { (reg.itens || []).forEach(function(it) {
+      if (!it.data_validade) return;
+      var v = new Date(it.data_validade + "T00:00:00");
+      var dias = Math.floor((v - hoje) / 86400000);
+      var alertaItem = Number(it.alerta_dias) || 60;
+      var limiteEfetivo = Math.max(alertaItem, lim);
+      if (dias >= 0 && dias > limiteEfetivo) return;
+      result.push({ aeronave_tail: reg.aeronave_tail, nome: it.nome, data_fmt: _fmtData(it.data_validade), dias_restantes: dias, severidade: (dias < 0 || dias <= 7) ? "danger" : "warning" });
+    }); });
+    return result;
+  }
+  return { render: render, _itensVencendo: _itensVencendo };
+})();
+/* ===== FIM FINANCEIRO AERONAVE ===== */
 
 const CiclosPage = (() => {
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
@@ -27375,6 +27606,24 @@ document.addEventListener("DOMContentLoaded", function() {
 </div></div>
 
 <!-- Modal: Criar Nova Pasta de Documentos -->
+<div class="modal" id="finItemModal"><div class="dialog" style="max-width:480px">
+  <h2 id="finItemModalTitle">Novo item financeiro</h2>
+  <input type="hidden" id="finItemId">
+  <input type="hidden" id="finItemAeroId">
+  <label class="field" style="margin-bottom:10px"><span>Nome do item</span><input id="finItemNome" list="finItemNomes" placeholder="Ex: Seguro RETA"></label>
+  <datalist id="finItemNomes">
+    <option value="Seguro RETA"><option value="Seguro Casco"><option value="PBN"><option value="RVSM">
+  </datalist>
+  <label class="field" style="margin-bottom:10px"><span>Valor (R$)</span><input id="finItemValor" type="number" min="0" step="0.01" placeholder="0,00"></label>
+  <label class="field" style="margin-bottom:10px"><span>Data de validade</span><input id="finItemData" type="date"></label>
+  <label class="field" style="margin-bottom:10px"><span>Alerta (dias antes)</span><select id="finItemAlerta"><option value="30">30 dias</option><option value="60" selected>60 dias</option><option value="90">90 dias</option><option value="120">120 dias</option></select></label>
+  <div class="dialog__actions">
+    <button class="btn btn--ghost" id="finItemDelete" hidden>Excluir</button>
+    <button class="btn btn--secondary" data-action="close-modal" data-modal="finItemModal">Cancelar</button>
+    <button class="btn" id="finItemSave">Salvar</button>
+  </div>
+</div></div>
+
 <div class="modal" id="pilPastaModal"><div class="dialog">
   <h2>📁 Nova Pasta de Documentos</h2>
   <p class="hint" style="margin-top:-14px;margin-bottom:18px">Crie um card para organizar os arquivos (ex: Viagem EUA, Meus Documentos).</p>
