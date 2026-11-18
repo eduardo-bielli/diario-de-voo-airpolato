@@ -6733,17 +6733,6 @@ const Solicitantes = (() => {
   }
 
   async function submitForm() {
-    // ═══ VALIDAÇÃO DE CONFLITO INTERNO ═══
-    const _confInt = conflitoTrechosInterno();
-    if (_confInt) {
-      const elAviso = document.getElementById("evAvisoConflito");
-      if (elAviso) elAviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      alert("⛔ EXISTEM TRECHOS SOBREPOSTOS!\n\nO trecho " + (_confInt.a.idx + 1) + " e o trecho " + (_confInt.b.idx + 1) + " têm horários que se chocam.\n\nAjuste os horários antes de salvar.");
-      return;
-    }
-    // ═══════════════════════════════════════
-
-
     const g = (id) => document.getElementById(id);
     const nome = g("solNome").value.trim();
     const email = g("solEmail").value.trim();
