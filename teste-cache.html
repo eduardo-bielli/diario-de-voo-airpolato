@@ -7566,6 +7566,7 @@ const Migrar = (() => {
   const CHAVES = [
     "dv.aircraft.v3",
     "dv.settings.v3",
+    "dv.financeiro.aeronaves.v1",
     "dv.users.v1",
     "dv.passengers.v1",
     "dv.solicitantes.v1",
@@ -7660,6 +7661,7 @@ const Cloud = (() => {
   const SYNC_KEYS = new Set([
     "dv.aircraft.v3",
     "dv.settings.v3",
+    "dv.financeiro.aeronaves.v1",
     ...(window.USE_AUTH === true ? [] : ["dv.users.v1"]),
     "dv.passengers.v1",
     "dv.solicitantes.v1",
@@ -7786,6 +7788,7 @@ const Cloud = (() => {
       "dv.manutencao.v1":    () => { if (typeof Manutencao !== "undefined" && Manutencao.carregar) return Manutencao.carregar(); },
       "dv.disponibilidade.v1":() => { if (typeof Disponibilidade !== "undefined" && Disponibilidade.recarregar) return Disponibilidade.recarregar(); },
       "dv.settings.v3":      () => { if (typeof Theme !== "undefined" && Theme.load) return Theme.load(); },
+      "dv.financeiro.aeronaves.v1": () => { if (window.FinanceiroAeronavePage && window.FinanceiroAeronavePage.render) return window.FinanceiroAeronavePage.render(); },
       "dv.solicitantes.v1":  () => { if (typeof Solicitantes !== "undefined" && Solicitantes.load) return Solicitantes.load().then(() => { if (Solicitantes.renderList) Solicitantes.renderList(); }); }
     };
     /* Trava contra race condition: se alteramos localmente < 2s atras, ignora o Realtime */
@@ -18197,10 +18200,25 @@ window.FinanceiroAeronavePage = (function() {
     } catch(e) { console.warn("[Financeiro re-render]", e); }
   }
   function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
+  var _pendingUpsert = null;
   function _salvar(d) {
     localStorage.setItem(KEY, JSON.stringify(d));
-    try { var sb = (typeof getSupabase === "function") ? getSupabase() : null; if (sb) sb.from("kv_store").upsert({ key: KEY, value: d }, { onConflict: "key" }).then(); } catch(e) {}
     _reRenderAlertas();
+    // Debounce: cancela upsert anterior e agenda o novo com o estado MAIS RECENTE
+    if (_pendingUpsert) clearTimeout(_pendingUpsert);
+    _pendingUpsert = setTimeout(function() {
+      _pendingUpsert = null;
+      try {
+        var sb = (typeof getSupabase === "function") ? getSupabase() : null;
+        if (!sb) return;
+        // Re-lê do localStorage pra garantir estado final (o debounce pode ter pego edições em sequência)
+        var atual = JSON.parse(localStorage.getItem(KEY) || "[]");
+        sb.from("kv_store").upsert({ key: KEY, value: atual }, { onConflict: "key" }).then(function(res) {
+          if (res && res.error) console.warn("[fin-aero] upsert falhou:", res.error);
+          else console.log("[fin-aero] ✅ Cloud:", atual.length, "aeronaves");
+        });
+      } catch(e) { console.warn("[fin-aero] upsert exceção:", e); }
+    }, 400);
   }
   function _uuid() { return "fin-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2,8)); }
   function _fmtValor(v) { var n = Number(v) || 0; return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
@@ -20285,8 +20303,37 @@ function renderLista() {
 
     const aero = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get().find(a => a.tail === ev.aeronave_tail) : null;
     const modelo = aero?.model || "—";
-    const sol = (typeof Users !== "undefined" && Users.get) ? Users.get().find(u => u.id === ev.solicitante_id) : null;
-    const solNome = sol?.nome || "—";
+    const solId = String(ev.solicitante_id || "");
+    let sol = null;
+
+    try {
+      const listaSol = (typeof Solicitantes !== "undefined" && Solicitantes.get)
+        ? Solicitantes.get() || []
+        : [];
+
+      sol = listaSol.find(s => {
+        let ids = [];
+        if (Array.isArray(s.user_ids)) {
+          ids = s.user_ids;
+        } else if (typeof s.user_ids === "string") {
+          try { ids = JSON.parse(s.user_ids); } catch(e) {}
+        }
+
+        const vinculados = [...ids, s.user_id]
+          .filter(Boolean)
+          .map(String);
+
+        return vinculados.includes(solId);
+      }) || listaSol.find(s => String(s.id) === solId);
+    } catch(e) {
+      console.warn("[TrocaHoras] Erro ao resolver solicitante:", e);
+    }
+
+    const solUsuario = (typeof Users !== "undefined" && Users.get)
+      ? Users.get().find(u => String(u.id) === solId)
+      : null;
+
+    const solNome = sol?.nome || solUsuario?.nome || "—";
 
     const el = document.getElementById("thCredResumo");
     if (el) el.innerHTML = ''
