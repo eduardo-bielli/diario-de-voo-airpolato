@@ -18270,20 +18270,26 @@ window.FinanceiroAeronavePage = (function() {
       var r = await sb.from("kv_store").select("value").eq("key", KEY).maybeSingle();
       var cloud = (r.data && r.data.value) ? (typeof r.data.value === "string" ? JSON.parse(r.data.value) : r.data.value) : null;
       if (!Array.isArray(cloud) || cloud.length === 0) return;
-      var local = JSON.parse(localStorage.getItem(KEY) || "[]");
+      // Cloud é fonte da verdade para EXCLUSÕES:
+      // - item no cloud + item local → usa o mais recente (atualizado_em)
+      // - item no cloud + sem item local → adiciona
+      // - item NÃO no cloud + item local → foi deletado em outro device → remove
       var map = {};
-      cloud.forEach(function(item) { if (item && item.aeronave_id) map[item.aeronave_id] = item; });
-      local.forEach(function(item) {
-        if (!item || !item.aeronave_id) return;
-        var ex = map[item.aeronave_id];
-        if (!ex) { map[item.aeronave_id] = item; return; }
-        if (item.atualizado_em && ex.atualizado_em && item.atualizado_em > ex.atualizado_em) {
-          map[item.aeronave_id] = item;
-        }
+      cloud.forEach(function(c) { if (c && c.id) map[c.id] = c; });
+      var locais = _ler();
+      var resultado = [];
+      locais.forEach(function(c) {
+        if (!c || !c.id) return;
+        if (!map[c.id]) return; // deletado no cloud → descarta
+        var cloudItem = map[c.id];
+        var localMaisRecente = (c.atualizado_em || "") > (cloudItem.atualizado_em || "");
+        resultado.push(localMaisRecente ? c : cloudItem);
+        delete map[c.id];
       });
-      localStorage.setItem(KEY, JSON.stringify(Object.values(map)));
-      console.log("[fin-aero] sync Cloud:", cloud.length, "itens");
-    } catch(e) { console.warn("[fin-aero] sync falhou:", e); }
+      Object.keys(map).forEach(function(id) { resultado.push(map[id]); });
+      localStorage.setItem(KEY, JSON.stringify(resultado));
+      console.log("[Tripulacao] sync:", cloud.length, "no cloud,", resultado.length, "após merge");
+    } catch(e) { console.warn("[Tripulacao] sync falhou:", e); }
   }
   function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
   var _pendingUpsert = null;
@@ -18965,6 +18971,11 @@ window.FinanceiroTripulacaoPage = (function() {
 
   function _bind() {
     if (_bound) return; _bound = true;
+    // Escutar mudanças de despesas (Comprovantes cria/exclui)
+    document.addEventListener("dv:despesas-changed", function(e) {
+      console.log("[Tripulacao] despesas mudaram:", e.detail && e.detail.origem);
+      _renderCards();
+    });
     var filtro = document.getElementById("finTripPilotoFiltro");
     if (filtro) filtro.addEventListener("change", function() { _filtroPilotoId = filtro.value; _atualizarBotoes(); _renderCards(); });
     var add = document.getElementById("finTripAdd");
@@ -19000,16 +19011,20 @@ window.ComprovantesPage = (function() {
   function _isAdmin() { return _session().perfil === "admin"; }
   function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
   function _lerDesp() { try { return JSON.parse(localStorage.getItem(DESP_KEY) || "[]"); } catch(e) { return []; } }
-  function _saveBoth(comps, desps) {
+  async function _saveBoth(comps, desps) {
     localStorage.setItem(KEY, JSON.stringify(comps));
     localStorage.setItem(DESP_KEY, JSON.stringify(desps));
     try {
       var sb = (typeof getSupabase === "function") ? getSupabase() : null;
-      if (sb) {
-        sb.from("kv_store").upsert({ key: KEY, value: comps }, { onConflict: "key" }).then();
-        sb.from("kv_store").upsert({ key: DESP_KEY, value: desps }, { onConflict: "key" }).then();
+      if (!sb) return;
+      var r1 = await sb.from("kv_store").upsert({ key: KEY, value: comps }, { onConflict: "key" });
+      if (r1.error) console.error("[comprovantes] erro ao salvar comprovantes no cloud:", r1.error);
+      var r2 = await sb.from("kv_store").upsert({ key: DESP_KEY, value: desps }, { onConflict: "key" });
+      if (r2.error) console.error("[comprovantes] erro ao salvar despesas no cloud:", r2.error);
+      if (r1.error || r2.error) {
+        alert("⚠️ Salvo localmente, mas houve erro no cloud. Verifique o console.");
       }
-    } catch(e) {}
+    } catch(e) { console.error("[comprovantes] _saveBoth falhou:", e); }
   }
   async function _syncFromCloud() {
     try {
@@ -19212,11 +19227,14 @@ window.ComprovantesPage = (function() {
 
       var comps = _ler();
       comps.push({ id: compId, piloto_id: s.id, piloto_nome: s.nome || "—", despesa_id: despesaId, data_documento: data, descricao: desc, valor: valor, pdf_url: up.url, pdf_path: up.path, tamanho_kb: Math.round(_pendingFile.bytes.byteLength / 1024), origem: _pendingFile.origem, criado_em: agora, atualizado_em: agora });
-      _saveBoth(comps, desps);
+      await _saveBoth(comps, desps);
       document.getElementById("compNovoModal").classList.remove("is-open");
       alert("✅ Salvo no Storage\n" + Math.round(_pendingFile.bytes.byteLength / 1024) + "KB");
       _renderLista();
-      if (window.FinanceiroTripulacaoPage && location.hash === "#/financeiro") try { window.FinanceiroTripulacaoPage.render(); } catch(e) {}
+      // Notificar Tripulação (sempre, independente da página atual)
+      try {
+        document.dispatchEvent(new CustomEvent("dv:despesas-changed", { detail: { origem: "comprovante-salvo" } }));
+      } catch(e) {}
     } catch(e) {
       console.error(e); st.textContent = "❌ " + e.message;
       alert("Erro: " + e.message);
@@ -19304,8 +19322,12 @@ window.ComprovantesPage = (function() {
     comps = comps.filter(function(x) { return x.id !== id; });
     var desps = _lerDesp();
     if (c.despesa_id) { var d = desps.find(function(x) { return x.id === c.despesa_id; }); if (d) { d.recibo_pdf_url = null; d.recibo_pdf_path = null; d.atualizado_em = new Date().toISOString(); } }
-    _saveBoth(comps, desps);
+    await _saveBoth(comps, desps);
     _renderLista();
+    // Notificar Tripulação
+    try {
+      document.dispatchEvent(new CustomEvent("dv:despesas-changed", { detail: { origem: "comprovante-excluido" } }));
+    } catch(e) {}
   }
 
   function _bind() {
