@@ -66,3 +66,8 @@ config.js
 *.bak
 *.bak-*
 deploy/teste-cache.html
+
+# === Backups manuais de sessões ===
+backup-cache-*/
+*-antes-*.html
+teste-cache-antes-*.html
