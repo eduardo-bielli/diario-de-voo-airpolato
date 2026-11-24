@@ -14764,7 +14764,7 @@ const Custos = (() => {
 
 const MENU_POR_PERFIL = {
   admin: null,  /* null = vê tudo */
-  piloto: ["dashboard","agenda","piloto","flights","map","aircraft-crud","maintenance","solicitantes","passageiros","registros","airports","backup"],
+  piloto: ["dashboard","agenda","piloto","flights","map","aircraft-crud","maintenance","solicitantes","passageiros","registros","airports","backup","financeiro"],
   gestor: ["agenda","flights","map","passageiros"],
   passageiro: ["agenda"]
 };
@@ -14785,7 +14785,8 @@ const MENUS_DISPONIVEIS = [
   { id: "passageiros",   label: "Passageiros" },
   { id: "airports",      label: "Aeroportos" },
   { id: "registros",     label: "Registros" },
-  { id: "backup",        label: "Backup" }
+  { id: "backup",        label: "Backup" },
+  { id: "financeiro",    label: "Financeiro" }
 ];
 
 function podeVerMenu(page) {
@@ -18207,9 +18208,9 @@ window.FinanceiroPage = (function() {
     var isAdmin = s.perfil === "admin";
     var btnAero = document.getElementById("finTabAeronave");
     var btnOp = document.getElementById("finTabOperacoes");
-    if (btnAero) btnAero.style.display = isAdmin ? "" : "none";
-    if (btnOp) btnOp.style.display = isAdmin ? "" : "none";
-    _mostrar(isAdmin ? "Aeronave" : "Tripulacao");
+    if (btnAero) { btnAero.style.removeProperty("display"); btnAero.removeAttribute("hidden"); }
+    if (btnOp) { btnOp.style.removeProperty("display"); btnOp.removeAttribute("hidden"); }
+    _mostrar("Aeronave");
   }
   return { render: render };
 })();
@@ -18222,6 +18223,7 @@ window.FinanceiroAeronavePage = (function() {
   var ITENS_PADRAO = ["Seguro RETA", "Seguro Casco", "PBN", "RVSM"];
   var _bound = false;
   var _esc = function(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); };
+  var _isAdmin = function() { var s = (typeof Session !== "undefined" && Session.get) ? Session.get() : {}; return s.perfil === "admin"; };
 
   function _reRenderAlertas() {
     try {
@@ -18230,6 +18232,28 @@ window.FinanceiroAeronavePage = (function() {
       else if (window.renderCurrentPage) window.renderCurrentPage();
       window.dispatchEvent(new CustomEvent("financeiroAtualizado"));
     } catch(e) { console.warn("[Financeiro re-render]", e); }
+  }
+  async function _syncFromCloud() {
+    try {
+      var sb = (typeof getSupabase === "function") ? getSupabase() : null;
+      if (!sb) return;
+      var r = await sb.from("kv_store").select("value").eq("key", KEY).maybeSingle();
+      var cloud = (r.data && r.data.value) ? (typeof r.data.value === "string" ? JSON.parse(r.data.value) : r.data.value) : null;
+      if (!Array.isArray(cloud) || cloud.length === 0) return;
+      var local = JSON.parse(localStorage.getItem(KEY) || "[]");
+      var map = {};
+      cloud.forEach(function(item) { if (item && item.aeronave_id) map[item.aeronave_id] = item; });
+      local.forEach(function(item) {
+        if (!item || !item.aeronave_id) return;
+        var ex = map[item.aeronave_id];
+        if (!ex) { map[item.aeronave_id] = item; return; }
+        if (item.atualizado_em && ex.atualizado_em && item.atualizado_em > ex.atualizado_em) {
+          map[item.aeronave_id] = item;
+        }
+      });
+      localStorage.setItem(KEY, JSON.stringify(Object.values(map)));
+      console.log("[fin-aero] sync Cloud:", cloud.length, "itens");
+    } catch(e) { console.warn("[fin-aero] sync falhou:", e); }
   }
   function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
   var _pendingUpsert = null;
@@ -18283,12 +18307,14 @@ window.FinanceiroAeronavePage = (function() {
         + '<td style="padding:8px">' + _fmtData(it.data_validade) + '</td>'
         + '<td style="padding:8px">' + (it.alerta_dias || 60) + 'd</td>'
         + '<td style="padding:8px;color:' + st.color + ';font-weight:700">' + st.icon + ' ' + st.label + '</td>'
-        + '<td style="padding:8px;text-align:right;white-space:nowrap">'
-        +   '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end">'
-        +     '<button type="button" data-fin-edit="' + _esc(it.id) + '" title="Editar" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">✏️</button>'
-        +     '<button type="button" data-fin-del="' + _esc(it.id) + '" title="Excluir" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">🗑️</button>'
-        +   '</div>'
-        + '</td>'
+        + (_isAdmin()
+          ? '<td style="padding:8px;text-align:right;white-space:nowrap">'
+            +   '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end">'
+            +     '<button type="button" data-fin-edit="' + _esc(it.id) + '" title="Editar" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">✏️</button>'
+            +     '<button type="button" data-fin-del="' + _esc(it.id) + '" title="Excluir" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">🗑️</button>'
+            +   '</div>'
+            + '</td>'
+          : '')
         + '</tr>';
     }).join("");
     return '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff"><thead><tr style="border-bottom:2px solid var(--line);text-align:left"><th style="padding:8px">Item</th><th style="padding:8px;text-align:right">Valor</th><th style="padding:8px">Validade</th><th style="padding:8px">Alerta</th><th style="padding:8px">Status</th><th style="padding:8px;text-align:right">Ações</th></tr></thead><tbody>' + (rows || '<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--muted)">Nenhum item.</td></tr>') + '</tbody></table>';
@@ -18341,7 +18367,7 @@ window.FinanceiroAeronavePage = (function() {
         + '</header>'
         + '<div style="padding:14px 16px">'
         +   _tabelaHtml(r.reg)
-        +   '<button type="button" class="btn btn--secondary" data-fin-add="' + _esc(aero.id) + '" style="margin-top:12px">➕ Adicionar item</button>'
+        +   (_isAdmin() ? '<button type="button" class="btn btn--secondary" data-fin-add="' + _esc(aero.id) + '" style="margin-top:12px">➕ Adicionar item</button>' : '')
         + '</div>'
         + '</div>';
     }).join("");
@@ -18418,7 +18444,7 @@ window.FinanceiroAeronavePage = (function() {
     var sav = document.getElementById("finItemSave"); if (sav) sav.addEventListener("click", _save);
     var del = document.getElementById("finItemDelete"); if (del) del.addEventListener("click", function() { var id = (document.getElementById("finItemId").value || "").trim(); if (id) _remove(id); });
   }
-  function render() { _bind(); _renderCards(); }
+  function render() { _bind(); _renderCards(); _syncFromCloud().then(function() { _renderCards(); }); }
   function _itensVencendo(limite) {
     var lim = Number(limite) || 30;
     var dados = _ler(); var result = [];
@@ -18646,6 +18672,28 @@ window.FinanceiroTripulacaoPage = (function() {
   var _pendingUpsert = null;
 
   function _uuid() { return "desp-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2,8)); }
+  async function _syncFromCloud() {
+    try {
+      var sb = (typeof getSupabase === "function") ? getSupabase() : null;
+      if (!sb) return;
+      var r = await sb.from("kv_store").select("value").eq("key", KEY).maybeSingle();
+      var cloud = (r.data && r.data.value) ? (typeof r.data.value === "string" ? JSON.parse(r.data.value) : r.data.value) : null;
+      if (!Array.isArray(cloud) || cloud.length === 0) return;
+      var local = JSON.parse(localStorage.getItem(KEY) || "[]");
+      var map = {};
+      cloud.forEach(function(item) { if (item && item.id) map[item.id] = item; });
+      local.forEach(function(item) {
+        if (!item || !item.id) return;
+        var ex = map[item.id];
+        if (!ex) { map[item.id] = item; return; }
+        if (item.atualizado_em && ex.atualizado_em && item.atualizado_em > ex.atualizado_em) {
+          map[item.id] = item;
+        }
+      });
+      localStorage.setItem(KEY, JSON.stringify(Object.values(map)));
+      console.log("[fin-trip] sync Cloud:", cloud.length, "despesas");
+    } catch(e) { console.warn("[fin-trip] sync falhou:", e); }
+  }
   function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
   function _salvar(d) {
     localStorage.setItem(KEY, JSON.stringify(d));
@@ -18677,13 +18725,18 @@ window.FinanceiroTripulacaoPage = (function() {
   function _atualizarBotoes() {
     var addBtn = document.getElementById("finTripAdd");
     var filtro = document.getElementById("finTripPilotoFiltro");
-    if (addBtn) addBtn.style.display = _podeAdicionar() ? "" : "none";
+    var s = _session();
+    var meuId = s.id || "";
+    var isAdmin = s.perfil === "admin";
+    var isPiloto = s.perfil === "piloto" || s.tambem_e_piloto === true;
+    var mostrarAdd = false;
+    if (!isAdmin && isPiloto) mostrarAdd = true;
+    else if (isAdmin && isPiloto && String(_filtroPilotoId) === String(meuId)) mostrarAdd = true;
+    if (addBtn) addBtn.style.display = mostrarAdd ? "" : "none";
     if (filtro) {
-      if (_veTodos()) {
+      if (isAdmin) {
         filtro.style.display = "";
-        var s = _session();
         var opts = '<option value="all">Todos os pilotos</option>';
-        opts += '<option value="__me__">Só as minhas</option>';
         _pilotosDisponiveis().forEach(function(u) {
           opts += '<option value="' + _esc(u.id) + '">' + _esc(u.nome) + '</option>';
         });
@@ -18704,12 +18757,8 @@ window.FinanceiroTripulacaoPage = (function() {
     // Filtrar por permissão
     if (!_veTodos()) {
       todas = todas.filter(function(d) { return String(d.piloto_id) === String(s.id); });
-    } else {
-      if (_filtroPilotoId === "__me__") {
-        todas = todas.filter(function(d) { return String(d.piloto_id) === String(s.id); });
-      } else if (_filtroPilotoId !== "all") {
-        todas = todas.filter(function(d) { return String(d.piloto_id) === String(_filtroPilotoId); });
-      }
+    } else if (_filtroPilotoId !== "all") {
+      todas = todas.filter(function(d) { return String(d.piloto_id) === String(_filtroPilotoId); });
     }
     // Agrupar por piloto → mês → despesas
     var porPiloto = {};
@@ -18887,7 +18936,7 @@ window.FinanceiroTripulacaoPage = (function() {
   function _bind() {
     if (_bound) return; _bound = true;
     var filtro = document.getElementById("finTripPilotoFiltro");
-    if (filtro) filtro.addEventListener("change", function() { _filtroPilotoId = filtro.value; _renderCards(); });
+    if (filtro) filtro.addEventListener("change", function() { _filtroPilotoId = filtro.value; _atualizarBotoes(); _renderCards(); });
     var add = document.getElementById("finTripAdd");
     if (add) add.addEventListener("click", function() { _modal(null); });
     var sav = document.getElementById("finTripDespSave");
@@ -18896,7 +18945,7 @@ window.FinanceiroTripulacaoPage = (function() {
     if (del) del.addEventListener("click", function() { var id = (document.getElementById("finTripDespId").value || "").trim(); if (id) _remove(id); });
   }
 
-  function render() { _bind(); _atualizarBotoes(); _renderCards(); }
+  function render() { _bind(); _atualizarBotoes(); _renderCards(); _syncFromCloud().then(function() { _renderCards(); }); }
   return { render: render };
 })();
 /* ===== FIM FINANCEIRO TRIPULACAO ===== */
