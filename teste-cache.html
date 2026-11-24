@@ -4987,8 +4987,16 @@ body.is-booting .app {
           </div>
           <div id="finSecOperacoes" hidden>
             <div class="panel" style="background:var(--bg)">
-              <header class="panel__head"><h3>Operações</h3></header>
-              <div style="padding:20px;text-align:center;color:var(--muted)"><p style="margin:0;font-size:13px">Em construção.</p></div>
+              <header class="panel__head">
+                <h3>⚙️ Operações — Despesas por Mês</h3>
+                <select id="finOpAeroFiltro" style="padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:13px;font-weight:600;margin-left:auto"></select>
+              </header>
+              <div style="padding:16px">
+                <div id="finOpCards"></div>
+                <div style="margin-top:16px;padding-top:12px;border-top:2px solid var(--line);text-align:right;font-size:16px;font-weight:800">
+                  💰 TOTAL GERAL: <span id="finOpTotalGeral" style="color:var(--accent)">R$ 0,00</span>
+                </div>
+              </div>
             </div>
           </div>
           <div id="finSecTripulacao" hidden>
@@ -18169,6 +18177,7 @@ window.FinanceiroPage = (function() {
       if (btn) btn.classList.toggle("is-active", a === nome);
     });
     if (nome === "Aeronave" && window.FinanceiroAeronavePage) window.FinanceiroAeronavePage.render();
+    if (nome === "Operacoes" && window.FinanceiroOperacoesPage) window.FinanceiroOperacoesPage.render();
   }
   function _bind() {
     if (_bound) return;
@@ -18405,6 +18414,201 @@ window.FinanceiroAeronavePage = (function() {
   return { render: render, _itensVencendo: _itensVencendo };
 })();
 /* ===== FIM FINANCEIRO AERONAVE ===== */
+
+/* ===== INÍCIO FINANCEIRO OPERACOES ===== */
+window.FinanceiroOperacoesPage = (function() {
+  "use strict";
+  var _bound = false;
+  var _filtroAero = "all";
+  var _esc = function(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); };
+  var _fmtValor = function(v) { var n = Number(v) || 0; return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); };
+  var _fmtData = function(iso) { if (!iso) return "—"; var p = iso.split("-"); return p.length === 3 ? p[2] + "/" + p[1] : iso; };
+  var _fmtLitros = function(v) { var n = Number(v) || 0; return n.toLocaleString("pt-BR", { maximumFractionDigits: 0 }) + " L"; };
+  var MESES_NOME = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  var CATS = [
+    { key: "aeroportos", label: "Aeroportos", icon: "🛬" },
+    { key: "fbo", label: "FBO", icon: "🏢" },
+    { key: "decea", label: "DECEA", icon: "📡" },
+    { key: "pernoite", label: "Pernoite", icon: "🌙" },
+    { key: "tripulacao", label: "Tripulação", icon: "👨‍✈️" },
+    { key: "outros", label: "Outros", icon: "📦" }
+  ];
+
+  function _dropdownAero() {
+    var sel = document.getElementById("finOpAeroFiltro"); if (!sel) return;
+    var aero = (typeof Aircraft !== "undefined" && Aircraft.get) ? Aircraft.get() : [];
+    var cur = sel.value || "all";
+    var html = '<option value="all">Todas as aeronaves</option>';
+    html += aero.map(function(a) { return '<option value="' + _esc(a.tail) + '">' + _esc(a.tail) + " — " + _esc(a.model || "") + '</option>'; }).join("");
+    sel.innerHTML = html;
+    sel.value = cur;
+    if (!sel.value) sel.value = "all";
+    _filtroAero = sel.value;
+  }
+
+  function _agrupar() {
+    var eventos = [];
+    try { eventos = JSON.parse(localStorage.getItem("dv.agenda.v1") || "[]"); } catch(e) {}
+    var porMes = {};
+    eventos.forEach(function(ev) {
+      if (_filtroAero !== "all" && ev.aeronave_tail !== _filtroAero) return;
+      (ev.trechos || []).forEach(function(tr) {
+        if (!tr.data || !tr.revisao) return;
+        if (tr.revisao.status !== "concluido") return;
+        var mes = String(tr.data).slice(0, 7);
+        if (!/^\d{4}-\d{2}$/.test(mes)) return;
+        if (!porMes[mes]) porMes[mes] = { combustivel: [], voos: [], total: 0, catAtivas: {} };
+
+        // Combustível
+        var comb = tr.revisao.combustivel;
+        if (comb && comb.abasteceu && Number(comb.litros_abastecidos) > 0) {
+          var litros = Number(comb.litros_abastecidos) || 0;
+          var valor = Number(comb.valor_gasto) || (litros * (Number(comb.tanque_depois_preco) || Number(comb.tanque_antes_preco) || 0));
+          var preco = litros > 0 ? valor / litros : 0;
+          if (valor > 0) {
+            porMes[mes].combustivel.push({ data: tr.data, tail: ev.aeronave_tail || "—", litros: litros, preco: preco, valor: valor });
+            porMes[mes].total += valor;
+          }
+        }
+
+        // Despesas — 1 linha por trecho concluído com despesas.ativo
+        var desp = tr.revisao.despesas;
+        if (desp && desp.ativo) {
+          var cats = {}, total = 0, temAlgo = false;
+          CATS.forEach(function(c) {
+            var v = Number(desp[c.key] && desp[c.key].valor) || 0;
+            cats[c.key] = v;
+            total += v;
+            if (v > 0) { temAlgo = true; porMes[mes].catAtivas[c.key] = true; }
+          });
+          if (temAlgo) {
+            porMes[mes].voos.push({ data: tr.data, tail: ev.aeronave_tail || "—", cats: cats, total: total, ev_id: ev.id });
+            porMes[mes].total += total;
+          }
+        }
+      });
+    });
+    // Ordenar combustível e voos por data (ascendente) em cada mês
+    Object.keys(porMes).forEach(function(m) {
+      porMes[m].combustivel.sort(function(a, b) { return a.data.localeCompare(b.data); });
+      porMes[m].voos.sort(function(a, b) { return a.data.localeCompare(b.data); });
+    });
+    return porMes;
+  }
+
+  function _despCard(label, icon, valor) {
+    if (valor <= 0) return "";
+    return '<div style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px">' + icon + ' ' + _esc(label) + '</div>'
+      + '<div style="font-size:14px;font-weight:800;color:var(--text)">' + _fmtValor(valor) + '</div>'
+      + '</div>';
+  }
+
+  function _renderCards() {
+    var box = document.getElementById("finOpCards"); if (!box) return;
+    var porMes = _agrupar();
+    var meses = Object.keys(porMes).sort().reverse();
+    if (!meses.length) {
+      box.innerHTML = '<div class="panel" style="padding:40px;text-align:center;color:var(--muted)">Nenhuma operação com despesas registradas.</div>';
+      var tg0 = document.getElementById("finOpTotalGeral"); if (tg0) tg0.textContent = _fmtValor(0);
+      return;
+    }
+    var totalGeral = 0;
+    box.innerHTML = meses.map(function(mes) {
+      var d = porMes[mes];
+      totalGeral += d.total;
+      var parts = mes.split("-");
+      var nomeMes = MESES_NOME[parseInt(parts[1], 10) - 1] + " " + parts[0];
+
+      // ═══ COMBUSTÍVEL ═══
+      var combRows = d.combustivel.map(function(c) {
+        return '<tr style="border-bottom:1px solid var(--line)">'
+          + '<td style="padding:6px 8px;white-space:nowrap">' + _fmtData(c.data) + '</td>'
+          + '<td style="padding:6px 8px"><span style="font-family:ui-monospace,monospace;font-weight:800;font-size:12px">' + _esc(c.tail) + '</span></td>'
+          + '<td style="padding:6px 8px;text-align:right">' + _fmtLitros(c.litros) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right">' + _fmtValor(c.preco) + '/L</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-weight:700">' + _fmtValor(c.valor) + '</td>'
+          + '</tr>';
+      }).join("");
+      var subtotalComb = d.combustivel.reduce(function(s, c) { return s + c.valor; }, 0);
+
+      // ═══ OUTRAS DESPESAS (por voo) ═══
+      var catsAtivas = CATS.filter(function(c) { return d.catAtivas[c.key]; });
+      var despHead = catsAtivas.map(function(c) {
+        return '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right;white-space:nowrap">' + c.icon + ' ' + _esc(c.label) + '</th>';
+      }).join("");
+      var despRows = d.voos.map(function(v) {
+        var cells = catsAtivas.map(function(c) {
+          var val = v.cats[c.key] || 0;
+          return '<td style="padding:6px 8px;text-align:right;' + (val === 0 ? 'color:var(--muted)' : '') + '">' + (val > 0 ? _fmtValor(val) : '—') + '</td>';
+        }).join("");
+        return '<tr style="border-bottom:1px solid var(--line)">'
+          + '<td style="padding:6px 8px;white-space:nowrap">' + _fmtData(v.data) + '</td>'
+          + '<td style="padding:6px 8px"><span style="font-family:ui-monospace,monospace;font-weight:800;font-size:12px">' + _esc(v.tail) + '</span></td>'
+          + cells
+          + '<td style="padding:6px 8px;text-align:right;font-weight:700">' + _fmtValor(v.total) + '</td>'
+          + '</tr>';
+      }).join("");
+      // Subtotal por categoria
+      var subCatCells = catsAtivas.map(function(c) {
+        var soma = d.voos.reduce(function(s, v) { return s + (v.cats[c.key] || 0); }, 0);
+        return '<td style="padding:6px 8px;text-align:right;font-weight:800;background:#f8fafc">' + _fmtValor(soma) + '</td>';
+      }).join("");
+      var despTotal = d.voos.reduce(function(s, v) { return s + v.total; }, 0);
+
+      var despHtml = (d.voos.length && catsAtivas.length)
+        ? '<h4 style="margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted);font-weight:800">💰 Outras Despesas</h4>'
+          + '<div style="overflow-x:auto;margin-bottom:8px">'
+          + '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;min-width:600px">'
+          + '<thead><tr style="border-bottom:2px solid var(--line);text-align:left">'
+          + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Data</th>'
+          + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Aeronave</th>'
+          + despHead
+          + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right">Total</th>'
+          + '</tr></thead><tbody>'
+          + despRows
+          + '<tr style="background:#f8fafc;border-top:2px solid var(--line)">'
+          + '<td colspan="2" style="padding:6px 8px;font-weight:800;text-transform:uppercase;font-size:11px;color:var(--muted)">Subtotal</td>'
+          + subCatCells
+          + '<td style="padding:6px 8px;text-align:right;font-weight:800;color:var(--accent)">' + _fmtValor(despTotal) + '</td>'
+          + '</tr></tbody></table></div>'
+        : '';
+
+      return '<div class="panel" style="background:#fff !important;margin-bottom:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">'
+        + '<header class="panel__head" style="background:#f8fafc !important;padding:14px 16px;border-bottom:1px solid var(--line)">'
+        +   '<h3 style="margin:0">📅 ' + _esc(nomeMes) + '</h3>'
+        +   '<span style="font-weight:800;color:var(--accent);font-size:15px;white-space:nowrap">' + _fmtValor(d.total) + '</span>'
+        + '</header>'
+        + '<div style="padding:16px">'
+        + (d.combustivel.length
+          ? '<h4 style="margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted);font-weight:800">⛽ Combustível</h4>'
+            + '<div style="overflow-x:auto;margin-bottom:6px">'
+            + '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;min-width:500px">'
+            + '<thead><tr style="border-bottom:2px solid var(--line);text-align:left">'
+            + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Data</th>'
+            + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Aeronave</th>'
+            + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right">Litros</th>'
+            + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right">Preço/L</th>'
+            + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right">Valor</th>'
+            + '</tr></thead><tbody>' + combRows + '</tbody></table></div>'
+            + '<div style="text-align:right;font-size:12px;color:var(--muted);margin-bottom:14px">Subtotal combustível: <b style="color:var(--text)">' + _fmtValor(subtotalComb) + '</b></div>'
+          : '')
+        + despHtml
+        + '</div></div>';
+    }).join("");
+    var tg = document.getElementById("finOpTotalGeral"); if (tg) tg.textContent = _fmtValor(totalGeral);
+  }
+
+  function _bind() {
+    if (_bound) return; _bound = true;
+    var sel = document.getElementById("finOpAeroFiltro");
+    if (sel) sel.addEventListener("change", function() { _filtroAero = sel.value; _renderCards(); });
+  }
+
+  function render() { _bind(); _dropdownAero(); _renderCards(); }
+  return { render: render };
+})();
+/* ===== FIM FINANCEIRO OPERACOES ===== */
 
 const CiclosPage = (() => {
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
