@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script src="vendor.min.js?v=6"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
 
 
@@ -4146,6 +4147,22 @@ body.is-booting .app {
     .aircraft-cards.is-solo .aircraft-card__media, .aircraft-cards.is-solo .aircraft-card__body { width: 100% !important; }
 }
 </style>
+
+<style id="comp-mobile-css">
+@media (max-width: 640px) {
+  .comp-card-mobile { display: flex !important; flex-direction: column; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); }
+  .comp-card-mobile__top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .comp-card-mobile__data { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .comp-card-mobile__valor { font-weight: 800; color: var(--accent); font-size: 15px; }
+  .comp-card-mobile__desc { font-size: 13px; line-height: 1.3; word-break: break-word; }
+  .comp-card-mobile__acoes { display: flex; gap: 8px; margin-top: 4px; }
+  .comp-card-mobile__acoes .btn { flex: 1; padding: 8px; font-size: 13px; }
+  .comp-tabela-wrap { display: none !important; }
+}
+@media (min-width: 641px) {
+  .comp-cards-wrap { display: none !important; }
+}
+</style>
 </head>
 
 
@@ -4963,6 +4980,16 @@ body.is-booting .app {
         </div>
       </div>
     </section>
+    <section class="page" id="page-comprovantes" hidden>
+      <div class="panel">
+        <header class="panel__head">
+          <h3>📄 Comprovantes</h3>
+          <button type="button" class="btn" id="compNovoBtn" style="margin-left:auto">+ Novo comprovante</button>
+        </header>
+        <div style="padding:16px"><div id="compLista"></div></div>
+      </div>
+    </section>
+
     <section class="page" id="page-financeiro" hidden>
       <div class="panel">
         <div style="padding:16px">
@@ -18154,6 +18181,9 @@ const Router = (() => {
       else if (page === "financeiro" && window.FinanceiroPage && window.FinanceiroPage.render) {
         window.FinanceiroPage.render();
       }
+      else if (page === "comprovantes" && window.ComprovantesPage && window.ComprovantesPage.render) {
+        window.ComprovantesPage.render();
+      }
     } catch(e) { console.error("[Router.go]", e); }
   }
   function showSoon(title) {
@@ -18949,6 +18979,349 @@ window.FinanceiroTripulacaoPage = (function() {
   return { render: render };
 })();
 /* ===== FIM FINANCEIRO TRIPULACAO ===== */
+
+
+
+
+/* ===== INÍCIO COMPROVANTES ===== */
+window.ComprovantesPage = (function() {
+  "use strict";
+  var KEY = "dv.comprovantes.v1";
+  var DESP_KEY = "dv.financeiro.despesas.v1";
+  var BUCKET = "comprovantes";
+  var _bound = false, _pendingFile = null;
+  var _esc = function(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); };
+  var _fmtValor = function(v) { return (Number(v)||0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); };
+  var _fmtData = function(iso) { if (!iso) return "—"; var p = iso.split("-"); return p.length === 3 ? p[2] + "/" + p[1] : iso; };
+  var MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  function _uuid() { return "comp-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2,8)); }
+  function _uuidDesp() { return "desp-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2,8)); }
+  function _session() { return (typeof Session !== "undefined" && Session.get) ? Session.get() : {}; }
+  function _isAdmin() { return _session().perfil === "admin"; }
+  function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
+  function _lerDesp() { try { return JSON.parse(localStorage.getItem(DESP_KEY) || "[]"); } catch(e) { return []; } }
+  function _saveBoth(comps, desps) {
+    localStorage.setItem(KEY, JSON.stringify(comps));
+    localStorage.setItem(DESP_KEY, JSON.stringify(desps));
+    try {
+      var sb = (typeof getSupabase === "function") ? getSupabase() : null;
+      if (sb) {
+        sb.from("kv_store").upsert({ key: KEY, value: comps }, { onConflict: "key" }).then();
+        sb.from("kv_store").upsert({ key: DESP_KEY, value: desps }, { onConflict: "key" }).then();
+      }
+    } catch(e) {}
+  }
+  async function _syncFromCloud() {
+    try {
+      var sb = getSupabase(); if (!sb) return;
+      var r = await sb.from("kv_store").select("value").eq("key", KEY).maybeSingle();
+      var cloud = (r.data && r.data.value) ? (typeof r.data.value === "string" ? JSON.parse(r.data.value) : r.data.value) : null;
+      if (!Array.isArray(cloud) || !cloud.length) return;
+      // Cloud é fonte da verdade para EXCLUSÕES:
+      // - item no cloud + item local → usa o mais recente (atualizado_em)
+      // - item no cloud + sem item local → adiciona
+      // - item NÃO no cloud + item local → foi deletado em outro device → remove
+      var map = {};
+      cloud.forEach(function(c) { if (c && c.id) map[c.id] = c; });
+      var locais = _ler();
+      var resultado = [];
+      locais.forEach(function(c) {
+        if (!c || !c.id) return;
+        if (!map[c.id]) return; // deletado no cloud → descarta
+        var cloudItem = map[c.id];
+        var localMaisRecente = (c.atualizado_em || "") > (cloudItem.atualizado_em || "");
+        resultado.push(localMaisRecente ? c : cloudItem);
+        delete map[c.id]; // marca como já processado
+      });
+      // Itens que só existem no cloud (criados em outro device)
+      Object.keys(map).forEach(function(id) { resultado.push(map[id]); });
+      localStorage.setItem(KEY, JSON.stringify(resultado));
+    } catch(e) { console.warn("[comp] sync:", e); }
+  }
+
+  async function _compressImage(blob, maxW, q) {
+    return new Promise(function(resolve, reject) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if (w > maxW) { h = (h * maxW) / w; w = maxW; }
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        c.toBlob(function(b) { b ? resolve(b) : reject(new Error("Canvas falhou")); }, "image/jpeg", q);
+      };
+      img.onerror = function() { reject(new Error("Img inválida")); };
+      img.src = URL.createObjectURL(blob);
+    });
+  }
+  async function _imagesToPDF(blobs) {
+    if (!window.PDFLib) throw new Error("pdf-lib não carregou");
+    var doc = await window.PDFLib.PDFDocument.create();
+    for (var i = 0; i < blobs.length; i++) {
+      var ab = await blobs[i].arrayBuffer();
+      var img = await doc.embedJpg(ab);
+      var page = doc.addPage([img.width, img.height]);
+      page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+    }
+    return await doc.save();
+  }
+  async function _compressToTarget(blobs, targetKB) {
+    var q = 0.75, w = 1400;
+    for (var t = 0; t < 6; t++) {
+      var comp = await Promise.all(blobs.map(function(b) { return _compressImage(b, w, q); }));
+      var bytes = await _imagesToPDF(comp);
+      var kb = bytes.byteLength / 1024;
+      if (kb <= targetKB || (q <= 0.35 && w <= 800)) return { bytes: bytes, kb: Math.round(kb) };
+      q = Math.max(0.35, q - 0.15);
+      w = Math.max(800, w - 200);
+    }
+  }
+  async function _uploadPDF(bytes) {
+    var sb = getSupabase(); if (!sb) throw new Error("Supabase off");
+    var s = _session();
+    var pid = s.id || "anon";
+    var ym = new Date().getFullYear() + "-" + String(new Date().getMonth()+1).padStart(2, "0");
+    var fname = pid + "/" + ym + "/" + Date.now() + "-" + _uuid() + ".pdf";
+    var blob = new Blob([bytes], { type: "application/pdf" });
+    var r = await sb.storage.from(BUCKET).upload(fname, blob, { upsert: false, contentType: "application/pdf" });
+    if (r.error) throw r.error;
+    return { path: fname, url: null };  // URL gerada on-demand (bucket privado)
+  }
+
+  function _isCapacitor() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+  function _getPlugin() { return (window.Capacitor && window.Capacitor.Plugins) ? (window.Capacitor.Plugins.DocumentScanner || window.Capacitor.Plugins.CapgoDocumentScanner) : null; }
+  async function _scan() {
+    var p = _getPlugin();
+    if (!p) throw new Error("Plugin DocumentScanner não instalado");
+    var res = await p.scanDocument({
+      responseType: "imageFilePath",
+      maxNumDocuments: 5
+    });
+    if (!res || res.status === "cancel" || !res.scannedImages || !res.scannedImages.length) {
+      throw new Error("Scan cancelado");
+    }
+    var blobs = [];
+    for (var i = 0; i < res.scannedImages.length; i++) {
+      var path = res.scannedImages[i];
+      var webPath = (window.Capacitor && window.Capacitor.convertFileSrc) ? window.Capacitor.convertFileSrc(path) : path;
+      var resp = await fetch(webPath);
+      if (!resp.ok) throw new Error("Falha ao ler imagem escaneada: " + resp.status);
+      blobs.push(await resp.blob());
+    }
+    return blobs;
+  }
+
+  function _resetModal() {
+    _pendingFile = null;
+    document.getElementById("compDespesaId").value = "";
+    document.getElementById("compData").value = new Date().toISOString().slice(0, 10);
+    document.getElementById("compDescricao").value = "";
+    document.getElementById("compValor").value = "";
+    document.getElementById("compFileInput").value = "";
+    document.getElementById("compPreview").innerHTML = "";
+    document.getElementById("compStatus").textContent = "";
+  }
+  function _abrirModal(despesaExistente) {
+    _resetModal();
+    var showScan = _isCapacitor() && _getPlugin() && typeof window.Capacitor.convertFileSrc === "function";
+    document.getElementById("compScanBtn").style.display = showScan ? "" : "none";
+    if (despesaExistente) {
+      document.getElementById("compDespesaId").value = despesaExistente.id || "";
+      document.getElementById("compData").value = despesaExistente.data || new Date().toISOString().slice(0, 10);
+      document.getElementById("compDescricao").value = despesaExistente.descricao || "";
+      document.getElementById("compValor").value = despesaExistente.valor || "";
+    }
+    document.getElementById("compNovoModal").classList.add("is-open");
+  }
+  async function _abrirExterno(url) {
+    if (!url) { alert("URL indisponível"); return; }
+    try {
+      var capBrowser = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser);
+      if (capBrowser) {
+        await capBrowser.open({ url: url, presentationStyle: "fullscreen" });
+      } else {
+        window.open(url, "_blank");
+      }
+    } catch(e) { alert("Erro ao abrir: " + (e.message || e)); }
+  }
+  function _preview(url, nome) {
+    document.getElementById("compPreview").innerHTML = '<div style="padding:8px;background:#f8fafc;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;gap:8px">'
+      + '<span style="font-size:12px;color:var(--muted)">📄 ' + _esc(nome || "documento") + '</span>'
+      + '<button type="button" id="compPreviewVer" class="btn btn--secondary" style="padding:4px 10px;font-size:12px">🔍 Visualizar</button></div>';
+    var verBtn = document.getElementById("compPreviewVer");
+    if (verBtn) verBtn.addEventListener("click", function() { _abrirExterno(url); });
+  }
+  async function _processar(file) {
+    var st = document.getElementById("compStatus");
+    st.textContent = "Processando...";
+    try {
+      var isImg = file.type.indexOf("image/") === 0;
+      if (!isImg && file.type !== "application/pdf") throw new Error("Use PDF ou imagem");
+      if (file.size > 5 * 1024 * 1024) throw new Error("Arquivo > 5MB");
+      if (isImg) {
+        var r = await _compressToTarget([file], 300);
+        _pendingFile = { bytes: r.bytes, nome: file.name, origem: "image" };
+        _preview(URL.createObjectURL(new Blob([r.bytes], { type: "application/pdf" })), "imagem.pdf");
+        st.textContent = "✅ " + r.kb + "KB";
+      } else {
+        var ab = await file.arrayBuffer();
+        _pendingFile = { bytes: new Uint8Array(ab), nome: file.name, origem: "pdf" };
+        _preview(URL.createObjectURL(new Blob([ab], { type: "application/pdf" })), file.name);
+        st.textContent = "✅ " + Math.round(file.size / 1024) + "KB";
+      }
+    } catch(e) { st.textContent = "❌ " + e.message; _pendingFile = null; }
+  }
+  async function _scanar() {
+    var st = document.getElementById("compStatus");
+    st.textContent = "Abrindo câmera...";
+    try {
+      var blobs = await _scan();
+      st.textContent = "Comprimindo " + blobs.length + " pág...";
+      var r = await _compressToTarget(blobs, 300);
+      _pendingFile = { bytes: r.bytes, nome: "scan-" + Date.now() + ".pdf", origem: "scan" };
+      _preview(URL.createObjectURL(new Blob([r.bytes], { type: "application/pdf" })), "scan.pdf");
+      st.textContent = "✅ " + blobs.length + " pág · " + r.kb + "KB";
+    } catch(e) { st.textContent = "❌ " + (e.message || "cancelado"); }
+  }
+  async function _salvar() {
+    var btn = document.getElementById("compSalvarBtn");
+    var st = document.getElementById("compStatus");
+    var data = document.getElementById("compData").value;
+    var desc = (document.getElementById("compDescricao").value || "").trim();
+    var valor = Number(document.getElementById("compValor").value) || 0;
+    if (!data) { alert("Informe data."); return; }
+    if (!desc) { alert("Informe descrição."); return; }
+    if (valor <= 0) { alert("Informe valor."); return; }
+    if (!_pendingFile) { alert("Anexe o comprovante."); return; }
+    btn.disabled = true; btn.textContent = "Salvando...";
+    try {
+      st.textContent = "Enviando PDF...";
+      var up = await _uploadPDF(_pendingFile.bytes);
+      var s = _session();
+      var agora = new Date().toISOString();
+      var despesaId = document.getElementById("compDespesaId").value || "";
+      var desps = _lerDesp();
+      var compId = _uuid();
+
+      if (!despesaId) {
+        despesaId = _uuidDesp();
+        desps.push({ id: despesaId, piloto_id: s.id, piloto_nome: s.nome || "—", data: data, descricao: desc, valor: valor, criado_em: agora, atualizado_em: agora, recibo_pdf_url: up.url, recibo_pdf_path: up.path });
+      } else {
+        var d = desps.find(function(x) { return x.id === despesaId; });
+        if (d) { d.recibo_pdf_url = up.url; d.recibo_pdf_path = up.path; d.atualizado_em = agora; }
+      }
+
+      var comps = _ler();
+      comps.push({ id: compId, piloto_id: s.id, piloto_nome: s.nome || "—", despesa_id: despesaId, data_documento: data, descricao: desc, valor: valor, pdf_url: up.url, pdf_path: up.path, tamanho_kb: Math.round(_pendingFile.bytes.byteLength / 1024), origem: _pendingFile.origem, criado_em: agora, atualizado_em: agora });
+      _saveBoth(comps, desps);
+      document.getElementById("compNovoModal").classList.remove("is-open");
+      alert("✅ Salvo no Storage\n" + Math.round(_pendingFile.bytes.byteLength / 1024) + "KB");
+      _renderLista();
+      if (window.FinanceiroTripulacaoPage && location.hash === "#/financeiro") try { window.FinanceiroTripulacaoPage.render(); } catch(e) {}
+    } catch(e) {
+      console.error(e); st.textContent = "❌ " + e.message;
+      alert("Erro: " + e.message);
+    } finally { btn.disabled = false; btn.textContent = "Salvar"; }
+  }
+
+  function _renderLista() {
+    var box = document.getElementById("compLista"); if (!box) return;
+    var todos = _ler(), s = _session();
+    if (!_isAdmin()) todos = todos.filter(function(c) { return String(c.piloto_id) === String(s.id); });
+    todos.sort(function(a, b) { return String(b.data_documento).localeCompare(String(a.data_documento)); });
+    if (!todos.length) { box.innerHTML = '<div class="panel" style="padding:40px;text-align:center;color:var(--muted)">Nenhum comprovante. Clique em "+ Novo comprovante".</div>'; return; }
+    var porMes = {};
+    todos.forEach(function(c) { var m = String(c.data_documento || "").slice(0, 7); if (!porMes[m]) porMes[m] = []; porMes[m].push(c); });
+    box.innerHTML = Object.keys(porMes).sort().reverse().map(function(m) {
+      var nome = m ? (MESES[parseInt(m.split("-")[1], 10) - 1] + " " + m.split("-")[0]) : "Sem data";
+      var total = porMes[m].reduce(function(a, c) { return a + (Number(c.valor) || 0); }, 0);
+      var rows = porMes[m].map(function(c) {
+        return '<tr style="border-bottom:1px solid var(--line)" class="comp-tabela-desktop">'
+          + '<td style="padding:6px 8px;white-space:nowrap">' + _fmtData(c.data_documento) + '</td>'
+          + '<td style="padding:6px 8px">' + _esc(c.descricao) + (c.piloto_nome && _isAdmin() ? ' <span class="hint" style="font-size:11px">— ' + _esc(c.piloto_nome) + '</span>' : '') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-weight:700">' + _fmtValor(c.valor) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-size:11px;color:var(--muted)">' + (c.tamanho_kb ? c.tamanho_kb + "KB" : "—") + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;white-space:nowrap">'
+          + '<button type="button" data-comp-open="' + _esc(c.id) + '" title="Ver PDF" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">🔍</button>'
+          + '<button type="button" data-comp-del="' + _esc(c.id) + '" title="Excluir" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:4px">🗑️</button>'
+          + '</td></tr>';
+      }).join("");
+      var cardsMobile = porMes[m].map(function(c) {
+        return '<div class="comp-card-mobile">'
+          + '<div class="comp-card-mobile__top">'
+          +   '<span class="comp-card-mobile__data">📅 ' + _fmtData(c.data_documento) + '</span>'
+          +   '<span class="comp-card-mobile__valor">' + _fmtValor(c.valor) + '</span>'
+          + '</div>'
+          + '<div class="comp-card-mobile__desc">' + _esc(c.descricao) + (c.piloto_nome && _isAdmin() ? ' <span class="hint" style="font-size:11px">— ' + _esc(c.piloto_nome) + '</span>' : '') + '</div>'
+          + '<div class="comp-card-mobile__acoes">'
+          +   '<button type="button" class="btn btn--secondary" data-comp-open="' + _esc(c.id) + '">🔍 Visualizar</button>'
+          +   '<button type="button" class="btn btn--secondary" data-comp-del="' + _esc(c.id) + '">🗑️ Apagar</button>'
+          + '</div></div>';
+      }).join("");
+      return '<div class="panel" style="background:#fff !important;margin-bottom:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden">'
+        + '<header class="panel__head" style="background:#f8fafc !important;padding:12px 16px;border-bottom:1px solid var(--line)">'
+        +   '<h3 style="margin:0;font-size:14px">📅 ' + _esc(nome) + '</h3>'
+        +   '<span style="font-weight:800;color:var(--accent)">' + _fmtValor(total) + '</span>'
+        + '</header>'
+        + '<div class="comp-tabela-wrap" style="padding:0 16px 12px;overflow-x:auto">'
+        +   '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;min-width:550px">'
+        +     '<thead><tr style="border-bottom:2px solid var(--line);text-align:left">'
+        +       '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Data</th>'
+        +       '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Descrição</th>'
+        +       '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right">Valor</th>'
+        +       '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right">Tam.</th>'
+        +       '<th style="padding:6px 8px;text-align:right;width:80px"></th>'
+        +     '</tr></thead>'
+        +     '<tbody>' + rows + '</tbody>'
+        +   '</table>'
+        + '</div>'
+        + '<div class="comp-cards-wrap">' + cardsMobile + '</div>'
+        + '</div>';
+    }).join("");
+    box.querySelectorAll("[data-comp-open]").forEach(function(b) { b.addEventListener("click", function() { _abrirPDF(b.dataset.compOpen); }); });
+    box.querySelectorAll("[data-comp-del]").forEach(function(b) { b.addEventListener("click", function() { _excluir(b.dataset.compDel); }); });
+  }
+  async function _abrirPDF(id) {
+    var c = _ler().find(function(x) { return x.id === id; });
+    if (!c) { alert("Comprovante não encontrado"); return; }
+    // Bucket público → usa pdf_url direto; senão gera signed URL
+    var url = c.pdf_url;
+    if (!url && c.pdf_path) {
+      try {
+        var sb = getSupabase();
+        var r = await sb.storage.from(BUCKET).createSignedUrl(c.pdf_path, 3600);
+        if (r.error) throw r.error;
+        url = r.data.signedUrl;
+      } catch(e) { alert("Erro ao gerar URL: " + e.message); return; }
+    }
+    await _abrirExterno(url);
+  }
+  async function _excluir(id) {
+    if (!confirm("Excluir comprovante? O PDF será removido do Storage.")) return;
+    var comps = _ler();
+    var c = comps.find(function(x) { return x.id === id; });
+    if (!c) return;
+    try { var sb = getSupabase(); if (sb && c.pdf_path) await sb.storage.from(BUCKET).remove([c.pdf_path]); } catch(e) {}
+    comps = comps.filter(function(x) { return x.id !== id; });
+    var desps = _lerDesp();
+    if (c.despesa_id) { var d = desps.find(function(x) { return x.id === c.despesa_id; }); if (d) { d.recibo_pdf_url = null; d.recibo_pdf_path = null; d.atualizado_em = new Date().toISOString(); } }
+    _saveBoth(comps, desps);
+    _renderLista();
+  }
+
+  function _bind() {
+    if (_bound) return; _bound = true;
+    document.getElementById("compNovoBtn").addEventListener("click", function() { _abrirModal(); });
+    document.getElementById("compScanBtn").addEventListener("click", _scanar);
+    var fi = document.getElementById("compFileInput");
+    document.getElementById("compAnexarBtn").addEventListener("click", function() { fi.click(); });
+    fi.addEventListener("change", function() { var f = fi.files && fi.files[0]; if (f) _processar(f); });
+    document.getElementById("compSalvarBtn").addEventListener("click", _salvar);
+  }
+  async function render() { _bind(); _renderLista(); await _syncFromCloud(); _renderLista(); }
+  function abrirParaDespesa(d) { _abrirModal(d); }
+  return { render: render, abrirParaDespesa: abrirParaDespesa };
+})();
+/* ===== FIM COMPROVANTES ===== */
 
 const CiclosPage = (() => {
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
@@ -28238,6 +28611,28 @@ document.addEventListener("DOMContentLoaded", function() {
     <button class="btn btn--ghost" id="finTripDespDelete" hidden>Excluir</button>
     <button class="btn btn--secondary" data-action="close-modal" data-modal="finTripDespModal">Cancelar</button>
     <button class="btn" id="finTripDespSave">Salvar</button>
+  </div>
+</div></div>
+
+<div class="modal" id="compNovoModal"><div class="dialog" style="max-width:480px">
+  <h2 id="compNovoTitle">Novo comprovante</h2>
+  <input type="hidden" id="compDespesaId">
+  <label class="field" style="margin-bottom:10px"><span>Data *</span><input id="compData" type="date"></label>
+  <label class="field" style="margin-bottom:10px"><span>Descrição *</span><input id="compDescricao" placeholder="Ex: Recibo combustível SBSP"></label>
+  <label class="field" style="margin-bottom:10px"><span>Valor (R$) *</span><input id="compValor" type="number" min="0" step="0.01" placeholder="0,00"></label>
+  <div class="field" style="margin-bottom:10px">
+    <span>Documento *</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn btn--secondary" id="compScanBtn" style="display:none">📷 Escanear</button>
+      <button type="button" class="btn btn--secondary" id="compAnexarBtn">📎 Anexar PDF/Imagem</button>
+    </div>
+    <input type="file" id="compFileInput" accept="application/pdf,image/*" style="display:none">
+    <div id="compPreview" style="margin-top:10px"></div>
+    <div id="compStatus" class="hint" style="margin-top:4px"></div>
+  </div>
+  <div class="dialog__actions">
+    <button class="btn btn--secondary" data-action="close-modal" data-modal="compNovoModal">Cancelar</button>
+    <button class="btn" id="compSalvarBtn">Salvar</button>
   </div>
 </div></div>
 
