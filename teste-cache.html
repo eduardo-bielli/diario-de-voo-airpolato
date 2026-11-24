@@ -4258,7 +4258,7 @@ body.is-booting .app {
       <button class="nav__item" data-page="aircraft-crud"><span data-icon="plane"></span>Aeronaves</button>
       <button class="nav__item" data-page="airports"><span data-icon="target"></span>Aeroportos</button>
       <button class="nav__item" data-page="ciclos" data-role="admin,piloto"><span data-icon="chart"></span>Ciclos/ano</button>
-      <button class="nav__item" data-page="financeiro" data-role="admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>Financeiro</button>
+      <button class="nav__item" data-page="financeiro" data-role="admin,piloto"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>Financeiro</button>
       <button class="nav__item" data-page="maintenance"><span data-icon="wrench"></span>Manutenção</button>
       <button class="nav__item" data-page="passageiros"><span data-icon="user"></span>Passageiros</button>
       <button class="nav__item" data-page="piloto" data-role="admin,piloto"><span data-icon="user"></span>Pilotos</button>
@@ -5001,8 +5001,19 @@ body.is-booting .app {
           </div>
           <div id="finSecTripulacao" hidden>
             <div class="panel" style="background:var(--bg)">
-              <header class="panel__head"><h3>Tripulação</h3></header>
-              <div style="padding:20px;text-align:center;color:var(--muted)"><p style="margin:0;font-size:13px">Em construção.</p></div>
+              <header class="panel__head">
+                <h3>👥 Despesas da Tripulação</h3>
+                <div style="display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap">
+                  <select id="finTripPilotoFiltro" style="padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:13px;font-weight:600;display:none"></select>
+                  <button type="button" class="btn" id="finTripAdd" style="display:none">➕ Adicionar despesa</button>
+                </div>
+              </header>
+              <div style="padding:16px">
+                <div id="finTripCards"></div>
+                <div style="margin-top:16px;padding-top:12px;border-top:2px solid var(--line);text-align:right;font-size:16px;font-weight:800">
+                  💰 TOTAL GERAL: <span id="finTripTotalGeral" style="color:var(--accent)">R$ 0,00</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -18072,6 +18083,8 @@ const Router = (() => {
   };
   
   function current() { const h = location.hash.replace(/^#\/?/,""); return PAGES.includes(h) ? h : "dashboard"; }
+  try { PAGE_PERMS["financeiro"] = ["admin", "piloto"]; } catch(e) { console.warn("[Router] PAGE_PERMS override:", e); }
+
   function go(page) {
     if (!PAGES.includes(page)) page = "dashboard";
     /* config é mobile-only */
@@ -18178,6 +18191,7 @@ window.FinanceiroPage = (function() {
     });
     if (nome === "Aeronave" && window.FinanceiroAeronavePage) window.FinanceiroAeronavePage.render();
     if (nome === "Operacoes" && window.FinanceiroOperacoesPage) window.FinanceiroOperacoesPage.render();
+    if (nome === "Tripulacao" && window.FinanceiroTripulacaoPage) window.FinanceiroTripulacaoPage.render();
   }
   function _bind() {
     if (_bound) return;
@@ -18187,7 +18201,16 @@ window.FinanceiroPage = (function() {
       if (btn) btn.addEventListener("click", function() { _mostrar(nome); });
     });
   }
-  function render() { _bind(); _mostrar("Aeronave"); }
+  function render() {
+    _bind();
+    var s = (typeof Session !== "undefined" && Session.get) ? Session.get() : {};
+    var isAdmin = s.perfil === "admin";
+    var btnAero = document.getElementById("finTabAeronave");
+    var btnOp = document.getElementById("finTabOperacoes");
+    if (btnAero) btnAero.style.display = isAdmin ? "" : "none";
+    if (btnOp) btnOp.style.display = isAdmin ? "" : "none";
+    _mostrar(isAdmin ? "Aeronave" : "Tripulacao");
+  }
   return { render: render };
 })();
 /* ===== FIM FINANCEIRO PAGE ===== */
@@ -18609,6 +18632,274 @@ window.FinanceiroOperacoesPage = (function() {
   return { render: render };
 })();
 /* ===== FIM FINANCEIRO OPERACOES ===== */
+
+/* ===== INÍCIO FINANCEIRO TRIPULACAO ===== */
+window.FinanceiroTripulacaoPage = (function() {
+  "use strict";
+  var KEY = "dv.financeiro.despesas.v1";
+  var _bound = false;
+  var _filtroPilotoId = "all";
+  var _esc = function(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]; }); };
+  var _fmtValor = function(v) { var n = Number(v) || 0; return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); };
+  var _fmtData = function(iso) { if (!iso) return "—"; var p = iso.split("-"); return p.length === 3 ? p[2] + "/" + p[1] : iso; };
+  var MESES_NOME = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  var _pendingUpsert = null;
+
+  function _uuid() { return "desp-" + ((typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2,8)); }
+  function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
+  function _salvar(d) {
+    localStorage.setItem(KEY, JSON.stringify(d));
+    if (_pendingUpsert) clearTimeout(_pendingUpsert);
+    _pendingUpsert = setTimeout(function() {
+      _pendingUpsert = null;
+      try {
+        var sb = (typeof getSupabase === "function") ? getSupabase() : null;
+        if (!sb) return;
+        var atual = JSON.parse(localStorage.getItem(KEY) || "[]");
+        sb.from("kv_store").upsert({ key: KEY, value: atual }, { onConflict: "key" }).then(function(res) {
+          if (res && res.error) console.warn("[fin-trip] upsert falhou:", res.error);
+        });
+      } catch(e) { console.warn("[fin-trip] upsert exceção:", e); }
+    }, 400);
+  }
+
+  function _session() { return (typeof Session !== "undefined" && Session.get) ? Session.get() : {}; }
+  function _isAdmin() { return _session().perfil === "admin"; }
+  function _isPiloto() { var s = _session(); return s.perfil === "piloto" || s.tambem_e_piloto === true; }
+  function _podeAdicionar() { return _isPiloto(); }
+  function _veTodos() { return _isAdmin(); }
+
+  function _pilotosDisponiveis() {
+    var users = (typeof Users !== "undefined" && Users.get) ? Users.get() : [];
+    return users.filter(function(u) { return u.ativo !== false && (u.perfil === "piloto" || u.tambem_e_piloto === true); });
+  }
+
+  function _atualizarBotoes() {
+    var addBtn = document.getElementById("finTripAdd");
+    var filtro = document.getElementById("finTripPilotoFiltro");
+    if (addBtn) addBtn.style.display = _podeAdicionar() ? "" : "none";
+    if (filtro) {
+      if (_veTodos()) {
+        filtro.style.display = "";
+        var s = _session();
+        var opts = '<option value="all">Todos os pilotos</option>';
+        opts += '<option value="__me__">Só as minhas</option>';
+        _pilotosDisponiveis().forEach(function(u) {
+          opts += '<option value="' + _esc(u.id) + '">' + _esc(u.nome) + '</option>';
+        });
+        filtro.innerHTML = opts;
+        filtro.value = _filtroPilotoId || "all";
+      } else {
+        filtro.style.display = "none";
+      }
+    }
+  }
+
+  function _meuPilotoId() { var s = _session(); return s.id || ""; }
+  function _meuNome() { var s = _session(); return s.nome || "Eu"; }
+
+  function _agruparPorPilotoEMes() {
+    var todas = _ler();
+    var s = _session();
+    // Filtrar por permissão
+    if (!_veTodos()) {
+      todas = todas.filter(function(d) { return String(d.piloto_id) === String(s.id); });
+    } else {
+      if (_filtroPilotoId === "__me__") {
+        todas = todas.filter(function(d) { return String(d.piloto_id) === String(s.id); });
+      } else if (_filtroPilotoId !== "all") {
+        todas = todas.filter(function(d) { return String(d.piloto_id) === String(_filtroPilotoId); });
+      }
+    }
+    // Agrupar por piloto → mês → despesas
+    var porPiloto = {};
+    todas.forEach(function(d) {
+      var pid = String(d.piloto_id || "—");
+      if (!porPiloto[pid]) porPiloto[pid] = { id: pid, nome: d.piloto_nome || "—", meses: {}, total: 0 };
+      var mes = String(d.data || "").slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(mes)) mes = "sem-data";
+      if (!porPiloto[pid].meses[mes]) porPiloto[pid].meses[mes] = { despesas: [], total: 0 };
+      porPiloto[pid].meses[mes].despesas.push(d);
+      porPiloto[pid].meses[mes].total += Number(d.valor) || 0;
+      porPiloto[pid].total += Number(d.valor) || 0;
+    });
+    // Ordenar despesas dentro do mês por data asc
+    Object.keys(porPiloto).forEach(function(pid) {
+      Object.keys(porPiloto[pid].meses).forEach(function(m) {
+        porPiloto[pid].meses[m].despesas.sort(function(a, b) { return String(a.data).localeCompare(String(b.data)); });
+      });
+    });
+    return porPiloto;
+  }
+
+  function _renderCards() {
+    var box = document.getElementById("finTripCards"); if (!box) return;
+    var porPiloto = _agruparPorPilotoEMes();
+    var pilotos = Object.keys(porPiloto);
+    if (!pilotos.length) {
+      box.innerHTML = '<div class="panel" style="padding:40px;text-align:center;color:var(--muted)">Nenhuma despesa registrada.</div>';
+      var tg0 = document.getElementById("finTripTotalGeral"); if (tg0) tg0.textContent = _fmtValor(0);
+      return;
+    }
+    // Ordenar pilotos por nome (ou "Minhas despesas" primeiro se piloto puro)
+    pilotos.sort(function(a, b) { return String(porPiloto[a].nome).localeCompare(String(porPiloto[b].nome)); });
+    var totalGeral = 0;
+    var html = pilotos.map(function(pid) {
+      var p = porPiloto[pid];
+      totalGeral += p.total;
+      var nomeExibir = (_veTodos() && pid !== _meuPilotoId()) ? p.nome : (pid === _meuPilotoId() ? "Minhas despesas" : p.nome);
+      var meses = Object.keys(p.meses).sort().reverse();
+
+      var mesesHtml = meses.map(function(m) {
+        var dm = p.meses[m];
+        var nomeMes = m === "sem-data" ? "Sem data" : (MESES_NOME[parseInt(m.split("-")[1], 10) - 1] + " " + m.split("-")[0]);
+        var rows = dm.despesas.map(function(d) {
+          return '<tr style="border-bottom:1px solid var(--line)">'
+            + '<td style="padding:6px 8px;white-space:nowrap">' + _fmtData(d.data) + '</td>'
+            + '<td style="padding:6px 8px">' + _esc(d.descricao || "—") + '</td>'
+            + '<td style="padding:6px 8px;text-align:right;font-weight:700">' + _fmtValor(d.valor) + '</td>'
+            + '<td style="padding:6px 8px;text-align:right;white-space:nowrap">'
+            +   '<button type="button" data-fintrip-edit="' + _esc(d.id) + '" title="Editar" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px">✏️</button>'
+            +   '<button type="button" data-fintrip-del="' + _esc(d.id) + '" title="Excluir" style="background:transparent;border:1px solid var(--line);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:4px">🗑️</button>'
+            + '</td></tr>';
+        }).join("");
+        return '<div style="margin-bottom:14px">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 4px;border-bottom:1px solid var(--line);margin-bottom:6px">'
+          +   '<h4 style="margin:0;font-size:13px;text-transform:uppercase;color:var(--muted);font-weight:800">📅 ' + _esc(nomeMes) + '</h4>'
+          +   '<span style="font-weight:800;color:var(--accent);font-size:13px">' + _fmtValor(dm.total) + '</span>'
+          + '</div>'
+          + '<div style="overflow-x:auto">'
+          + '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;min-width:450px">'
+          + '<thead><tr style="border-bottom:2px solid var(--line);text-align:left">'
+          + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Data</th>'
+          + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Descrição</th>'
+          + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right">Valor</th>'
+          + '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted);text-align:right;width:80px">Ações</th>'
+          + '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      }).join("");
+
+      return '<div class="panel" style="background:#fff !important;margin-bottom:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">'
+        + '<header class="panel__head" style="background:#f8fafc !important;padding:14px 16px;border-bottom:1px solid var(--line)">'
+        +   '<h3 style="margin:0">👨‍✈️ ' + _esc(nomeExibir) + '</h3>'
+        +   '<span style="font-weight:800;color:var(--accent);font-size:15px;white-space:nowrap">' + _fmtValor(p.total) + '</span>'
+        + '</header>'
+        + '<div style="padding:16px">' + mesesHtml + '</div>'
+        + '</div>';
+    }).join("");
+
+    box.innerHTML = html;
+    var tg = document.getElementById("finTripTotalGeral"); if (tg) tg.textContent = _fmtValor(totalGeral);
+
+    box.querySelectorAll("[data-fintrip-edit]").forEach(function(b) { b.addEventListener("click", function() { _modal(b.dataset.fintripEdit); }); });
+    box.querySelectorAll("[data-fintrip-del]").forEach(function(b) { b.addEventListener("click", function() { _remove(b.dataset.fintripDel); }); });
+  }
+
+  function _modal(id) {
+    var s = _session();
+    var todas = _ler();
+    var d = id ? todas.find(function(x) { return x.id === id; }) : null;
+    if (id && !d) return;
+
+    // Verificar permissão: piloto só pode editar as próprias
+    if (id && !_veTodos() && String(d.piloto_id) !== String(s.id)) {
+      alert("Você só pode editar suas próprias despesas.");
+      return;
+    }
+
+    document.getElementById("finTripDespModalTitle").textContent = d ? "Editar despesa" : "Nova despesa";
+    document.getElementById("finTripDespId").value = d ? d.id : "";
+    document.getElementById("finTripDespData").value = d ? (d.data || "") : new Date().toISOString().slice(0, 10);
+    document.getElementById("finTripDespDescricao").value = d ? (d.descricao || "") : "";
+    document.getElementById("finTripDespValor").value = d ? (d.valor || "") : "";
+    document.getElementById("finTripDespDelete").hidden = !d;
+
+    var aviso = document.getElementById("finTripDespAvisoPiloto");
+    if (d && _veTodos() && String(d.piloto_id) !== String(s.id)) {
+      aviso.textContent = "Editando despesa de 👨‍✈️ " + (d.piloto_nome || "—");
+      aviso.style.display = "";
+      document.getElementById("finTripDespPilotoId").value = d.piloto_id;
+      document.getElementById("finTripDespPilotoNome").value = d.piloto_nome || "";
+    } else {
+      aviso.style.display = "none";
+      document.getElementById("finTripDespPilotoId").value = s.id;
+      document.getElementById("finTripDespPilotoNome").value = s.nome || "—";
+    }
+
+    document.getElementById("finTripDespModal").classList.add("is-open");
+  }
+
+  function _save() {
+    var id = (document.getElementById("finTripDespId").value || "").trim();
+    var data = (document.getElementById("finTripDespData").value || "").trim();
+    var descricao = (document.getElementById("finTripDespDescricao").value || "").trim();
+    var valor = Number(document.getElementById("finTripDespValor").value) || 0;
+    var s = _session();
+
+    if (!data) { alert("Informe a data."); return; }
+    if (!descricao) { alert("Informe a descrição."); return; }
+    if (valor <= 0) { alert("Informe um valor maior que zero."); return; }
+
+    var todas = _ler();
+    var agora = new Date().toISOString();
+
+    if (id) {
+      var d = todas.find(function(x) { return x.id === id; });
+      if (!d) { alert("Despesa não encontrada."); return; }
+      if (!_veTodos() && String(d.piloto_id) !== String(s.id)) { alert("Sem permissão."); return; }
+      d.data = data;
+      d.descricao = descricao;
+      d.valor = valor;
+      d.atualizado_em = agora;
+    } else {
+      if (!_podeAdicionar()) { alert("Apenas pilotos podem adicionar despesas."); return; }
+      todas.push({
+        id: _uuid(),
+        piloto_id: s.id,
+        piloto_nome: s.nome || "—",
+        data: data,
+        descricao: descricao,
+        valor: valor,
+        criado_em: agora,
+        atualizado_em: agora,
+        recibo_pdf_url: null,
+        recibo_pdf_path: null
+      });
+    }
+
+    _salvar(todas);
+    document.getElementById("finTripDespModal").classList.remove("is-open");
+    _renderCards();
+  }
+
+  function _remove(id) {
+    var s = _session();
+    var todas = _ler();
+    var d = todas.find(function(x) { return x.id === id; });
+    if (!d) return;
+    if (!_veTodos() && String(d.piloto_id) !== String(s.id)) { alert("Sem permissão."); return; }
+    if (!confirm("Excluir esta despesa?\n\n" + d.descricao + " — " + _fmtValor(d.valor))) return;
+    todas = todas.filter(function(x) { return x.id !== id; });
+    _salvar(todas);
+    document.getElementById("finTripDespModal").classList.remove("is-open");
+    _renderCards();
+  }
+
+  function _bind() {
+    if (_bound) return; _bound = true;
+    var filtro = document.getElementById("finTripPilotoFiltro");
+    if (filtro) filtro.addEventListener("change", function() { _filtroPilotoId = filtro.value; _renderCards(); });
+    var add = document.getElementById("finTripAdd");
+    if (add) add.addEventListener("click", function() { _modal(null); });
+    var sav = document.getElementById("finTripDespSave");
+    if (sav) sav.addEventListener("click", _save);
+    var del = document.getElementById("finTripDespDelete");
+    if (del) del.addEventListener("click", function() { var id = (document.getElementById("finTripDespId").value || "").trim(); if (id) _remove(id); });
+  }
+
+  function render() { _bind(); _atualizarBotoes(); _renderCards(); }
+  return { render: render };
+})();
+/* ===== FIM FINANCEIRO TRIPULACAO ===== */
 
 const CiclosPage = (() => {
   const esc = (v) => String(v??"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
@@ -27882,6 +28173,22 @@ document.addEventListener("DOMContentLoaded", function() {
     <button class="btn btn--ghost" id="finItemDelete" hidden>Excluir</button>
     <button class="btn btn--secondary" data-action="close-modal" data-modal="finItemModal">Cancelar</button>
     <button class="btn" id="finItemSave">Salvar</button>
+  </div>
+</div></div>
+
+<div class="modal" id="finTripDespModal"><div class="dialog" style="max-width:480px">
+  <h2 id="finTripDespModalTitle">Nova despesa</h2>
+  <input type="hidden" id="finTripDespId">
+  <input type="hidden" id="finTripDespPilotoId">
+  <input type="hidden" id="finTripDespPilotoNome">
+  <div id="finTripDespAvisoPiloto" style="display:none;padding:8px 12px;background:rgba(56,168,255,0.1);border-radius:6px;margin-bottom:12px;font-size:12px;color:var(--text)"></div>
+  <label class="field" style="margin-bottom:10px"><span>Data *</span><input id="finTripDespData" type="date"></label>
+  <label class="field" style="margin-bottom:10px"><span>Descrição *</span><input id="finTripDespDescricao" placeholder="Ex: Combustível SBSP"></label>
+  <label class="field" style="margin-bottom:10px"><span>Valor (R$) *</span><input id="finTripDespValor" type="number" min="0" step="0.01" placeholder="0,00"></label>
+  <div class="dialog__actions">
+    <button class="btn btn--ghost" id="finTripDespDelete" hidden>Excluir</button>
+    <button class="btn btn--secondary" data-action="close-modal" data-modal="finTripDespModal">Cancelar</button>
+    <button class="btn" id="finTripDespSave">Salvar</button>
   </div>
 </div></div>
 
