@@ -4147,7 +4147,6 @@ body.is-booting .app {
     .aircraft-cards.is-solo .aircraft-card__media, .aircraft-cards.is-solo .aircraft-card__body { width: 100% !important; }
 }
 </style>
-
 <style id="comp-mobile-css">
 @media (max-width: 640px) {
   .comp-card-mobile { display: flex !important; flex-direction: column; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); }
@@ -7857,6 +7856,11 @@ const Cloud = (() => {
     if (eventType === "DELETE") return;
     const key = novo?.key;
     if (!key || !SYNC_KEYS.has(key)) return;
+    // Comprovantes: ignorar Realtime (usa _syncFromCloud no render() + focus)
+    if (key === "dv.comprovantes.v1") {
+      console.log("[Realtime] dv.comprovantes.v1 ignorado (usa _syncFromCloud)");
+      return;
+    }
 
     const cloudTs = new Date(novo.updated_at).getTime();
     const lp = JSON.parse(localStorage.getItem("dv.cloud.lastPull") || "{}");
@@ -18270,26 +18274,20 @@ window.FinanceiroAeronavePage = (function() {
       var r = await sb.from("kv_store").select("value").eq("key", KEY).maybeSingle();
       var cloud = (r.data && r.data.value) ? (typeof r.data.value === "string" ? JSON.parse(r.data.value) : r.data.value) : null;
       if (!Array.isArray(cloud) || cloud.length === 0) return;
-      // Cloud é fonte da verdade para EXCLUSÕES:
-      // - item no cloud + item local → usa o mais recente (atualizado_em)
-      // - item no cloud + sem item local → adiciona
-      // - item NÃO no cloud + item local → foi deletado em outro device → remove
+      var local = JSON.parse(localStorage.getItem(KEY) || "[]");
       var map = {};
-      cloud.forEach(function(c) { if (c && c.id) map[c.id] = c; });
-      var locais = _ler();
-      var resultado = [];
-      locais.forEach(function(c) {
-        if (!c || !c.id) return;
-        if (!map[c.id]) return; // deletado no cloud → descarta
-        var cloudItem = map[c.id];
-        var localMaisRecente = (c.atualizado_em || "") > (cloudItem.atualizado_em || "");
-        resultado.push(localMaisRecente ? c : cloudItem);
-        delete map[c.id];
+      cloud.forEach(function(item) { if (item && item.aeronave_id) map[item.aeronave_id] = item; });
+      local.forEach(function(item) {
+        if (!item || !item.aeronave_id) return;
+        var ex = map[item.aeronave_id];
+        if (!ex) { map[item.aeronave_id] = item; return; }
+        if (item.atualizado_em && ex.atualizado_em && item.atualizado_em > ex.atualizado_em) {
+          map[item.aeronave_id] = item;
+        }
       });
-      Object.keys(map).forEach(function(id) { resultado.push(map[id]); });
-      localStorage.setItem(KEY, JSON.stringify(resultado));
-      console.log("[Tripulacao] sync:", cloud.length, "no cloud,", resultado.length, "após merge");
-    } catch(e) { console.warn("[Tripulacao] sync falhou:", e); }
+      localStorage.setItem(KEY, JSON.stringify(Object.values(map)));
+      console.log("[fin-aero] sync Cloud:", cloud.length, "itens");
+    } catch(e) { console.warn("[fin-aero] sync falhou:", e); }
   }
   function _ler() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } }
   var _pendingUpsert = null;
@@ -18971,11 +18969,6 @@ window.FinanceiroTripulacaoPage = (function() {
 
   function _bind() {
     if (_bound) return; _bound = true;
-    // Escutar mudanças de despesas (Comprovantes cria/exclui)
-    document.addEventListener("dv:despesas-changed", function(e) {
-      console.log("[Tripulacao] despesas mudaram:", e.detail && e.detail.origem);
-      _renderCards();
-    });
     var filtro = document.getElementById("finTripPilotoFiltro");
     if (filtro) filtro.addEventListener("change", function() { _filtroPilotoId = filtro.value; _atualizarBotoes(); _renderCards(); });
     var add = document.getElementById("finTripAdd");
@@ -18990,9 +18983,6 @@ window.FinanceiroTripulacaoPage = (function() {
   return { render: render };
 })();
 /* ===== FIM FINANCEIRO TRIPULACAO ===== */
-
-
-
 
 /* ===== INÍCIO COMPROVANTES ===== */
 window.ComprovantesPage = (function() {
@@ -19021,21 +19011,19 @@ window.ComprovantesPage = (function() {
       if (r1.error) console.error("[comprovantes] erro ao salvar comprovantes no cloud:", r1.error);
       var r2 = await sb.from("kv_store").upsert({ key: DESP_KEY, value: desps }, { onConflict: "key" });
       if (r2.error) console.error("[comprovantes] erro ao salvar despesas no cloud:", r2.error);
-      if (r1.error || r2.error) {
-        alert("⚠️ Salvo localmente, mas houve erro no cloud. Verifique o console.");
-      }
     } catch(e) { console.error("[comprovantes] _saveBoth falhou:", e); }
   }
   async function _syncFromCloud() {
     try {
       var sb = getSupabase(); if (!sb) return;
       var r = await sb.from("kv_store").select("value").eq("key", KEY).maybeSingle();
-      var cloud = (r.data && r.data.value) ? (typeof r.data.value === "string" ? JSON.parse(r.data.value) : r.data.value) : null;
-      if (!Array.isArray(cloud) || !cloud.length) return;
+      var cloud = (r.data && r.data.value) ? (typeof r.data.value === "string" ? JSON.parse(r.data.value) : r.data.value) : [];
+      if (!Array.isArray(cloud)) cloud = [];
       // Cloud é fonte da verdade para EXCLUSÕES:
       // - item no cloud + item local → usa o mais recente (atualizado_em)
       // - item no cloud + sem item local → adiciona
       // - item NÃO no cloud + item local → foi deletado em outro device → remove
+      // - cloud vazio → TODOS os itens locais foram excluídos → limpa localStorage
       var map = {};
       cloud.forEach(function(c) { if (c && c.id) map[c.id] = c; });
       var locais = _ler();
@@ -19046,14 +19034,13 @@ window.ComprovantesPage = (function() {
         var cloudItem = map[c.id];
         var localMaisRecente = (c.atualizado_em || "") > (cloudItem.atualizado_em || "");
         resultado.push(localMaisRecente ? c : cloudItem);
-        delete map[c.id]; // marca como já processado
+        delete map[c.id];
       });
-      // Itens que só existem no cloud (criados em outro device)
       Object.keys(map).forEach(function(id) { resultado.push(map[id]); });
       localStorage.setItem(KEY, JSON.stringify(resultado));
+      console.log("[comprovantes] sync:", cloud.length, "no cloud,", resultado.length, "após merge");
     } catch(e) { console.warn("[comp] sync:", e); }
   }
-
   async function _compressImage(blob, maxW, q) {
     return new Promise(function(resolve, reject) {
       var img = new Image();
@@ -19099,32 +19086,35 @@ window.ComprovantesPage = (function() {
     var blob = new Blob([bytes], { type: "application/pdf" });
     var r = await sb.storage.from(BUCKET).upload(fname, blob, { upsert: false, contentType: "application/pdf" });
     if (r.error) throw r.error;
-    return { path: fname, url: null };  // URL gerada on-demand (bucket privado)
+    var u = sb.storage.from(BUCKET).getPublicUrl(fname);
+    var publicUrl = (u.data && u.data.publicUrl) ? u.data.publicUrl : "";
+    if (publicUrl) {
+      try {
+        var check = await fetch(publicUrl, { method: "HEAD" });
+        if (check.ok) return { path: fname, url: publicUrl };
+      } catch(e) {}
+    }
+    var signed = await sb.storage.from(BUCKET).createSignedUrl(fname, 60 * 60 * 24 * 365);
+    if (signed.error) throw new Error("Upload OK mas URL falhou: " + signed.error.message);
+    return { path: fname, url: signed.data.signedUrl };
   }
-
   function _isCapacitor() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
   function _getPlugin() { return (window.Capacitor && window.Capacitor.Plugins) ? (window.Capacitor.Plugins.DocumentScanner || window.Capacitor.Plugins.CapgoDocumentScanner) : null; }
   async function _scan() {
     var p = _getPlugin();
     if (!p) throw new Error("Plugin DocumentScanner não instalado");
-    var res = await p.scanDocument({
-      responseType: "imageFilePath",
-      maxNumDocuments: 5
-    });
-    if (!res || res.status === "cancel" || !res.scannedImages || !res.scannedImages.length) {
-      throw new Error("Scan cancelado");
-    }
+    var res = await p.scanDocument({ responseType: "imageFilePath", maxNumDocuments: 5 });
+    if (!res || res.status === "cancel" || !res.scannedImages || !res.scannedImages.length) throw new Error("Scan cancelado");
     var blobs = [];
     for (var i = 0; i < res.scannedImages.length; i++) {
       var path = res.scannedImages[i];
       var webPath = (window.Capacitor && window.Capacitor.convertFileSrc) ? window.Capacitor.convertFileSrc(path) : path;
       var resp = await fetch(webPath);
-      if (!resp.ok) throw new Error("Falha ao ler imagem escaneada: " + resp.status);
+      if (!resp.ok) throw new Error("Falha ao ler imagem: " + resp.status);
       blobs.push(await resp.blob());
     }
     return blobs;
   }
-
   function _resetModal() {
     _pendingFile = null;
     document.getElementById("compDespesaId").value = "";
@@ -19137,7 +19127,7 @@ window.ComprovantesPage = (function() {
   }
   function _abrirModal(despesaExistente) {
     _resetModal();
-    var showScan = _isCapacitor() && _getPlugin() && typeof window.Capacitor.convertFileSrc === "function";
+    var showScan = _isCapacitor() && _getPlugin();
     document.getElementById("compScanBtn").style.display = showScan ? "" : "none";
     if (despesaExistente) {
       document.getElementById("compDespesaId").value = despesaExistente.id || "";
@@ -19147,23 +19137,20 @@ window.ComprovantesPage = (function() {
     }
     document.getElementById("compNovoModal").classList.add("is-open");
   }
+  function _preview(url, nome) {
+    document.getElementById("compPreview").innerHTML = '<div style="padding:8px;background:#f8fafc;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;gap:8px">'
+      + '<span style="font-size:12px;color:var(--muted)">📄 ' + _esc(nome || "documento") + '</span>'
+      + '<button type="button" id="compPreviewVer" class="btn btn--secondary" style="padding:4px 10px;font-size:12px">👁️ Visualizar</button></div>';
+    var verBtn = document.getElementById("compPreviewVer");
+    if (verBtn) verBtn.addEventListener("click", function() { _abrirExterno(url); });
+  }
   async function _abrirExterno(url) {
     if (!url) { alert("URL indisponível"); return; }
     try {
       var capBrowser = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser);
-      if (capBrowser) {
-        await capBrowser.open({ url: url, presentationStyle: "fullscreen" });
-      } else {
-        window.open(url, "_blank");
-      }
+      if (capBrowser) { await capBrowser.open({ url: url, presentationStyle: "fullscreen" }); }
+      else { window.open(url, "_blank"); }
     } catch(e) { alert("Erro ao abrir: " + (e.message || e)); }
-  }
-  function _preview(url, nome) {
-    document.getElementById("compPreview").innerHTML = '<div style="padding:8px;background:#f8fafc;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;gap:8px">'
-      + '<span style="font-size:12px;color:var(--muted)">📄 ' + _esc(nome || "documento") + '</span>'
-      + '<button type="button" id="compPreviewVer" class="btn btn--secondary" style="padding:4px 10px;font-size:12px">🔍 Visualizar</button></div>';
-    var verBtn = document.getElementById("compPreviewVer");
-    if (verBtn) verBtn.addEventListener("click", function() { _abrirExterno(url); });
   }
   async function _processar(file) {
     var st = document.getElementById("compStatus");
@@ -19216,7 +19203,6 @@ window.ComprovantesPage = (function() {
       var despesaId = document.getElementById("compDespesaId").value || "";
       var desps = _lerDesp();
       var compId = _uuid();
-
       if (!despesaId) {
         despesaId = _uuidDesp();
         desps.push({ id: despesaId, piloto_id: s.id, piloto_nome: s.nome || "—", data: data, descricao: desc, valor: valor, criado_em: agora, atualizado_em: agora, recibo_pdf_url: up.url, recibo_pdf_path: up.path });
@@ -19224,23 +19210,17 @@ window.ComprovantesPage = (function() {
         var d = desps.find(function(x) { return x.id === despesaId; });
         if (d) { d.recibo_pdf_url = up.url; d.recibo_pdf_path = up.path; d.atualizado_em = agora; }
       }
-
       var comps = _ler();
       comps.push({ id: compId, piloto_id: s.id, piloto_nome: s.nome || "—", despesa_id: despesaId, data_documento: data, descricao: desc, valor: valor, pdf_url: up.url, pdf_path: up.path, tamanho_kb: Math.round(_pendingFile.bytes.byteLength / 1024), origem: _pendingFile.origem, criado_em: agora, atualizado_em: agora });
       await _saveBoth(comps, desps);
       document.getElementById("compNovoModal").classList.remove("is-open");
-      alert("✅ Salvo no Storage\n" + Math.round(_pendingFile.bytes.byteLength / 1024) + "KB");
+      alert("✅ Salvo\n" + Math.round(_pendingFile.bytes.byteLength / 1024) + "KB");
       _renderLista();
-      // Notificar Tripulação (sempre, independente da página atual)
-      try {
-        document.dispatchEvent(new CustomEvent("dv:despesas-changed", { detail: { origem: "comprovante-salvo" } }));
-      } catch(e) {}
     } catch(e) {
       console.error(e); st.textContent = "❌ " + e.message;
       alert("Erro: " + e.message);
     } finally { btn.disabled = false; btn.textContent = "Salvar"; }
   }
-
   function _renderLista() {
     var box = document.getElementById("compLista"); if (!box) return;
     var todos = _ler(), s = _session();
@@ -19253,9 +19233,9 @@ window.ComprovantesPage = (function() {
       var nome = m ? (MESES[parseInt(m.split("-")[1], 10) - 1] + " " + m.split("-")[0]) : "Sem data";
       var total = porMes[m].reduce(function(a, c) { return a + (Number(c.valor) || 0); }, 0);
       var rows = porMes[m].map(function(c) {
-        return '<tr style="border-bottom:1px solid var(--line)" class="comp-tabela-desktop">'
+        return '<tr style="border-bottom:1px solid var(--line)">'
           + '<td style="padding:6px 8px;white-space:nowrap">' + _fmtData(c.data_documento) + '</td>'
-          + '<td style="padding:6px 8px">' + _esc(c.descricao) + (c.piloto_nome && _isAdmin() ? ' <span class="hint" style="font-size:11px">— ' + _esc(c.piloto_nome) + '</span>' : '') + '</td>'
+          + '<td style="padding:6px 8px">' + _esc(c.descricao) + '</td>'
           + '<td style="padding:6px 8px;text-align:right;font-weight:700">' + _fmtValor(c.valor) + '</td>'
           + '<td style="padding:6px 8px;text-align:right;font-size:11px;color:var(--muted)">' + (c.tamanho_kb ? c.tamanho_kb + "KB" : "—") + '</td>'
           + '<td style="padding:6px 8px;text-align:right;white-space:nowrap">'
@@ -19269,7 +19249,7 @@ window.ComprovantesPage = (function() {
           +   '<span class="comp-card-mobile__data">📅 ' + _fmtData(c.data_documento) + '</span>'
           +   '<span class="comp-card-mobile__valor">' + _fmtValor(c.valor) + '</span>'
           + '</div>'
-          + '<div class="comp-card-mobile__desc">' + _esc(c.descricao) + (c.piloto_nome && _isAdmin() ? ' <span class="hint" style="font-size:11px">— ' + _esc(c.piloto_nome) + '</span>' : '') + '</div>'
+          + '<div class="comp-card-mobile__desc">' + _esc(c.descricao) + '</div>'
           + '<div class="comp-card-mobile__acoes">'
           +   '<button type="button" class="btn btn--secondary" data-comp-open="' + _esc(c.id) + '">🔍 Visualizar</button>'
           +   '<button type="button" class="btn btn--secondary" data-comp-del="' + _esc(c.id) + '">🗑️ Apagar</button>'
@@ -19301,7 +19281,6 @@ window.ComprovantesPage = (function() {
   async function _abrirPDF(id) {
     var c = _ler().find(function(x) { return x.id === id; });
     if (!c) { alert("Comprovante não encontrado"); return; }
-    // Bucket público → usa pdf_url direto; senão gera signed URL
     var url = c.pdf_url;
     if (!url && c.pdf_path) {
       try {
@@ -19309,27 +19288,27 @@ window.ComprovantesPage = (function() {
         var r = await sb.storage.from(BUCKET).createSignedUrl(c.pdf_path, 3600);
         if (r.error) throw r.error;
         url = r.data.signedUrl;
-      } catch(e) { alert("Erro ao gerar URL: " + e.message); return; }
+      } catch(e) { alert("Erro: " + e.message); return; }
     }
     await _abrirExterno(url);
   }
   async function _excluir(id) {
-    if (!confirm("Excluir comprovante? O PDF será removido do Storage.")) return;
+    console.log("[comprovantes] _excluir chamado para:", id);
+    if (!confirm("Excluir comprovante?")) { console.log("[comprovantes] exclusão cancelada pelo usuário"); return; }
     var comps = _ler();
     var c = comps.find(function(x) { return x.id === id; });
-    if (!c) return;
-    try { var sb = getSupabase(); if (sb && c.pdf_path) await sb.storage.from(BUCKET).remove([c.pdf_path]); } catch(e) {}
+    if (!c) { console.log("[comprovantes] comprovante não encontrado no localStorage"); return; }
+    console.log("[comprovantes] comprovante encontrado, removendo PDF do Storage...");
+    try { var sb = getSupabase(); if (sb && c.pdf_path) await sb.storage.from(BUCKET).remove([c.pdf_path]); } catch(e) { console.warn("[comprovantes] erro ao remover PDF:", e); }
     comps = comps.filter(function(x) { return x.id !== id; });
+    console.log("[comprovantes] após filter, comps tem", comps.length, "itens");
     var desps = _lerDesp();
     if (c.despesa_id) { var d = desps.find(function(x) { return x.id === c.despesa_id; }); if (d) { d.recibo_pdf_url = null; d.recibo_pdf_path = null; d.atualizado_em = new Date().toISOString(); } }
+    console.log("[comprovantes] chamando _saveBoth...");
     await _saveBoth(comps, desps);
+    console.log("[comprovantes] _saveBoth concluído, renderizando lista...");
     _renderLista();
-    // Notificar Tripulação
-    try {
-      document.dispatchEvent(new CustomEvent("dv:despesas-changed", { detail: { origem: "comprovante-excluido" } }));
-    } catch(e) {}
   }
-
   function _bind() {
     if (_bound) return; _bound = true;
     document.getElementById("compNovoBtn").addEventListener("click", function() { _abrirModal(); });
@@ -19338,6 +19317,13 @@ window.ComprovantesPage = (function() {
     document.getElementById("compAnexarBtn").addEventListener("click", function() { fi.click(); });
     fi.addEventListener("change", function() { var f = fi.files && fi.files[0]; if (f) _processar(f); });
     document.getElementById("compSalvarBtn").addEventListener("click", _salvar);
+    // Sync quando o app volta ao foco (resolve exclusão em outro device)
+    document.addEventListener("visibilitychange", function() {
+      if (!document.hidden) _syncFromCloud().then(_renderLista).catch(function(e) { console.warn("[comp] sync visibility:", e); });
+    });
+    window.addEventListener("focus", function() {
+      _syncFromCloud().then(_renderLista).catch(function(e) { console.warn("[comp] sync focus:", e); });
+    });
   }
   async function render() { _bind(); _renderLista(); await _syncFromCloud(); _renderLista(); }
   function abrirParaDespesa(d) { _abrirModal(d); }
@@ -26550,6 +26536,16 @@ document.addEventListener('click', function(e) {
         fecharSheet();
         if (typeof Router !== "undefined" && Router.go) Router.go(_mobPage);
       });
+    // Adicionar listener para o botão "Comprovantes" (que não tem data-mobile-page)
+    document.querySelectorAll("button").forEach(function(b) {
+      if (b.textContent && b.textContent.trim() === "Comprovantes" && !b.dataset.mobilePage && !b.dataset.page) {
+        b.addEventListener("click", function(e) {
+          e.preventDefault();
+          if (typeof fecharSheet === "function") fecharSheet();
+          if (typeof go === "function") go("comprovantes");
+        });
+      }
+    });
     });
 
     /* Sync inicial */
